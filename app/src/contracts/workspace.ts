@@ -16,16 +16,50 @@ export interface FileNode {
   git?: GitMarker;
 }
 
-export interface Project {
+/**
+ * A git **repository** (§2.1) — one remote + a default branch. A repo has N
+ * worktrees. The repo carries the identity the remote knows; per-checkout state
+ * (path / branch / base) lives on `Worktree`, never here.
+ */
+export interface Repo {
   id: string;
   name: string;
+  /** Remote URL or shorthand (e.g. "git@github.com:acme/core.git"). */
+  remote?: string;
+  /** The repo's default branch (e.g. "main"). */
+  defaultBranch: string;
+}
+
+/**
+ * A git **worktree** (§2.1) — one checkout of a `Repo` at a path, on a branch,
+ * branched from a base. The Explorer and Changes views map onto worktrees, not
+ * repos: a single repo can have several worktrees open side-by-side.
+ */
+export interface Worktree {
+  id: string;
+  /** The `Repo` this worktree is a checkout of. */
+  repoId: string;
+  /** Display name (defaults to the repo name; may disambiguate the checkout). */
+  name: string;
+  /** Filesystem path of this checkout. */
   path: string;
+  /** Branch this worktree currently has checked out. */
   branch: string;
+  /** Branch this worktree was created from (its base). */
+  base: string;
+  /** Ahead/behind tracking shorthand vs upstream (e.g. "↓3"). */
   tracking?: string;
   expanded?: boolean;
   selected?: boolean;
   files: FileNode[];
 }
+
+/**
+ * @deprecated B-pre split `Project` into {@link Repo} + {@link Worktree}.
+ * Retained as a structural alias of `Worktree` for any straggling consumer; new
+ * code consumes `Worktree`.
+ */
+export type Project = Worktree;
 
 /** A global "Scratches and Consoles" leaf — shared across all loaded projects. */
 export interface ScratchNode {
@@ -263,4 +297,81 @@ export interface WipRow {
   who: string;
   wip: number;
   limit: number;
+}
+
+/**
+ * Workspace data provider (B-pre: async). Repos + worktrees, the change set,
+ * the work-stash, search and structure outline — the Explorer/Changes/Search/
+ * Commit surfaces map onto worktrees, not repos (§2.1). Real impl reads the git
+ * sidecar; mock resolves deterministically.
+ */
+export interface WorkspaceProvider {
+  /** The repos loaded in the workspace. */
+  listRepos(): Promise<Repo[]>;
+  /** The worktrees (checkouts) the Explorer/Changes views render. */
+  listWorktrees(): Promise<Worktree[]>;
+  /** Global "Scratches and Consoles" leaves, shared across worktrees. */
+  listScratches(): Promise<ScratchNode[]>;
+  /** Side-by-side diff document for a file (R1). */
+  getDiff(file?: string): Promise<DiffDoc>;
+  /** Changes vs a base branch + PR linkage. */
+  getChangeSet(): Promise<ChangeSet>;
+  /** Branch the Changes view diffs against its base. */
+  getCurrentBranch(): Promise<string>;
+  /** Local changes grouped per worktree + the git shelf. */
+  getWorkStash(): Promise<WorkStash>;
+  /** Global ripgrep-style search, grouped by file. */
+  getSearch(): Promise<SearchResult>;
+  /** Symbol outline of `file` (basename match), or [] when none is known. */
+  getStructure(file: string): Promise<SymbolNode[]>;
+}
+
+/** Git-Dashboard provider (B-pre: async). build-spec §5. */
+export interface GitProvider {
+  /** Overdue threshold in days (build-plan §3 correction: 7, configurable). */
+  readonly overdueThresholdDays: number;
+  getPullRequests(): Promise<PullRequest[]>;
+  getMyPullRequests(): Promise<PullRequest[]>;
+  getReviewRequested(): Promise<PullRequest[]>;
+  getOverdue(threshold?: number): Promise<PullRequest[]>;
+  getWeeks(): Promise<string[]>;
+  getSeries(): Promise<WeeklySeries>;
+  getDora(): Promise<Metric[]>;
+  getPrCategories(): Promise<DonutSegment[]>;
+  getLanguages(): Promise<LangStat[]>;
+  getActivityStats(): Promise<ActivityStats>;
+  getWorkHeatmap(): Promise<WorkHeatmap>;
+  getAwareness(): Promise<AwarenessEntry[]>;
+  /** Chart-palette var name for a PR/ticket label (pure — stays synchronous). */
+  labelChartVar(label: string): string;
+}
+
+/** Per-ticket detail (description + activity thread). */
+export interface TicketDetail {
+  description: string;
+  comments: { who: string; when: string; text: string }[];
+}
+
+/** Tasks-Workspace provider (B-pre: async). build-spec §6. */
+export interface TasksProvider {
+  /** WIP limit per person (Insights). */
+  readonly wipLimit: number;
+  getSprint(): Promise<Sprint>;
+  getTickets(): Promise<Ticket[]>;
+  getTicket(id: string): Promise<Ticket | undefined>;
+  getEpics(): Promise<Epic[]>;
+  getColumns(): Promise<TicketColumn[]>;
+  getMyTickets(): Promise<Ticket[]>;
+  getActiveTickets(): Promise<Ticket[]>;
+  getBurndown(): Promise<Burndown>;
+  getTeamWip(): Promise<WipRow[]>;
+  getMyWipSeries(): Promise<number[]>;
+  getReviewsGiven(): Promise<number[]>;
+  getThroughput(): Promise<number[]>;
+  getSprintDayLabels(): Promise<string[]>;
+  getTypeSplit(): Promise<DonutSegment[]>;
+  getTicketDetail(id: string): Promise<TicketDetail>;
+  /** Pure lookups — stay synchronous. */
+  epicLabel(epicId: string | undefined): string;
+  typeChartVar(type: string): string;
 }

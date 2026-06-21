@@ -69,15 +69,19 @@ export interface EditorDoc {
   dirty?: boolean;
 }
 
+/**
+ * Editor provider (B-pre: async). The real provider talks to an LSP / git / the
+ * IPC sidecar; every read is a `Promise`. Mock resolves deterministically.
+ */
 export interface EditorProvider {
-  getDocs(): EditorDoc[];
-  getDoc(file: string): EditorDoc | undefined;
-  getCompletions(file: string, line: number): CompletionItem[];
-  getInlayHints(file: string): InlayHint[];
-  getBlame(file: string): BlameLine[];
-  getPresence(file: string): PresenceMarker[];
-  getFolds(file: string): FoldRange[];
-  getChangeBars(file: string): ChangeBar[];
+  getDocs(): Promise<EditorDoc[]>;
+  getDoc(file: string): Promise<EditorDoc | undefined>;
+  getCompletions(file: string, line: number): Promise<CompletionItem[]>;
+  getInlayHints(file: string): Promise<InlayHint[]>;
+  getBlame(file: string): Promise<BlameLine[]>;
+  getPresence(file: string): Promise<PresenceMarker[]>;
+  getFolds(file: string): Promise<FoldRange[]>;
+  getChangeBars(file: string): Promise<ChangeBar[]>;
   /** 1-based line the editor caret/active line sits on (blame anchor). */
-  getActiveLine(file: string): number;
+  getActiveLine(file: string): Promise<number>;
 }
