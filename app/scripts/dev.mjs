@@ -10,15 +10,45 @@
  */
 
 import { spawn } from "node:child_process";
+import { readFileSync, existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const appRoot = join(here, "..");
 
+/**
+ * Dep-free `.env.local` loader (dev secrets/config — gitignored, never committed).
+ * Parses `KEY=VALUE` lines (ignores blanks / `#` comments, strips surrounding
+ * quotes) so the SIDECAR inherits e.g. CAPISCO_ACP_CLI / CAPISCO_ACP_API_KEY.
+ * The sidecar vaults any key at startup and injects it only at the execution
+ * layer (broker) — values never reach the agent subprocess or the browser.
+ */
+function loadEnvLocal() {
+  const file = join(appRoot, ".env.local");
+  if (!existsSync(file)) return {};
+  const out = {};
+  for (const raw of readFileSync(file, "utf8").split("\n")) {
+    const line = raw.trim();
+    if (!line || line.startsWith("#")) continue;
+    const eq = line.indexOf("=");
+    if (eq === -1) continue;
+    const key = line.slice(0, eq).trim();
+    let val = line.slice(eq + 1).trim();
+    if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+      val = val.slice(1, -1);
+    }
+    if (key) out[key] = val;
+  }
+  return out;
+}
+
+// `.env.local` overrides the inherited shell env for the dev children.
+const childEnv = { ...process.env, ...loadEnvLocal() };
+
 /** Spawn a child, prefixing each output line with `[label]`. */
 function run(label, command, args) {
-  const child = spawn(command, args, { cwd: appRoot, env: process.env });
+  const child = spawn(command, args, { cwd: appRoot, env: childEnv });
   const pipe = (stream, sink) => {
     let buf = "";
     stream.setEncoding("utf8");
