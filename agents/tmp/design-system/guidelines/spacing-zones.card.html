@@ -1,0 +1,40 @@
+<!-- @dsCard group="Spacing" viewport="700x180" name="Chrome zones & radius" subtitle="Fixed panel sizes; near-square corners" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<link rel="stylesheet" href="../styles.css" />
+<style>
+  html, body { margin: 0; }
+  body { background: var(--bg-tool); font-family: var(--font-sans); color: var(--text-primary); padding: 16px 18px; display:flex; gap: 28px; align-items: flex-start; }
+  .col { display: flex; flex-direction: column; gap: 7px; }
+  .cap { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-tertiary); font-weight: 600; margin-bottom: 3px; }
+  .kv { display: flex; gap: 10px; font-size: 12px; }
+  .k { color: var(--text-secondary); width: 120px; }
+  .v { font-family: var(--font-mono); color: var(--text-primary); }
+  .radii { display: flex; gap: 14px; align-items: flex-end; }
+  .r { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .rbox { width: 44px; height: 44px; background: var(--bg-hover); border: 1px solid var(--border); }
+  .rl { font-family: var(--font-mono); font-size: 10.5px; color: var(--text-secondary); }
+</style>
+</head>
+<body>
+<div class="col">
+  <div class="cap">Zone sizes</div>
+  <div class="kv"><span class="k">Title bar</span><span class="v">40px</span></div>
+  <div class="kv"><span class="k">Tab bar</span><span class="v">36px</span></div>
+  <div class="kv"><span class="k">Activity bar</span><span class="v">48px</span></div>
+  <div class="kv"><span class="k">Left panel</span><span class="v">260px</span></div>
+  <div class="kv"><span class="k">Right panel</span><span class="v">360px</span></div>
+  <div class="kv"><span class="k">Status bar</span><span class="v">26px</span></div>
+</div>
+<div class="col">
+  <div class="cap">Radius</div>
+  <div class="radii">
+    <div class="r"><div class="rbox" style="border-radius:0"></div><span class="rl">0 · panels</span></div>
+    <div class="r"><div class="rbox" style="border-radius:3px"></div><span class="rl">3px · controls</span></div>
+    <div class="r"><div class="rbox" style="border-radius:5px"></div><span class="rl">5px · popups</span></div>
+  </div>
+</div>
+</body>
+</html>

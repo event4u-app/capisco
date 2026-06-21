@@ -1,0 +1,27 @@
+<!-- @dsCard group="Spacing" viewport="700x150" name="Spacing raster — 4 / 8 / 12" subtitle="Tight, consistent base grid" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<link rel="stylesheet" href="../styles.css" />
+<style>
+  html, body { margin: 0; }
+  body { background: var(--bg-tool); font-family: var(--font-sans); color: var(--text-primary); padding: 18px 20px; }
+  .row { display: flex; gap: 20px; align-items: flex-end; }
+  .unit { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .bar { background: var(--accent); border-radius: 2px; width: 100%; }
+  .box { width: 56px; display: flex; flex-direction: column; align-items: center; }
+  .lab { font-family: var(--font-mono); font-size: 11px; color: var(--text-secondary); }
+  .px { font-family: var(--font-mono); font-size: 10px; color: var(--text-tertiary); }
+</style>
+</head>
+<body>
+<div class="row">
+  <div class="unit"><div class="box"><div class="bar" style="height:4px"></div></div><span class="lab">--space-1</span><span class="px">4px</span></div>
+  <div class="unit"><div class="box"><div class="bar" style="height:8px"></div></div><span class="lab">--space-2</span><span class="px">8px</span></div>
+  <div class="unit"><div class="box"><div class="bar" style="height:12px"></div></div><span class="lab">--space-3</span><span class="px">12px</span></div>
+  <div class="unit"><div class="box"><div class="bar" style="height:16px"></div></div><span class="lab">--space-4</span><span class="px">16px</span></div>
+  <div class="unit"><div class="box"><div class="bar" style="height:24px"></div></div><span class="lab">--space-6</span><span class="px">24px</span></div>
+</div>
+</body>
+</html>

@@ -1,0 +1,27 @@
+<!-- @dsCard group="Colors" viewport="700x150" name="Accent & semantic" subtitle="Teal accent — sparingly. Diff/status colors muted." -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<link rel="stylesheet" href="../styles.css" />
+<style>
+  html, body { margin: 0; }
+  body { background: var(--bg-tool); font-family: var(--font-sans); color: var(--text-primary); padding: 16px 18px; }
+  .row { display: flex; gap: 10px; }
+  .sw { flex: 1; border-radius: var(--radius-1); border: 1px solid var(--border); overflow: hidden; }
+  .chip { height: 64px; }
+  .meta { padding: 6px 8px; font-size: 11px; line-height: 1.4; }
+  .name { color: var(--text-primary); font-weight: 600; }
+  .hex { color: var(--text-secondary); font-family: var(--font-mono); font-size: 10.5px; }
+</style>
+</head>
+<body>
+<div class="row">
+  <div class="sw"><div class="chip" style="background:var(--accent)"></div><div class="meta"><div class="name">Accent · teal</div><div class="hex">#3FB6A8</div></div></div>
+  <div class="sw"><div class="chip" style="background:var(--accent-muted)"></div><div class="meta"><div class="name">Accent muted</div><div class="hex">#2C6E68</div></div></div>
+  <div class="sw"><div class="chip" style="background:var(--success)"></div><div class="meta"><div class="name">Success / added</div><div class="hex">#4FA85A</div></div></div>
+  <div class="sw"><div class="chip" style="background:var(--error)"></div><div class="meta"><div class="name">Error / removed</div><div class="hex">#D16E6E</div></div></div>
+  <div class="sw"><div class="chip" style="background:var(--warning)"></div><div class="meta"><div class="name">Warning</div><div class="hex">#D8A65C</div></div></div>
+</div>
+</body>
+</html>

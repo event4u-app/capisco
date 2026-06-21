@@ -1,0 +1,27 @@
+<!-- @dsCard group="Colors" viewport="700x150" name="Surface ramp (dark)" subtitle="Surfaces separate by brightness, not borders" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<link rel="stylesheet" href="../styles.css" />
+<style>
+  html, body { margin: 0; }
+  body { background: var(--bg-tool); font-family: var(--font-sans); color: var(--text-primary); padding: 16px 18px; }
+  .row { display: flex; gap: 10px; }
+  .sw { flex: 1; border-radius: var(--radius-1); border: 1px solid var(--border); overflow: hidden; }
+  .chip { height: 64px; }
+  .meta { padding: 6px 8px; font-size: 11px; line-height: 1.4; }
+  .name { color: var(--text-primary); font-weight: 600; }
+  .hex { color: var(--text-secondary); font-family: var(--font-mono); font-size: 10.5px; }
+</style>
+</head>
+<body>
+<div class="row">
+  <div class="sw"><div class="chip" style="background:var(--bg-editor)"></div><div class="meta"><div class="name">Editor</div><div class="hex">#1E1F22</div></div></div>
+  <div class="sw"><div class="chip" style="background:var(--bg-tool)"></div><div class="meta"><div class="name">Tool window</div><div class="hex">#2B2D30</div></div></div>
+  <div class="sw"><div class="chip" style="background:var(--bg-raised)"></div><div class="meta"><div class="name">Input / Terminal</div><div class="hex">#1C1D20</div></div></div>
+  <div class="sw"><div class="chip" style="background:var(--bg-hover)"></div><div class="meta"><div class="name">Hover wash</div><div class="hex">#34373B</div></div></div>
+  <div class="sw"><div class="chip" style="background:var(--border)"></div><div class="meta"><div class="name">Border</div><div class="hex">#393B40</div></div></div>
+</div>
+</body>
+</html>

@@ -1,0 +1,8 @@
+/* Capisco webfonts.
+   UI chrome:  Inter (sans)         — JetBrains New UI uses a system sans; Inter is the
+                                        closest freely-redistributable match.
+   Code/term:  JetBrains Mono       — the canonical JetBrains monospace.
+   NOTE: loaded from the Google Fonts CDN rather than self-hosted binaries.
+   To self-host, drop the .woff2 files in assets/fonts/ and replace the src urls. */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&display=swap');
