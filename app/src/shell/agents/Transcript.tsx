@@ -7,10 +7,10 @@ import { ToolAction } from "@/components/capisco/tool-action";
 import { PermissionPrompt } from "@/components/capisco/permission-prompt";
 import { VirtualTranscript } from "@/components/ui/virtual-transcript";
 import { useReducedMotion } from "@/lib/use-reduced-motion";
-import { agentSnapshot } from "@/mocks";
+import { agentSnapshot, chatSnapshot } from "@/mocks";
 import type { PermissionRequest, Session, TranscriptBlock } from "@/contracts";
 import { Message } from "./Message";
-import type { RunState } from "./store";
+import type { RunState, WorkspaceKind } from "./store";
 import { useLivePermission } from "./use-live-permission";
 
 function EmptyState({ model }: { model: string }) {
@@ -25,6 +25,25 @@ function EmptyState({ model }: { model: string }) {
         {t("agents.empty.title", { model })}
       </div>
       <div className="text-micro text-muted-foreground">{t("agents.empty.sub")}</div>
+    </div>
+  );
+}
+
+/**
+ * The compressed carry-over summary a Red→new-session handoff seeds (Phase 1).
+ * Rendered above the empty state so the human sees what context was carried.
+ */
+function HandoffSeed({ text }: { text: string }) {
+  const { t } = useTranslation();
+  return (
+    <div
+      data-testid="handoff-seed"
+      className="mx-auto mt-4 max-w-[740px] rounded-md border border-border bg-muted/40 px-4 py-3"
+    >
+      <div className="mb-1.5 text-micro font-semibold uppercase tracking-wide text-muted-foreground">
+        {t("agents.handoff.label")}
+      </div>
+      <div className="whitespace-pre-wrap font-mono text-micro text-muted-foreground">{text}</div>
     </div>
   );
 }
@@ -122,20 +141,32 @@ function Block({
  * short sessions still flow through the same virtualizer for one code path.
  */
 export function Transcript({
+  kind = "agents",
   session,
   runState,
   onRetry,
   onOpenFile,
+  handoffSeed,
 }: {
+  kind?: WorkspaceKind;
   session: Session;
   runState: RunState;
   onRetry: () => void;
   onOpenFile: (file: string) => void;
+  /**
+   * Compressed carry-over summary (Phase 1 handoff) for a freshly handed-off
+   * session — rendered above the empty state so the new session is not a blank
+   * restart. Undefined for every normal session (incl. the visual harness, which
+   * never triggers a handoff → goldens byte-identical).
+   */
+  handoffSeed?: string;
 }) {
-  const blocks = agentSnapshot.blocks(session.id);
+  const isChat = kind === "chat";
+  const blocks = isChat ? chatSnapshot.blocks(session.id) : agentSnapshot.blocks(session.id);
   // LIVE gate: the active session's parked `ask` over the sidecar bridge. Inert
   // (null) with no bridge — the snapshot path below is then byte-identical.
-  const live = useLivePermission(session.id);
+  // Chat has no tools / permissions, so the live gate never applies.
+  const live = useLivePermission(isChat ? "" : session.id);
 
   if (runState === "loading") return <Wrap>{<LoadingState />}</Wrap>;
   if (runState === "error") return <Wrap>{<ErrorState onRetry={onRetry} />}</Wrap>;
@@ -148,11 +179,16 @@ export function Transcript({
   ) : null;
 
   if (blocks.length === 0) {
-    // No live banner → byte-identical to the original snapshot path.
-    if (!liveBanner) return <Wrap>{<EmptyState model={session.model} />}</Wrap>;
+    // A handed-off session (Phase 1) carries a compressed seed — render it above
+    // the empty state so the fresh session is not a blank restart. Only a real
+    // handoff sets this; the snapshot/golden path never does.
+    const seed = handoffSeed ? <HandoffSeed text={handoffSeed} /> : null;
+    // No live banner + no seed → byte-identical to the original snapshot path.
+    if (!liveBanner && !seed) return <Wrap>{<EmptyState model={session.model} />}</Wrap>;
     return (
       <Wrap>
         {liveBanner}
+        {seed}
         <EmptyState model={session.model} />
       </Wrap>
     );

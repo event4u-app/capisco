@@ -22,6 +22,10 @@
     "inactive": "Not currently open",
     "note": "Other windows — reference only, opens separately"
   },
+  "mention": {
+    "stale": "{{name}} is no longer at its recorded path",
+    "listLabel": "Reference a recent project"
+  },
   "rail": {
     "explorer": "Explorer",
     "changes": "Changes",
@@ -43,6 +47,7 @@
   },
   "mode": {
     "agents": "Agents",
+    "chat": "Chat",
     "editor": "Editor",
     "git": "Git",
     "tasks": "Tasks"
@@ -213,6 +218,11 @@
       "unsaved": "Unsaved changes",
       "close": "Close {{name}}"
     },
+    "overflow": {
+      "open": "Show all tabs",
+      "rows": "Tab rows",
+      "rowsValue": "{{count}} rows"
+    },
     "presence": {
       "lane": "Colleague presence",
       "openLabel": "Open live presence for {{who}}",
@@ -321,8 +331,39 @@
       "effortFaster": "Faster",
       "effortSmarter": "Smarter",
       "effortHelp": "Higher effort thinks longer for stronger answers.",
+      "terse": "Terse",
+      "terseLabel": "Terse mode",
+      "terseOn": "On",
+      "terseOff": "Off",
+      "terseHelp": "Caveman terse mode trims explanation prose to save output tokens. It never abbreviates code, paths, errors, or safety prompts.",
+      "terseLevelLite": "Lite",
+      "terseLevelFull": "Full",
+      "terseLevelUltra": "Ultra",
+      "terseEnable": "Enable terse mode",
+      "terseHintTitle": "Replies are intentionally terse.",
+      "terseHintBody": "Caveman terse mode is on to save tokens — short answers are on purpose, not broken or rude. Turn it off in Agent settings → Token economy.",
+      "tune": "Effort, plan & usage",
+      "terseHintDismiss": "Got it",
+      "routing": "Routing",
+      "routingLabel": "Model routing",
+      "routingOn": "On",
+      "routingOff": "Off",
+      "routingHelp": "Routes mechanical work (roadmap steps, subtasks) to a smaller model, with quality-driven escalation. Off by default; calibrate on real runs. Broker, review, and untrusted egress are never downgraded.",
+      "routingOverride": "This session",
+      "routingAuto": "Auto (routed)",
       "budget": "Plan usage",
-      "planUsage": "Plan usage"
+      "planUsage": "Plan usage",
+      "contextMeter": "Context budget — green, then orange, then red",
+      "contextBudget": "Context budget",
+      "contextWarnAt": "Warn at {{budget}} tokens · {{used}} used",
+      "contextNote": "Turns green, then orange, then red as the session fills. At red we suggest a fresh session to save tokens.",
+      "bannerTitle": "Session is {{pct}}% of its token budget.",
+      "bannerBody": "Long sessions cost more and dull responses — start a fresh one to keep it lean.",
+      "newSession": "New session",
+      "keepGoing": "Keep going"
+    },
+    "handoff": {
+      "label": "Carried over (compressed)"
     },
     "settings": {
       "title": "Agent backend",
@@ -345,11 +386,24 @@
       "inUse": "In use",
       "guide": "Setup guide",
       "requires": "Requires: {{deps}}",
-      "installGated": "Install runs through the broker with your approval — never silent."
+      "installGated": "Install runs through the broker with your approval — never silent.",
+      "tokenEconomy": "Token economy",
+      "autoRoute": "Auto model routing",
+      "autoRouteSub": "Mechanical sub-tasks run on a smaller model; escalates if quality checks fail. Off by default.",
+      "routingOverride": "This session",
+      "routingAuto": "Auto (routed)",
+      "terseTitle": "Terse mode",
+      "terseSub": "Shorter replies, fewer output tokens. Never touches facts, diffs, or broker prompts. On by default."
     },
     "command": {
       "newSession": "New agent session",
       "settings": "Open agent backend settings"
+    }
+  },
+  "chat": {
+    "command": {
+      "newSession": "New chat",
+      "settings": "Open chat settings"
     }
   },
   "chart": {

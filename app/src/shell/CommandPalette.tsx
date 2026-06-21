@@ -8,6 +8,7 @@ import {
   FileDiff,
   GitBranch,
   LayoutGrid,
+  MessageSquare,
   Pin,
   PinOff,
   SquareKanban,
@@ -29,6 +30,7 @@ import { usePalette, type Command } from "./command-registry";
 
 const MODE_ICONS: Record<Exclude<WorkspaceMode, "diff">, typeof Bot> = {
   agents: Bot,
+  chat: MessageSquare,
   editor: FileCode2,
   git: GitBranch,
   tasks: SquareKanban,

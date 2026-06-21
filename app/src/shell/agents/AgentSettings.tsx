@@ -1,6 +1,7 @@
 import * as React from "react";
 import { useTranslation } from "react-i18next";
 import {
+  Check,
   ChevronDown,
   CircleCheck,
   Download,
@@ -14,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { agentSnapshot } from "@/mocks";
 import type { AgentBackend } from "@/contracts";
-import { useAgents } from "./store";
+import { useAgents, type TerseLevel } from "./store";
 
 /**
  * Agent backend settings — API client (provider + token, "stored in your OS
@@ -28,10 +29,29 @@ export function AgentSettings({
   backendKind,
   setBackendKind,
   onClose,
+  routingEnabled,
+  setRoutingEnabled,
+  modelOverride,
+  setModelOverride,
+  terseEnabled,
+  setTerseEnabled,
+  terseLevel,
+  setTerseLevel,
 }: {
   backendKind: "api" | "cli";
   setBackendKind: (k: "api" | "cli") => void;
   onClose: () => void;
+  /** Token-economy: auto model routing (default off) + the per-session human
+   * model override ("" = none, routed/own model wins). */
+  routingEnabled: boolean;
+  setRoutingEnabled: (on: boolean) => void;
+  modelOverride: string;
+  setModelOverride: (model: string) => void;
+  /** Token-economy: Caveman terse mode (default on) + level. */
+  terseEnabled: boolean;
+  setTerseEnabled: (on: boolean) => void;
+  terseLevel: TerseLevel;
+  setTerseLevel: (l: TerseLevel) => void;
 }) {
   const { t } = useTranslation();
   const [token, setToken] = React.useState("");
@@ -224,6 +244,205 @@ export function AgentSettings({
           </div>
         )}
       </div>
+      )}
+
+      {/* Token economy (token-economy / F5) — the Caveman terse mode + auto
+          model routing toggles, moved here from the composer bar (prototype
+          `design-update-v1`) so each carries its explanatory text + level. The
+          state lives in the workspace store; this is the richer surface. */}
+      <div
+        className="mt-2.5 flex flex-col gap-2.5 border-t border-border pt-2.5"
+        data-testid="agent-settings-token-economy"
+      >
+        <span className="block text-[10.5px] font-semibold uppercase tracking-wide text-muted-foreground">
+          {t("agents.settings.tokenEconomy")}
+        </span>
+
+        {/* Auto model routing — default OFF; with the per-session override. */}
+        <div className="flex flex-col gap-2">
+          <div className="flex items-start gap-2.5">
+            <SettingSwitch
+              checked={routingEnabled}
+              onChange={() => setRoutingEnabled(!routingEnabled)}
+              label={t("agents.settings.autoRoute")}
+              testId="agent-settings-routing-toggle"
+            />
+            <div className="min-w-0 flex-1">
+              <div className="text-[12.5px] font-medium text-foreground">
+                {t("agents.settings.autoRoute")}
+              </div>
+              <div className="mt-0.5 text-micro leading-snug text-muted-foreground">
+                {t("agents.settings.autoRouteSub")}
+              </div>
+            </div>
+          </div>
+          <div className="ml-[42px]">
+            <OverridePicker override={modelOverride} setOverride={setModelOverride} />
+          </div>
+        </div>
+
+        {/* Terse mode (Caveman) — default ON; level shown when enabled. */}
+        <div className="flex flex-col gap-2">
+          <div className="flex items-start gap-2.5">
+            <SettingSwitch
+              checked={terseEnabled}
+              onChange={() => setTerseEnabled(!terseEnabled)}
+              label={t("agents.settings.terseTitle")}
+              testId="agent-settings-terse-toggle"
+            />
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 text-[12.5px] font-medium text-foreground">
+                {t("agents.settings.terseTitle")}
+                <span className="rounded-sm bg-primary/15 px-1 text-[9px] font-bold uppercase leading-[14px] tracking-wide text-primary">
+                  Caveman
+                </span>
+              </div>
+              <div className="mt-0.5 text-micro leading-snug text-muted-foreground">
+                {t("agents.settings.terseSub")}
+              </div>
+            </div>
+          </div>
+          {terseEnabled && (
+            <div className="ml-[42px] flex gap-0.5">
+              {(["lite", "full", "ultra"] as const).map((l) => (
+                <button
+                  key={l}
+                  type="button"
+                  aria-pressed={terseLevel === l}
+                  data-testid={`agent-settings-terse-level-${l}`}
+                  onClick={() => setTerseLevel(l)}
+                  className={cn(
+                    "h-6 flex-1 rounded-sm border text-ui focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                    terseLevel === l
+                      ? "border-primary/60 bg-primary/10 font-medium text-primary"
+                      : "border-border bg-muted text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {t(
+                    l === "lite"
+                      ? "agents.composer.terseLevelLite"
+                      : l === "full"
+                        ? "agents.composer.terseLevelFull"
+                        : "agents.composer.terseLevelUltra",
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * A compact pill switch (prototype `.as-switch`) — the on/off control for the
+ * token-economy toggles. Rendered inside the focus-trapped panel.
+ */
+function SettingSwitch({
+  checked,
+  onChange,
+  label,
+  testId,
+}: {
+  checked: boolean;
+  onChange: () => void;
+  label: string;
+  testId: string;
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={label}
+      data-testid={testId}
+      onClick={onChange}
+      className={cn(
+        "inline-flex h-[18px] w-8 shrink-0 items-center rounded-full p-0.5 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+        checked ? "bg-primary" : "bg-border-strong",
+      )}
+    >
+      <span
+        className={cn(
+          "size-3.5 rounded-full bg-background transition-transform",
+          checked && "translate-x-3.5",
+        )}
+      />
+    </button>
+  );
+}
+
+/**
+ * Per-session model override (the human always wins over routing). Inline
+ * expander — NOT a portalled popover — so it stays inside the panel and never
+ * trips the settings outside-click dismiss. "Auto" clears the override.
+ */
+function OverridePicker({
+  override,
+  setOverride,
+}: {
+  override: string;
+  setOverride: (model: string) => void;
+}) {
+  const { t } = useTranslation();
+  const [open, setOpen] = React.useState(false);
+  const agents = agentSnapshot.agents;
+  return (
+    <div>
+      <button
+        type="button"
+        aria-expanded={open}
+        data-testid="agent-settings-routing-override"
+        onClick={() => setOpen((o) => !o)}
+        className="flex h-6 w-full items-center justify-between gap-2 rounded-sm border border-border bg-muted px-2 text-ui text-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+      >
+        <span className="truncate">
+          <span className="text-muted-foreground">{t("agents.settings.routingOverride")}: </span>
+          {override || t("agents.settings.routingAuto")}
+        </span>
+        <ChevronDown
+          className={cn("size-3.5 shrink-0 text-muted-foreground transition-transform", open && "rotate-180")}
+          strokeWidth={1.6}
+        />
+      </button>
+      {open && (
+        <div className="mt-1 flex flex-col gap-0.5 rounded-sm border border-border bg-muted p-1">
+          <button
+            type="button"
+            aria-pressed={override === ""}
+            data-testid="agent-settings-routing-override-auto"
+            onClick={() => {
+              setOverride("");
+              setOpen(false);
+            }}
+            className={cn(
+              "flex h-6 w-full items-center rounded-sm px-2 text-left text-ui focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+              override === "" ? "bg-primary/10 font-medium text-primary" : "text-foreground hover:bg-accent",
+            )}
+          >
+            {t("agents.settings.routingAuto")}
+          </button>
+          {agents.map((a) => (
+            <button
+              key={a.id}
+              type="button"
+              aria-pressed={override === a.label}
+              data-testid={`agent-settings-routing-override-${a.id}`}
+              onClick={() => {
+                setOverride(a.label);
+                setOpen(false);
+              }}
+              className={cn(
+                "flex h-6 w-full items-center justify-between rounded-sm px-2 text-left text-ui focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                override === a.label ? "bg-primary/10 font-medium text-primary" : "text-foreground hover:bg-accent",
+              )}
+            >
+              {a.label}
+              {override === a.label && <Check className="size-3 text-primary" strokeWidth={2} />}
+            </button>
+          ))}
+        </div>
       )}
     </div>
   );

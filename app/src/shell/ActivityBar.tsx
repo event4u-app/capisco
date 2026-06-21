@@ -4,6 +4,7 @@ import {
   Bot,
   FileCode2,
   GitBranch,
+  MessageSquare,
   SquareKanban,
   type LucideIcon,
 } from "lucide-react";
@@ -20,6 +21,7 @@ const DND_TYPE = "application/x-capisco-tool";
 
 const MODES: { id: WorkspaceMode; icon: LucideIcon; labelKey: string }[] = [
   { id: "agents", icon: Bot, labelKey: "mode.agents" },
+  { id: "chat", icon: MessageSquare, labelKey: "mode.chat" },
   { id: "editor", icon: FileCode2, labelKey: "mode.editor" },
   { id: "git", icon: GitBranch, labelKey: "mode.git" },
   { id: "tasks", icon: SquareKanban, labelKey: "mode.tasks" },

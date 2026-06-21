@@ -24,8 +24,15 @@ beforeEach(() => {
     closed: [],
     activeId: "s1",
     runStates: {},
+    handoffSeeds: {},
     model: "Opus 4.8",
     effort: 3,
+    budget: 200_000,
+    terseEnabled: true,
+    terseLevel: "full",
+    terseHintSeen: false,
+    routingEnabled: false,
+    modelOverrides: {},
     backendKind: "api",
     settingsOpen: false,
     selectedBackendId: "stub",
@@ -85,6 +92,27 @@ describe("AgentWorkspace", () => {
     await user.click(screen.getByTestId("session-close-s1"));
     expect(useAgents.getState().closed).toContain("s1");
     expect(screen.queryByTestId("session-tab-s1")).not.toBeInTheDocument();
+  });
+
+  it("trims long session titles with an ellipsis (max-w 160px), keeps the 36px tab height", () => {
+    renderWorkspace();
+    const title = screen.getByTestId("session-title-s1");
+    expect(title.className).toContain("max-w-40"); // 160px
+    expect(title.className).toContain("text-ellipsis");
+    expect(title.className).toContain("whitespace-nowrap");
+    // The tabbar is fixed at the 36px chrome tab height.
+    expect(screen.getByTestId("session-tabbar").className).toContain("h-[var(--tabbar-h)]");
+  });
+
+  it("centers the chat reading column at the 740px max (R2 correction)", () => {
+    renderWorkspace();
+    // Every rendered transcript row wraps its block in the centered reading
+    // column (mx-auto max-w-[740px]); this is the settled R2 correction.
+    const rows = screen.getByTestId("transcript").querySelectorAll("[data-vrow]");
+    expect(rows.length).toBeGreaterThan(0);
+    const inner = rows[0].querySelector(":scope > div") as HTMLElement;
+    expect(inner.className).toContain("mx-auto");
+    expect(inner.className).toContain("max-w-[740px]");
   });
 
   it("virtualizes the transcript — only a window of a 500-block session renders", async () => {
@@ -149,6 +177,148 @@ describe("AgentWorkspace", () => {
     expect(useAgents.getState().selectedBackendId).toBe("claude-code-acp");
     // Persisted under the agents store key.
     expect(localStorage.getItem("capisco-agents")).toContain("claude-code-acp");
+  });
+
+  it("the context-budget meter flips tone green → orange → red against the threshold (P4)", () => {
+    // PURE projection: used = active session tokens (s1 = 7.7k); we move the
+    // budget threshold to cross the bands. Assert the TONE class, not the
+    // (volatile) number string.
+    const { rerender } = renderWorkspace();
+    const meter = () => screen.getByTestId("context-meter");
+
+    useAgents.setState({ budget: 200_000 }); // 7.7k / 200k ≈ 4% → green
+    rerender(
+      <ThemeProvider>
+        <div style={{ height: 800 }}>
+          <AgentWorkspace />
+        </div>
+      </ThemeProvider>,
+    );
+    expect(meter()).toHaveAttribute("data-tone", "ok");
+
+    useAgents.setState({ budget: 10_000 }); // 7.7k / 10k = 77% → orange
+    rerender(
+      <ThemeProvider>
+        <div style={{ height: 800 }}>
+          <AgentWorkspace />
+        </div>
+      </ThemeProvider>,
+    );
+    expect(meter()).toHaveAttribute("data-tone", "warn");
+
+    useAgents.setState({ budget: 8_000 }); // 7.7k / 8k ≈ 96% → red + banner
+    rerender(
+      <ThemeProvider>
+        <div style={{ height: 800 }}>
+          <AgentWorkspace />
+        </div>
+      </ThemeProvider>,
+    );
+    expect(meter()).toHaveAttribute("data-tone", "crit");
+    expect(screen.getByTestId("context-banner")).toBeInTheDocument();
+  });
+
+  it("the Rot-banner appears at red and dismisses on Keep going (stub, no behaviour wired)", async () => {
+    const user = userEvent.setup();
+    useAgents.setState({ budget: 8_000 });
+    renderWorkspace();
+    expect(screen.getByTestId("context-banner")).toBeInTheDocument();
+    // Keep going is a pure stub — it dismisses the banner, mutates no sessions.
+    const before = useAgents.getState().extra.length;
+    await user.click(screen.getByTestId("context-banner-keep"));
+    expect(screen.queryByTestId("context-banner")).toBeNull();
+    expect(useAgents.getState().extra.length).toBe(before);
+  });
+
+  it("the Rot-banner [New session] performs a compressed handoff, never mutating the parent (Phase 1)", async () => {
+    const user = userEvent.setup();
+    useAgents.setState({ budget: 8_000 }); // s1 ≈ 96% → red banner
+    renderWorkspace();
+    expect(screen.getByTestId("context-banner")).toBeInTheDocument();
+
+    const parentBefore = useAgents.getState().activeId;
+    const extraBefore = useAgents.getState().extra.length;
+    await user.click(screen.getByTestId("context-banner-new"));
+
+    // A fresh session was created + made active (human-initiated, no auto-switch).
+    const st = useAgents.getState();
+    expect(st.extra.length).toBe(extraBefore + 1);
+    expect(st.activeId).not.toBe(parentBefore);
+    // The new session carries a compressed seed (not a blank restart).
+    const seed = st.handoffSeeds[st.activeId];
+    expect(seed).toBeDefined();
+    expect(seed).toContain("not a fresh start");
+    // The seed is rendered in the (otherwise empty) new session transcript.
+    expect(await screen.findByTestId("handoff-seed")).toBeInTheDocument();
+  });
+
+  it("agent settings exposes the terse control (default ON at full); toggling opts out (Phase 2)", async () => {
+    const user = userEvent.setup();
+    renderWorkspace();
+    await user.click(screen.getByTestId("session-gear"));
+    const terse = screen.getByTestId("agent-settings-terse-toggle");
+    expect(terse).toHaveAttribute("aria-checked", "true");
+    // The level picker shows full as the active level.
+    expect(screen.getByTestId("agent-settings-terse-level-full")).toHaveAttribute("aria-pressed", "true");
+    // Opt out via the switch.
+    await user.click(terse);
+    expect(useAgents.getState().terseEnabled).toBe(false);
+
+    // Switch level to ultra (re-enable first).
+    await user.click(screen.getByTestId("agent-settings-terse-toggle"));
+    await user.click(screen.getByTestId("agent-settings-terse-level-ultra"));
+    expect(useAgents.getState().terseLevel).toBe("ultra");
+  });
+
+  it("shows the one-time terse hint on the first terse send, then never again (Phase 2)", async () => {
+    const user = userEvent.setup();
+    renderWorkspace();
+    expect(screen.queryByTestId("terse-hint")).toBeNull();
+    // First send while terse is on → the hint appears once.
+    await user.click(screen.getByTestId("composer-send"));
+    expect(await screen.findByTestId("terse-hint")).toBeInTheDocument();
+    expect(useAgents.getState().terseHintSeen).toBe(true);
+    await user.click(screen.getByTestId("terse-hint-dismiss"));
+    expect(screen.queryByTestId("terse-hint")).toBeNull();
+    // A second send does NOT re-surface it (seen is sticky).
+    await user.click(screen.getByTestId("composer-send"));
+    expect(screen.queryByTestId("terse-hint")).toBeNull();
+  });
+
+  it("the routing control is OFF by default and toggles on (Phase 4)", async () => {
+    const user = userEvent.setup();
+    renderWorkspace();
+    await user.click(screen.getByTestId("session-gear"));
+    const routing = screen.getByTestId("agent-settings-routing-toggle");
+    expect(routing).toHaveAttribute("aria-checked", "false");
+    await user.click(routing);
+    expect(useAgents.getState().routingEnabled).toBe(true);
+  });
+
+  it("a per-session model override wins and shows in the session badge (Phase 4)", async () => {
+    const user = userEvent.setup();
+    renderWorkspace();
+    // s1's badge starts at its own model.
+    const badge = () => within(screen.getByTestId("session-tab-s1"));
+    await user.click(screen.getByTestId("session-gear"));
+    await user.click(screen.getByTestId("agent-settings-routing-override"));
+    await user.click(screen.getByTestId("agent-settings-routing-override-Haiku 4.8"));
+    expect(useAgents.getState().modelOverrides.s1).toBe("Haiku 4.8");
+    // The badge reflects the override (effective model).
+    expect(badge().getByText("Haiku 4.8")).toBeInTheDocument();
+    // "Auto" clears it.
+    await user.click(screen.getByTestId("agent-settings-routing-override"));
+    await user.click(screen.getByTestId("agent-settings-routing-override-auto"));
+    expect(useAgents.getState().modelOverrides.s1).toBeUndefined();
+  });
+
+  it("the meter popover sets the budget threshold live via presets", async () => {
+    const user = userEvent.setup();
+    useAgents.setState({ budget: 200_000 });
+    renderWorkspace();
+    await user.click(screen.getByTestId("context-meter"));
+    await user.click(screen.getByTestId("context-budget-preset-100000"));
+    expect(useAgents.getState().budget).toBe(100_000);
   });
 
   it("renders empty / loading / error transcript states", async () => {

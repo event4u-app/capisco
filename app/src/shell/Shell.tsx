@@ -6,7 +6,7 @@ import { PanelStack } from "./PanelStack";
 import { PanelContent } from "./PanelContent";
 import { Terminal, TerminalSplitter } from "./Terminal";
 import { DiffView } from "./DiffView";
-import { AgentWorkspace } from "./agents/AgentWorkspace";
+import { AgentWorkspace, ChatWorkspace } from "./agents/AgentWorkspace";
 import { EditorWorkspace } from "./editor/EditorWorkspace";
 import { GitWorkspace } from "./git/GitWorkspace";
 import { TasksWorkspace } from "./tasks/TasksWorkspace";
@@ -103,6 +103,8 @@ export function Shell() {
               <DiffView />
             ) : mode === "agents" ? (
               <AgentWorkspace />
+            ) : mode === "chat" ? (
+              <ChatWorkspace />
             ) : mode === "editor" ? (
               <EditorWorkspace />
             ) : mode === "git" ? (

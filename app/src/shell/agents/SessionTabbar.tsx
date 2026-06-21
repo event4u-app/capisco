@@ -8,18 +8,21 @@ import { ModelBadge } from "@/components/capisco/model-badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { agentSnapshot } from "@/mocks";
 import type { Session } from "@/contracts";
-import { formatTelemetry } from "./store";
+import { formatTelemetry, effectiveModel } from "./store";
 
 function SessionTab({
   s,
   active,
   onSelect,
   onClose,
+  modelOverrides,
 }: {
   s: Session;
   active: boolean;
   onSelect: () => void;
   onClose: () => void;
+  /** Per-session human model overrides (Phase 4) — the badge shows the effective model. */
+  modelOverrides: Record<string, string>;
 }) {
   const { t } = useTranslation();
   // The outer element is layout-only (no interactive role) so the selectable
@@ -29,7 +32,9 @@ function SessionTab({
     <div
       data-testid={`session-tab-${s.id}`}
       className={cn(
-        "group flex max-w-[320px] items-stretch whitespace-nowrap border-r border-border",
+        // Fixed 36px chrome tab height (Design-Sync P2 / .session-tab). h-9 ==
+        // 36px == --tabbar-h; a static class so it always resolves.
+        "group flex h-9 max-w-[320px] items-stretch whitespace-nowrap border-r border-border",
         active && "bg-editor shadow-[inset_0_2px_0_0_hsl(var(--primary))]",
       )}
     >
@@ -39,14 +44,21 @@ function SessionTab({
         data-testid={`session-select-${s.id}`}
         onClick={onSelect}
         className={cn(
-          "flex cursor-pointer items-center gap-1.5 pl-3.5 pr-1.5 text-muted-foreground",
+          "flex min-w-0 cursor-pointer items-center gap-1.5 pl-3.5 pr-1.5 text-muted-foreground",
           "hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring",
           active && "bg-editor text-foreground hover:bg-editor",
         )}
       >
         <StatusDot status={s.status} />
-        <ModelBadge spotlight={active}>{s.model}</ModelBadge>
-        <span className="overflow-hidden text-ellipsis text-ui">{s.title}</span>
+        <ModelBadge spotlight={active}>{effectiveModel(s, modelOverrides)}</ModelBadge>
+        {/* Session/chat titles trim with an ellipsis at 160px (.st-title);
+            file tabs (editor) stay untrimmed. */}
+        <span
+          data-testid={`session-title-${s.id}`}
+          className="max-w-40 overflow-hidden text-ellipsis whitespace-nowrap text-ui"
+        >
+          {s.title}
+        </span>
         <span
           data-testid={`session-meta-${s.id}`}
           className="whitespace-nowrap font-mono text-[10.5px] text-muted-foreground"
@@ -122,6 +134,7 @@ export function SessionTabbar({
   onCreate,
   settingsOpen,
   onToggleSettings,
+  modelOverrides = {},
 }: {
   sessions: Session[];
   activeId: string;
@@ -130,6 +143,8 @@ export function SessionTabbar({
   onCreate: (model: string) => void;
   settingsOpen: boolean;
   onToggleSettings: () => void;
+  /** Per-session human model overrides (Phase 4); defaults to none (golden-safe). */
+  modelOverrides?: Record<string, string>;
 }) {
   const { t } = useTranslation();
   return (
@@ -147,6 +162,7 @@ export function SessionTabbar({
             active={activeId === s.id}
             onSelect={() => onSelect(s.id)}
             onClose={() => onClose(s.id)}
+            modelOverrides={modelOverrides}
           />
         ))}
       </div>

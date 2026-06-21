@@ -79,10 +79,22 @@ export interface Capability {
 export type Scope = "once" | "session";
 `;
 
+// Extra open tabs (Design-Sync P1) so the overflow dropdown + multi-row wrap
+// have something to fold. Lightweight stub bodies — they are real openable docs
+// (selecting one renders its text), deterministic, no provider overlays.
+const EXTRA_SRC =
+  "// Capisco source file.\n// Open in the editor from the tab strip.\n";
+
 const DOCS: EditorDoc[] = [
   { file: "broker.ts", ext: "ts", text: BROKER_SRC, pinned: true },
   { file: "worktree.ts", ext: "ts", text: WORKTREE_SRC, dirty: true },
   { file: "types.ts", ext: "ts", text: TYPES_SRC },
+  { file: "session-tree.ts", ext: "ts", text: EXTRA_SRC },
+  { file: "language-pack.ts", ext: "ts", text: EXTRA_SRC },
+  { file: "task-provider.ts", ext: "ts", text: EXTRA_SRC },
+  { file: "main.rs", ext: "rs", text: EXTRA_SRC },
+  { file: "package.json", ext: "json", text: '{\n  "name": "capisco"\n}\n' },
+  { file: "ListProjectsControllerTest.ts", ext: "ts", text: EXTRA_SRC },
 ];
 
 // Completions surfaced at the broker.prompt(...) call site (editor.jsx Autocomplete).

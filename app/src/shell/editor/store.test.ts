@@ -20,11 +20,13 @@ describe("editor tab-strip store", () => {
     const a = await mockEditorProvider.getDocs();
     const b = await mockEditorProvider.getDocs();
     expect(a).toEqual(b); // no Date.now / Math.random
-    expect(useEditor.getState().tabs.map((t) => t.file)).toEqual([
-      "broker.ts",
-      "worktree.ts",
-      "types.ts",
-    ]);
+    // Leading docs are stable (broker pinned + active, worktree dirty, types);
+    // Design-Sync P1 appends extra tabs so the overflow dropdown has something
+    // to fold.
+    const files = useEditor.getState().tabs.map((t) => t.file);
+    expect(files.slice(0, 3)).toEqual(["broker.ts", "worktree.ts", "types.ts"]);
+    expect(files.length).toBeGreaterThan(3);
+    expect(files).toContain("ListProjectsControllerTest.ts");
     // broker.ts ships pinned, worktree.ts dirty (from the doc shape).
     expect(useEditor.getState().tabs[0].pinned).toBe(true);
     expect(useEditor.getState().tabs[1].dirty).toBe(true);
@@ -40,7 +42,7 @@ describe("editor tab-strip store", () => {
 
   it("reorders a tab before another", () => {
     useEditor.getState().reorder("types.ts", "broker.ts");
-    expect(useEditor.getState().tabs.map((t) => t.file)).toEqual([
+    expect(useEditor.getState().tabs.map((t) => t.file).slice(0, 3)).toEqual([
       "types.ts",
       "broker.ts",
       "worktree.ts",
@@ -50,7 +52,10 @@ describe("editor tab-strip store", () => {
   it("closing the active tab advances the active selection", () => {
     useEditor.getState().setActive("worktree.ts");
     useEditor.getState().closeTab("worktree.ts");
-    expect(useEditor.getState().tabs.map((t) => t.file)).toEqual(["broker.ts", "types.ts"]);
+    const files = useEditor.getState().tabs.map((t) => t.file);
+    expect(files).not.toContain("worktree.ts");
+    expect(files.slice(0, 2)).toEqual(["broker.ts", "types.ts"]);
+    // Active advances to the tab that took the closed tab's slot.
     expect(useEditor.getState().activeFile).toBe("types.ts");
   });
 });

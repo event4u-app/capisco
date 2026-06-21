@@ -1,4 +1,5 @@
 export { mockAgentProvider, agentSnapshot, aggregateTelemetry, grantOf } from "./agents";
+export { chatSnapshot } from "./chat";
 export { mockEditorProvider, editorSnapshot } from "./editor";
 export {
   mockChangeSet,
