@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useTheme } from "@/lib/theme";
 import { usePalette } from "./command-registry";
+import { ProjectSwitcher } from "./ProjectSwitcher";
 
 function TrafficLights() {
   return (
@@ -54,10 +55,7 @@ export function TitleBar() {
     >
       <TrafficLights />
       <span className="ml-1 font-mono text-code font-semibold text-primary">capisco</span>
-      <ChromeButton label={t("titlebar.project")}>
-        capisco
-        <ChevronDown className="size-3" strokeWidth={1.6} />
-      </ChromeButton>
+      <ProjectSwitcher current="capisco" />
       <ChromeButton label={t("titlebar.branch")}>
         <GitBranch className="size-3.5" strokeWidth={1.6} />
         main

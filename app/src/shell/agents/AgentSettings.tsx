@@ -5,7 +5,7 @@ import { ChevronDown, CircleCheck, Lock, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { mockAgentProvider } from "@/mocks";
+import { agentSnapshot } from "@/mocks";
 
 /**
  * Agent backend settings — API client (provider + token, "stored in your OS
@@ -27,7 +27,7 @@ export function AgentSettings({
   const { t } = useTranslation();
   const [token, setToken] = React.useState("");
   const ref = React.useRef<HTMLDivElement>(null);
-  const cli = mockAgentProvider.getDetectedCli();
+  const cli = agentSnapshot.detectedCli;
 
   // Focus the first control on open; trap Tab within the panel; Esc closes.
   React.useEffect(() => {

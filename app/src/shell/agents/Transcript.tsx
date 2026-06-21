@@ -7,7 +7,7 @@ import { ToolAction } from "@/components/capisco/tool-action";
 import { PermissionPrompt } from "@/components/capisco/permission-prompt";
 import { VirtualTranscript } from "@/components/ui/virtual-transcript";
 import { useReducedMotion } from "@/lib/use-reduced-motion";
-import { mockAgentProvider } from "@/mocks";
+import { agentSnapshot } from "@/mocks";
 import type { Session, TranscriptBlock } from "@/contracts";
 import { Message } from "./Message";
 import type { RunState } from "./store";
@@ -131,7 +131,7 @@ export function Transcript({
   onRetry: () => void;
   onOpenFile: (file: string) => void;
 }) {
-  const blocks = mockAgentProvider.getBlocks(session.id);
+  const blocks = agentSnapshot.blocks(session.id);
 
   if (runState === "loading") return <Wrap>{<LoadingState />}</Wrap>;
   if (runState === "error") return <Wrap>{<ErrorState onRetry={onRetry} />}</Wrap>;

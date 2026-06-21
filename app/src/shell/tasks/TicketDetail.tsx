@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Pencil, Check, GitBranchPlus, GitBranch, GitPullRequest } from "lucide-react";
 import { Icon } from "@/components/icon";
 import { Button } from "@/components/ui/button";
-import { mockTasksProvider } from "@/mocks/tasks";
+import { tasksSnapshot } from "@/mocks/tasks";
 import type { Ticket } from "@/contracts";
 import { StatusDot } from "./TicketCards";
 
@@ -25,7 +25,7 @@ function avatar(who: string): string {
  */
 export function TicketDetail({ ticket: t }: { ticket: Ticket }) {
   const { t: tr } = useTranslation();
-  const tasks = mockTasksProvider;
+  const tasks = tasksSnapshot;
   const detail = tasks.getTicketDetail(t.id);
 
   const [editing, setEditing] = React.useState(false);

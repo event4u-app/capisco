@@ -2,7 +2,7 @@ import * as React from "react";
 import { useTranslation } from "react-i18next";
 import { GitBranch } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { mockGitProvider } from "@/mocks/git";
+import { gitSnapshot } from "@/mocks/git";
 import { useLayout } from "@/shell/store";
 import { usePalette } from "@/shell/command-registry";
 import { ChartCard, Donut, Heatmap, LineChart, MetricCard } from "@/components/capisco/charts";
@@ -24,7 +24,7 @@ const pad = (n: number) => String(n).padStart(2, "0");
  */
 export function GitWorkspace() {
   const { t } = useTranslation();
-  const git = mockGitProvider;
+  const git = gitSnapshot;
   const setMode = useLayout((s) => s.setMode);
   const register = usePalette((s) => s.register);
 

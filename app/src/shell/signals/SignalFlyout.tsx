@@ -3,7 +3,7 @@ import { Pin, PinOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Icon } from "@/components/icon";
 import type { SignalItem, SignalSeverity } from "@/contracts";
-import { mockSignalProvider } from "@/mocks";
+import { signalSnapshot } from "@/mocks";
 import { useLayout } from "../store";
 
 /** Severity dot colour role (token roles, no hardcoded hex). */
@@ -40,7 +40,7 @@ export function SignalFlyout({
   const { t } = useTranslation();
   const pinned = useLayout((s) => s.pinnedFlyouts.includes(channel));
   const togglePin = useLayout((s) => s.togglePin);
-  const items = mockSignalProvider.signalsFor(channel);
+  const items = signalSnapshot.signalsFor(channel);
 
   return (
     <div

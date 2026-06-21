@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 
 import { StatusDot } from "@/components/capisco/status-dot";
 import type { SubAgent } from "@/contracts";
+import { formatTelemetry } from "./store";
 
 /** Child agents as small branch chips with their own StatusDot + mono meta. */
 export function SubagentRow({ subs }: { subs: SubAgent[] }) {
@@ -24,7 +25,7 @@ export function SubagentRow({ subs }: { subs: SubAgent[] }) {
         >
           <StatusDot status={sub.status} size={7} />
           {sub.title}
-          <span className="ml-0.5 font-mono text-[10.5px] text-muted-foreground">{sub.meta}</span>
+          <span className="ml-0.5 font-mono text-[10.5px] text-muted-foreground">{formatTelemetry(sub.telemetry, sub.status)}</span>
         </span>
       ))}
     </div>

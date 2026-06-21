@@ -6,8 +6,9 @@ import { cn } from "@/lib/utils";
 import { StatusDot } from "@/components/capisco/status-dot";
 import { ModelBadge } from "@/components/capisco/model-badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { mockAgentProvider } from "@/mocks";
+import { agentSnapshot } from "@/mocks";
 import type { Session } from "@/contracts";
+import { formatTelemetry } from "./store";
 
 function SessionTab({
   s,
@@ -50,7 +51,7 @@ function SessionTab({
           data-testid={`session-meta-${s.id}`}
           className="whitespace-nowrap font-mono text-[10.5px] text-muted-foreground"
         >
-          {s.meta}
+          {formatTelemetry(s.telemetry, s.status)}
         </span>
       </button>
       <button
@@ -72,7 +73,7 @@ function SessionTab({
 function NewSessionButton({ onCreate }: { onCreate: (model: string) => void }) {
   const { t } = useTranslation();
   const [open, setOpen] = React.useState(false);
-  const agents = mockAgentProvider.listAgents();
+  const agents = agentSnapshot.agents;
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>

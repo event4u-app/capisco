@@ -11,7 +11,7 @@ import { keymap } from "@codemirror/view";
 import { javascript } from "@codemirror/lang-javascript";
 
 import type { ChangeBar, EditorDoc, FoldRange } from "@/contracts";
-import { mockEditorProvider } from "@/mocks";
+import { editorSnapshot } from "@/mocks";
 import {
   capiscoTheme,
   capiscoSyntax,
@@ -94,8 +94,8 @@ export function CodeMirrorView({ doc }: { doc: EditorDoc }) {
   React.useEffect(() => {
     const host = hostRef.current;
     if (!host) return;
-    const folds = mockEditorProvider.getFolds(doc.file);
-    const bars = mockEditorProvider.getChangeBars(doc.file);
+    const folds = editorSnapshot.getFolds(doc.file);
+    const bars = editorSnapshot.getChangeBars(doc.file);
 
     const state = EditorState.create({
       doc: doc.text,

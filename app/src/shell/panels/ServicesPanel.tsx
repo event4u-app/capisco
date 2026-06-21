@@ -3,9 +3,40 @@ import { useTranslation } from "react-i18next";
 import { ChevronRight, Folder, Play, RefreshCw, SquareTerminal } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Icon } from "@/components/icon";
-import type { ContainerStatus, ServiceStat } from "@/contracts";
-import { mockContainerGroups } from "@/mocks";
+import type { ContainerStatus, RuntimeProvider, ServiceStat } from "@/contracts";
+import { fakeRuntimeProvider } from "@/mocks";
 import { PanelHead, PanelHeadAction } from "./PanelHead";
+
+interface ServiceGroup {
+  project: string;
+  services: ServiceStat[];
+}
+
+/**
+ * Load the container groups from a {@link RuntimeProvider} snapshot. The
+ * provider seam (deferred-real, fake-now) replaces the old hardcoded
+ * `mockContainerGroups` import: the Services view now runs against the runtime
+ * contract, so the real Docker/Podman adapter is a drop-in swap behind the same
+ * interface. `listServices` is a deterministic snapshot (one `docker ps` +
+ * `docker stats` tick) — stable in tests. Live `subscribeStats` frames are a
+ * provider capability (exercised by the fake's own tests) the panel deliberately
+ * does not auto-apply, so the rendered values stay snapshot-stable.
+ */
+function useRuntimeServices(runtime: RuntimeProvider): ServiceGroup[] {
+  const [groups, setGroups] = React.useState<ServiceGroup[]>([]);
+
+  React.useEffect(() => {
+    let live = true;
+    runtime.listServices().then((g) => {
+      if (live) setGroups(g);
+    });
+    return () => {
+      live = false;
+    };
+  }, [runtime]);
+
+  return groups;
+}
 
 /** Status dot colour role per container status (token roles, no hardcoded hex). */
 function statusDotClass(status: ContainerStatus): string {
@@ -39,7 +70,8 @@ export function ServicesPanel() {
     });
   }, []);
 
-  const empty = mockContainerGroups.length === 0;
+  const groups = useRuntimeServices(fakeRuntimeProvider);
+  const empty = groups.length === 0;
 
   return (
     <div data-testid="services-panel" className="flex h-full min-h-0 flex-col">
@@ -53,7 +85,7 @@ export function ServicesPanel() {
         </p>
       ) : (
         <div data-testid="services-list" className="min-h-0 flex-1 overflow-auto">
-          {mockContainerGroups.map((g) => {
+          {groups.map((g) => {
             const running = g.services.filter((s) => s.status === "running").length;
             const open = !collapsed.has(g.project);
             return (

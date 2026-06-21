@@ -15,6 +15,13 @@
     "settings": "Settings",
     "commandPalette": "Command palette"
   },
+  "projectSwitcher": {
+    "recent": "Recent projects",
+    "empty": "No other open projects",
+    "active": "Open in another window",
+    "inactive": "Not currently open",
+    "note": "Other windows — reference only, opens separately"
+  },
   "rail": {
     "explorer": "Explorer",
     "changes": "Changes",

@@ -2,7 +2,7 @@ import * as React from "react";
 import { useTranslation } from "react-i18next";
 import { Code2 } from "lucide-react";
 
-import { mockEditorProvider } from "@/mocks";
+import { editorSnapshot } from "@/mocks";
 import { usePalette } from "@/shell/command-registry";
 import { EditorTabStrip } from "./EditorTabStrip";
 import { CodeMirrorView } from "./CodeMirrorView";
@@ -29,19 +29,19 @@ export function EditorWorkspace() {
       group: "view",
       icon: Code2,
       label: t("editor.command.focusEditor"),
-      run: () => mockEditorProvider.getDocs()[0] && setActive(mockEditorProvider.getDocs()[0].file),
+      run: () => editorSnapshot.getDocs()[0] && setActive(editorSnapshot.getDocs()[0].file),
     });
     return () => unFocus();
   }, [register, t, setActive]);
 
-  const doc = mockEditorProvider.getDoc(activeFile);
+  const doc = editorSnapshot.getDoc(activeFile);
 
   // Provider outputs — all mock data behind the EditorProvider contract.
-  const completions = doc ? mockEditorProvider.getCompletions(doc.file, 18) : [];
-  const hints = doc ? mockEditorProvider.getInlayHints(doc.file) : [];
-  const blame = doc ? mockEditorProvider.getBlame(doc.file) : [];
-  const presence = doc ? mockEditorProvider.getPresence(doc.file) : [];
-  const activeLine = doc ? mockEditorProvider.getActiveLine(doc.file) : 1;
+  const completions = doc ? editorSnapshot.getCompletions(doc.file) : [];
+  const hints = doc ? editorSnapshot.getInlayHints(doc.file) : [];
+  const blame = doc ? editorSnapshot.getBlame(doc.file) : [];
+  const presence = doc ? editorSnapshot.getPresence(doc.file) : [];
+  const activeLine = doc ? editorSnapshot.getActiveLine(doc.file) : 1;
   const activeBlame = blame.find((b) => b.line === activeLine);
 
   return (

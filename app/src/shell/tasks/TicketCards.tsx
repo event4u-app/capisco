@@ -1,7 +1,7 @@
 import { GitPullRequest, CircleDashed, BarChart3 } from "lucide-react";
 import { Icon } from "@/components/icon";
 import { cn } from "@/lib/utils";
-import { mockTasksProvider } from "@/mocks/tasks";
+import { tasksSnapshot } from "@/mocks/tasks";
 import type { Ticket } from "@/contracts";
 
 const TYPE_TAG: Record<string, string> = { feature: "F", bug: "B", chore: "C" };
@@ -24,7 +24,7 @@ export function TicketCard({ ticket: t, onOpen }: { ticket: Ticket; onOpen?: (t:
       <div className="flex items-center gap-1.5">
         <span
           className="flex size-4 items-center justify-center rounded-[3px] text-[9px] font-semibold text-primary-foreground"
-          style={{ background: `hsl(var(${mockTasksProvider.typeChartVar(t.type)}))` }}
+          style={{ background: `hsl(var(${tasksSnapshot.typeChartVar(t.type)}))` }}
         >
           {TYPE_TAG[t.type] ?? "F"}
         </span>
@@ -49,7 +49,7 @@ export function TicketCard({ ticket: t, onOpen }: { ticket: Ticket; onOpen?: (t:
 
 /** Linear-style board card: id + avatar, title, type/mine labels, footer. */
 export function LinearCard({ ticket: t, onOpen }: { ticket: Ticket; onOpen?: (t: Ticket) => void }) {
-  const typeVar = mockTasksProvider.typeChartVar(t.type);
+  const typeVar = tasksSnapshot.typeChartVar(t.type);
   return (
     <button
       type="button"

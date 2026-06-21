@@ -4,11 +4,13 @@ import { Donut } from "./Donut";
 import { Heatmap } from "./Heatmap";
 import { MetricCard } from "./MetricCard";
 import { ChartCard } from "./ChartCard";
-import { mockGitProvider } from "@/mocks/git";
-import { mockTasksProvider } from "@/mocks/tasks";
+import { gitSnapshot } from "@/mocks/git";
+import { tasksSnapshot } from "@/mocks/tasks";
 
-const git = mockGitProvider;
-const tasks = mockTasksProvider;
+// Stories render synchronously off the deterministic snapshot facades (the
+// async providers are the contract seam; see mocks/*.ts).
+const git = gitSnapshot;
+const tasks = tasksSnapshot;
 
 export const Line = () => (
   <div className="w-[480px]">

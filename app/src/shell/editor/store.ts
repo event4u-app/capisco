@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { mockEditorProvider } from "@/mocks";
+import { editorSnapshot } from "@/mocks";
 
 export interface EditorTabState {
   /** Stable id / file path. */
@@ -23,7 +23,7 @@ interface EditorStore {
 }
 
 function initialTabs(): EditorTabState[] {
-  return mockEditorProvider.getDocs().map((d) => ({
+  return editorSnapshot.getDocs().map((d) => ({
     file: d.file,
     ext: d.ext,
     label: d.file,

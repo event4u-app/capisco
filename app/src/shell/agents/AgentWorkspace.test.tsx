@@ -86,7 +86,7 @@ describe("AgentWorkspace", () => {
   });
 
   it("virtualizes the transcript — only a window of a 500-block session renders", async () => {
-    expect(mockAgentProvider.getBlocks("s4")).toHaveLength(500);
+    expect(await mockAgentProvider.getBlocks("s4")).toHaveLength(500);
     const user = userEvent.setup();
     renderWorkspace();
     await user.click(screen.getByTestId("session-select-s4"));

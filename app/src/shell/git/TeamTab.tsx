@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { GitPullRequest, GitBranch, TriangleAlert, Eye, GitBranchPlus } from "lucide-react";
 import { Icon } from "@/components/icon";
 import { cn } from "@/lib/utils";
-import { mockGitProvider } from "@/mocks/git";
+import { gitSnapshot } from "@/mocks/git";
 import type { AwarenessEntry } from "@/contracts";
 
 function AwarenessRow({ a, by }: { a: AwarenessEntry; by: "pr" | "branch" }) {
@@ -81,7 +81,7 @@ function AwarenessRow({ a, by }: { a: AwarenessEntry; by: "pr" | "branch" }) {
 export function TeamTab() {
   const { t } = useTranslation();
   const [by, setBy] = React.useState<"pr" | "branch">("pr");
-  const awareness = mockGitProvider.getAwareness();
+  const awareness = gitSnapshot.getAwareness();
 
   return (
     <div data-testid="git-team">

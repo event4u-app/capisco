@@ -7,7 +7,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Slider } from "@/components/ui/slider";
 import { Progress } from "@/components/ui/progress";
 import { BudgetRing } from "@/components/capisco/budget-ring";
-import { mockAgentProvider } from "@/mocks";
+import { agentSnapshot } from "@/mocks";
 
 const TONE_CLASS: Record<string, string> = {
   accent: "[&>div]:bg-primary",
@@ -19,7 +19,7 @@ const TONE_CLASS: Record<string, string> = {
 function ModelControl({ model, setModel }: { model: string; setModel: (m: string) => void }) {
   const { t } = useTranslation();
   const [open, setOpen] = React.useState(false);
-  const agents = mockAgentProvider.listAgents();
+  const agents = agentSnapshot.agents;
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -64,7 +64,7 @@ function ModelControl({ model, setModel }: { model: string; setModel: (m: string
 function EffortControl({ effort, setEffort }: { effort: number; setEffort: (n: number) => void }) {
   const { t } = useTranslation();
   const [open, setOpen] = React.useState(false);
-  const levels = mockAgentProvider.listEffortLevels();
+  const levels = agentSnapshot.effortLevels;
   const current = levels[effort] ?? levels[0];
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -120,7 +120,7 @@ function EffortControl({ effort, setEffort }: { effort: number; setEffort: (n: n
 function BudgetControl() {
   const { t } = useTranslation();
   const [open, setOpen] = React.useState(false);
-  const plan = mockAgentProvider.getPlanUsage();
+  const plan = agentSnapshot.planUsage;
   const ringPct = plan.find((p) => p.id === "credits")?.pct ?? 0;
   return (
     <Popover open={open} onOpenChange={setOpen}>

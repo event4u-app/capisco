@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-import { mockAgentProvider } from "@/mocks";
+import { agentSnapshot } from "@/mocks";
 import type { Session } from "@/contracts";
 
 /** Per-agent-run lifecycle state (drives loading / error / ready transcripts). */
@@ -34,7 +34,7 @@ interface AgentsState {
   toggleSettings: () => void;
 }
 
-const base = mockAgentProvider.listSessions();
+const base = agentSnapshot.sessions;
 
 export const useAgents = create<AgentsState>((set) => ({
   extra: [],
@@ -58,7 +58,8 @@ export const useAgents = create<AgentsState>((set) => ({
         model: model.split(" ")[0],
         status: "idle",
         title: "New session",
-        meta: "idle",
+        // A fresh session has zero structured telemetry (Phase 1).
+        telemetry: { tokensIn: 0, tokensOut: 0, runtimeMs: 0 },
       };
       return { extra: [...s.extra, session], activeId: id };
     }),
@@ -86,4 +87,35 @@ export const useAgents = create<AgentsState>((set) => ({
 /** Resolves the visible session list from the base mock + runtime additions. */
 export function visibleSessions(extra: Session[], closed: string[]): Session[] {
   return [...base, ...extra].filter((s) => !closed.includes(s.id));
+}
+
+/**
+ * Render structured run telemetry into the compact tab/subagent meta string
+ * (Phase 1 — replaces the pre-rendered `meta`). For a running session it shows
+ * runtime + output tokens (e.g. "2m 49s · 6.5k ↓"); idle/waiting sessions with
+ * no runtime fall back to the status word. Volatile — masked in goldens.
+ */
+export function formatTelemetry(
+  telemetry: { tokensIn: number; tokensOut: number; runtimeMs: number },
+  status: Session["status"],
+): string {
+  if (telemetry.runtimeMs === 0) {
+    if (status === "waiting") return "waiting";
+    return telemetry.tokensOut > 0
+      ? `idle · ${formatTokens(telemetry.tokensOut)} ↓`
+      : "idle";
+  }
+  const totalSec = Math.round(telemetry.runtimeMs / 1000);
+  const m = Math.floor(totalSec / 60);
+  const s = totalSec % 60;
+  const time = `${m}m ${String(s).padStart(2, "0")}s`;
+  return `${time} · ${formatTokens(telemetry.tokensOut)} ↓`;
+}
+
+function formatTokens(n: number): string {
+  if (n >= 1000) {
+    const k = n / 1000;
+    return `${Number.isInteger(k) ? k : k.toFixed(1)}k`;
+  }
+  return String(n);
 }

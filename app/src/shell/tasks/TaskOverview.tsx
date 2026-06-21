@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { ChevronDown, Layers } from "lucide-react";
 import { Icon } from "@/components/icon";
 import { cn } from "@/lib/utils";
-import { mockTasksProvider } from "@/mocks/tasks";
+import { tasksSnapshot } from "@/mocks/tasks";
 import {
   BurndownChart,
   ChartCard,
@@ -25,7 +25,7 @@ type OverviewTab = "board" | "mine" | "active" | "insights";
  */
 export function TaskOverview({ onOpenTicket }: { onOpenTicket: (t: Ticket) => void }) {
   const { t } = useTranslation();
-  const tasks = mockTasksProvider;
+  const tasks = tasksSnapshot;
   const [tab, setTab] = React.useState<OverviewTab>("board");
 
   const all = tasks.getTickets();

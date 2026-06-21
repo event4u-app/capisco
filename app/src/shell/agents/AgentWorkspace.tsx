@@ -6,7 +6,7 @@ import { Bot, Settings as SettingsIcon } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { mockAgentProvider } from "@/mocks";
+import { agentSnapshot } from "@/mocks";
 import { useLayout } from "@/shell/store";
 import { usePalette } from "@/shell/command-registry";
 import { SessionTabbar } from "./SessionTabbar";
@@ -70,7 +70,7 @@ export function AgentWorkspace() {
 
   const sessions = visibleSessions(extra, closed);
   const cur = sessions.find((s) => s.id === activeId) ?? sessions[0];
-  const backend = mockAgentProvider.getBackend();
+  const backend = agentSnapshot.backend;
 
   const openFile = React.useCallback(() => {
     // Tool actions deep-link into the diff view (R1) — the shell remembers the

@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { LayoutDashboard, SquareKanban, X } from "lucide-react";
 import { Icon } from "@/components/icon";
 import { cn } from "@/lib/utils";
-import { mockTasksProvider } from "@/mocks/tasks";
+import { tasksSnapshot } from "@/mocks/tasks";
 import { useLayout } from "@/shell/store";
 import { usePalette } from "@/shell/command-registry";
 import type { Ticket } from "@/contracts";
@@ -44,7 +44,7 @@ export function TasksWorkspace() {
     setView((v) => (v === id ? "overview" : v));
   };
 
-  const activeTicket = view !== "overview" ? mockTasksProvider.getTicket(view) : undefined;
+  const activeTicket = view !== "overview" ? tasksSnapshot.getTicket(view) : undefined;
 
   return (
     <div

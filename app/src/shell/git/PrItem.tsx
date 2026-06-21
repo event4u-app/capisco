@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { Icon } from "@/components/icon";
 import { cn } from "@/lib/utils";
-import { mockGitProvider } from "@/mocks/git";
+import { gitSnapshot } from "@/mocks/git";
 import type { PrChecks, PullRequest, ReviewState } from "@/contracts";
 
 const CHECK_ICON: Record<PrChecks, typeof CircleCheck> = {
@@ -109,8 +109,8 @@ export function PrItem({
                 key={l}
                 className="rounded-sm border px-1 text-[9px]"
                 style={{
-                  color: `hsl(var(${mockGitProvider.labelChartVar(l)}))`,
-                  borderColor: `hsl(var(${mockGitProvider.labelChartVar(l)}))`,
+                  color: `hsl(var(${gitSnapshot.labelChartVar(l)}))`,
+                  borderColor: `hsl(var(${gitSnapshot.labelChartVar(l)}))`,
                 }}
               >
                 {l}
