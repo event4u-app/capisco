@@ -13,15 +13,17 @@ import {
 } from "./index";
 
 describe("mock providers", () => {
-  it("expose deterministic sessions implementing the contract", () => {
-    const a = mockAgentProvider.listSessions();
-    const b = mockAgentProvider.listSessions();
+  it("expose deterministic sessions implementing the async contract", async () => {
+    const a = await mockAgentProvider.listSessions();
+    const b = await mockAgentProvider.listSessions();
     expect(a).toEqual(b); // deterministic — no Date.now / Math.random
     expect(a[0]).toMatchObject({ id: "s1", model: "Claude", status: "running" });
-    expect(mockAgentProvider.getPendingPermission("s1")?.command).toBe(
+    // Telemetry is structured (Phase 1), not a pre-rendered meta string.
+    expect(a[0].telemetry).toMatchObject({ tokensOut: expect.any(Number), runtimeMs: expect.any(Number) });
+    expect((await mockAgentProvider.getPendingPermission("s1"))?.command).toBe(
       "Bash(rm -rf .worktrees/tmp)",
     );
-    expect(mockAgentProvider.getPendingPermission("s2")).toBeNull();
+    expect(await mockAgentProvider.getPendingPermission("s2")).toBeNull();
   });
 
   it("exposes a multi-project explorer tree + global scratches", () => {
@@ -69,7 +71,7 @@ describe("mock providers", () => {
 
   it("prod datasource is read-only with a credential REFERENCE, never a value", () => {
     const prod = mockDatasources.find((d) => d.env === "production")!;
-    expect(prod.readonly).toBe(true); // invariant §2.2 — a fact, not a toggle
+    expect(prod.readonly).toBe(true); // invariant §3.3 — derived from env, not a toggle
     // Secret is a reference name only (invariant §2.1) — must not look like a value.
     expect(prod.credentialRef).toBe("prod-readonly");
     expect(prod.credentialRef).not.toMatch(/[:=]|password|token|secret/i);
@@ -77,8 +79,8 @@ describe("mock providers", () => {
     expect(mockDatasources.filter((d) => d.env !== "production").every((d) => !d.readonly)).toBe(true);
   });
 
-  it("shared signal rail folds every source into ONE SignalItem shape (§5.2)", () => {
-    const signals = mockSignalProvider.listSignals();
+  it("shared signal rail folds every source into ONE SignalItem shape (§5.2)", async () => {
+    const signals = await mockSignalProvider.listSignals();
     expect(signals.length).toBeGreaterThan(0);
     // Multiple distinct sources collapse into one rail.
     const sources = new Set(signals.map((s) => s.source));
@@ -86,13 +88,13 @@ describe("mock providers", () => {
     expect([...sources]).toEqual(expect.arrayContaining(["pr", "container", "observability"]));
 
     // The rule side is deliberately dumb (2-3 rules — here a small fixed set).
-    const rules = mockSignalProvider.listRules();
+    const rules = await mockSignalProvider.listRules();
     expect(rules.length).toBeGreaterThanOrEqual(2);
     expect(rules.length).toBeLessThanOrEqual(5);
 
     // Alerts vs Inspect are two VIEWS of the one rail, partitioned by the rules.
-    const alerts = mockSignalProvider.signalsFor("alerts");
-    const inspect = mockSignalProvider.signalsFor("inspect");
+    const alerts = await mockSignalProvider.signalsFor("alerts");
+    const inspect = await mockSignalProvider.signalsFor("inspect");
     expect(alerts.length).toBeGreaterThan(0);
     expect(inspect.length).toBeGreaterThan(0);
     expect(alerts.every((a) => a.source !== "lint")).toBe(true); // lint routes to inspect

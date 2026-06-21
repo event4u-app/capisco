@@ -2,6 +2,7 @@ import type {
   ActivityStats,
   AwarenessEntry,
   DonutSegment,
+  GitProvider,
   LangStat,
   Metric,
   PullRequest,
@@ -108,52 +109,50 @@ const AWARENESS: AwarenessEntry[] = [
   { who: "lea", branch: "refactor/session-store", pr: "#1255", act: "left 2 comments", when: "3h ago", files: ["session-store.ts"], status: "idle" },
 ];
 
-export const mockGitProvider = {
-  /** Overdue threshold (build-plan §3 correction): 7 days, configurable. A
-   * non-draft PR older than this many days counts as overdue (NOT 3). */
+// B-pre: the GitProvider contract is async (real impl reads the git sidecar /
+// forge API). The mock resolves deterministically. `overdueThresholdDays` and
+// `labelChartVar` are pure and stay synchronous per the contract.
+export const mockGitProvider: GitProvider = {
   overdueThresholdDays: OVERDUE_THRESHOLD_DAYS,
 
-  getPullRequests(): PullRequest[] {
-    return PULL_REQUESTS;
-  },
-  /** PRs authored by the current user. */
-  getMyPullRequests(): PullRequest[] {
-    return PULL_REQUESTS.filter((p) => p.author === "you");
-  },
-  /** PRs where review is directly requested OR the user reviewed it before. */
-  getReviewRequested(): PullRequest[] {
-    return PULL_REQUESTS.filter((p) => p.requested || p.reviewedByMe);
-  },
-  /** Non-draft PRs older than `threshold` days (default = overdueThresholdDays). */
-  getOverdue(threshold: number = OVERDUE_THRESHOLD_DAYS): PullRequest[] {
-    return PULL_REQUESTS.filter((p) => !p.draft && p.days > threshold);
-  },
-  getWeeks(): string[] {
-    return WEEKS;
-  },
-  getSeries(): WeeklySeries {
-    return SERIES;
-  },
-  getDora(): Metric[] {
-    return DORA;
-  },
-  getPrCategories(): DonutSegment[] {
-    return PR_CATEGORIES;
-  },
-  getLanguages(): LangStat[] {
-    return LANGS;
-  },
-  getActivityStats(): ActivityStats {
-    return ACTIVITY;
-  },
-  getWorkHeatmap(): WorkHeatmap {
-    return WORK_HEATMAP;
-  },
-  getAwareness(): AwarenessEntry[] {
-    return AWARENESS;
-  },
-  /** Chart-palette var name for a PR/ticket label (falls back to a muted gray). */
-  labelChartVar(label: string): string {
-    return LABEL_CHART_VARS[label] ?? "--chart-6";
-  },
+  getPullRequests: () => Promise.resolve(PULL_REQUESTS),
+  getMyPullRequests: () => Promise.resolve(PULL_REQUESTS.filter((p) => p.author === "you")),
+  getReviewRequested: () =>
+    Promise.resolve(PULL_REQUESTS.filter((p) => p.requested || p.reviewedByMe)),
+  getOverdue: (threshold: number = OVERDUE_THRESHOLD_DAYS) =>
+    Promise.resolve(PULL_REQUESTS.filter((p) => !p.draft && p.days > threshold)),
+  getWeeks: () => Promise.resolve(WEEKS),
+  getSeries: () => Promise.resolve(SERIES),
+  getDora: () => Promise.resolve(DORA),
+  getPrCategories: () => Promise.resolve(PR_CATEGORIES),
+  getLanguages: () => Promise.resolve(LANGS),
+  getActivityStats: () => Promise.resolve(ACTIVITY),
+  getWorkHeatmap: () => Promise.resolve(WORK_HEATMAP),
+  getAwareness: () => Promise.resolve(AWARENESS),
+  labelChartVar: (label: string): string => LABEL_CHART_VARS[label] ?? "--chart-6",
+};
+
+/**
+ * Synchronous deterministic facade over the same fixtures — for the Git
+ * dashboard, a SNAPSHOT view (build-spec §5), mirroring the async `GitProvider`
+ * method names so a consumer swaps one import line. The async provider stays
+ * the contract seam (real forge/sidecar swap); this is the instant-paint
+ * mirror, deterministic and poll-free.
+ */
+export const gitSnapshot = {
+  overdueThresholdDays: OVERDUE_THRESHOLD_DAYS,
+  getPullRequests: () => PULL_REQUESTS,
+  getMyPullRequests: () => PULL_REQUESTS.filter((p) => p.author === "you"),
+  getReviewRequested: () => PULL_REQUESTS.filter((p) => p.requested || p.reviewedByMe),
+  getOverdue: (threshold: number = OVERDUE_THRESHOLD_DAYS) =>
+    PULL_REQUESTS.filter((p) => !p.draft && p.days > threshold),
+  getWeeks: () => WEEKS,
+  getSeries: () => SERIES,
+  getDora: () => DORA,
+  getPrCategories: () => PR_CATEGORIES,
+  getLanguages: () => LANGS,
+  getActivityStats: () => ACTIVITY,
+  getWorkHeatmap: () => WORK_HEATMAP,
+  getAwareness: () => AWARENESS,
+  labelChartVar: (label: string): string => LABEL_CHART_VARS[label] ?? "--chart-6",
 };

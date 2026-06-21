@@ -2,22 +2,44 @@ import type {
   ChangeSet,
   DiffDoc,
   DiffRow,
-  Project,
+  Repo,
   PullRequest,
   ScratchNode,
   SearchResult,
   SymbolNode,
+  WorkspaceProvider,
   WorkStash,
+  Worktree,
 } from "@/contracts";
 
 // Deterministic mock subset grounded in the prototype's shared.jsx (R4 expands
 // the per-view data). No Date.now / Math.random anywhere.
-export const mockProjects: Project[] = [
+
+// B-pre: `Project` is split into Repo (remote + default branch) + Worktree
+// (path / branch / base). The Explorer/Changes views map onto WORKTREES.
+export const mockRepos: Repo[] = [
   {
     id: "core",
     name: "capisco-core",
+    remote: "git@github.com:capisco/core.git",
+    defaultBranch: "main",
+  },
+  {
+    id: "tauri",
+    name: "capisco-tauri",
+    remote: "git@github.com:capisco/tauri.git",
+    defaultBranch: "main",
+  },
+];
+
+export const mockWorktrees: Worktree[] = [
+  {
+    id: "core",
+    repoId: "core",
+    name: "capisco-core",
     path: "~/dev/capisco/core",
     branch: "feat/worktree-teardown",
+    base: "main",
     tracking: "↓3",
     expanded: true,
     selected: true,
@@ -33,9 +55,11 @@ export const mockProjects: Project[] = [
   },
   {
     id: "tauri",
+    repoId: "tauri",
     name: "capisco-tauri",
     path: "~/dev/capisco/tauri",
     branch: "main",
+    base: "main",
     tracking: "↑2",
     files: [
       { depth: 1, ext: "dir", name: "src", expandable: true },
@@ -43,6 +67,12 @@ export const mockProjects: Project[] = [
     ],
   },
 ];
+
+/**
+ * @deprecated Use {@link mockWorktrees}. Retained as an alias while consumers
+ * migrate from the conflated `Project` to the `Repo`/`Worktree` split.
+ */
+export const mockProjects = mockWorktrees;
 
 // Global "Scratches and Consoles" tree — shared across all loaded projects.
 export const mockScratches: ScratchNode[] = [
@@ -208,3 +238,18 @@ export function mockStructure(file: string): SymbolNode[] {
   const base = file.split("/").pop() ?? file;
   return STRUCTURE_BY_FILE[base] ?? [];
 }
+
+// B-pre: the WorkspaceProvider contract is async (real impl reads the git
+// sidecar). The mock resolves the deterministic fixtures above instantly; the
+// bare exports remain available as synchronous snapshots for render-only views.
+export const mockWorkspaceProvider: WorkspaceProvider = {
+  listRepos: () => Promise.resolve(mockRepos),
+  listWorktrees: () => Promise.resolve(mockWorktrees),
+  listScratches: () => Promise.resolve(mockScratches),
+  getDiff: () => Promise.resolve(mockDiff),
+  getChangeSet: () => Promise.resolve(mockChangeSet),
+  getCurrentBranch: () => Promise.resolve(mockCurrentBranch),
+  getWorkStash: () => Promise.resolve(mockWorkStash),
+  getSearch: () => Promise.resolve(mockSearch),
+  getStructure: (file) => Promise.resolve(mockStructure(file)),
+};

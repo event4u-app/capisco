@@ -3,12 +3,20 @@ import type {
   AgentProvider,
   BackendConfig,
   EffortLevel,
+  GrantAxis,
   Message,
+  PermissionDecision,
   PermissionRequest,
   PlanUsageRow,
   Session,
+  SessionEvent,
+  SessionListener,
+  SessionNode,
+  SessionTree,
+  Telemetry,
   ToolAction,
   TranscriptBlock,
+  Unsubscribe,
 } from "@/contracts";
 
 // Deterministic seed (no Date.now / Math.random) → stable golden captures.
@@ -60,20 +68,38 @@ const LONG_BLOCKS: TranscriptBlock[] = Array.from({ length: 500 }, (_, i): Trans
   return { type: "message", block: { id: `s4-m${i + 1}`, role, body } };
 });
 
+// Structured telemetry helpers (Phase 1) — replaces pre-rendered meta strings.
+function tel(tokensIn: number, tokensOut: number, runtimeMs: number): Telemetry {
+  return { tokensIn, tokensOut, runtimeMs };
+}
+
+/** Roll a node's own telemetry up with every subagent's (parent ← subagent). */
+export function aggregateTelemetry(own: Telemetry, subs: { telemetry: Telemetry }[]): Telemetry {
+  return subs.reduce(
+    (acc, s) => ({
+      tokensIn: acc.tokensIn + s.telemetry.tokensIn,
+      tokensOut: acc.tokensOut + s.telemetry.tokensOut,
+      runtimeMs: Math.max(acc.runtimeMs, s.telemetry.runtimeMs),
+    }),
+    own,
+  );
+}
+
 const SESSIONS: Session[] = [
   {
     id: "s1",
     model: "Claude",
     status: "running",
     title: "Implement worktree teardown",
-    meta: "2m 49s · 6.5k ↓",
+    // Parent own-telemetry; the subagent's tokens aggregate up (see below).
+    telemetry: aggregateTelemetry(tel(0, 6500, 169_000), [{ telemetry: tel(0, 1200, 31_000) }]),
     subs: [
       {
         id: "s1a",
         model: "Claude",
         status: "running",
         title: "Subagent · write tests",
-        meta: "0m 31s · 1.2k ↓",
+        telemetry: tel(0, 1200, 31_000),
       },
     ],
   },
@@ -82,21 +108,21 @@ const SESSIONS: Session[] = [
     model: "GPT-5",
     status: "idle",
     title: "Refactor broker grant model",
-    meta: "idle · 18k ↓",
+    telemetry: tel(0, 18_000, 0),
   },
   {
     id: "s3",
     model: "Local",
     status: "waiting",
     title: 'Search: "where is port allocated?"',
-    meta: "waiting",
+    telemetry: tel(0, 0, 0),
   },
   {
     id: "s4",
     model: "Claude",
     status: "running",
     title: "Audit module surfaces",
-    meta: "4m 02s · 41k ↓",
+    telemetry: tel(0, 41_000, 242_000),
   },
 ];
 
@@ -209,17 +235,23 @@ const BLOCKS: Record<string, TranscriptBlock[]> = {
         // A secret-bearing read shows the credential as a reference, never a
         // value (invariant §3.2 / Overview §2.1).
         credentialRef: "staging-admin",
+        // This read is derived from an untrusted search result → hard gate (§3.3).
+        fromUntrusted: true,
       },
     },
   ],
   s4: LONG_BLOCKS,
 };
 
+function pendingBlock(id: string): PermissionRequest | undefined {
+  return (BLOCKS[id] ?? []).find(
+    (b): b is Extract<TranscriptBlock, { type: "permission" }> => b.type === "permission",
+  )?.block;
+}
+
 const PENDING: Record<string, PermissionRequest | undefined> = {
-  s1: BLOCKS.s1.find((b): b is Extract<TranscriptBlock, { type: "permission" }> => b.type === "permission")
-    ?.block,
-  s3: BLOCKS.s3.find((b): b is Extract<TranscriptBlock, { type: "permission" }> => b.type === "permission")
-    ?.block,
+  s1: pendingBlock("s1"),
+  s3: pendingBlock("s3"),
 };
 
 function messagesOf(id: string): Message[] {
@@ -234,18 +266,133 @@ function toolsOf(id: string): ToolAction[] {
     .map((b) => b.block);
 }
 
+/**
+ * Build a linear session tree from a flat block list (§2.2). Each block is a
+ * node chained to the previous; the active leaf is the tail. Retry branches are
+ * grafted later by `branch()` as siblings — never overwriting the parent.
+ */
+function buildTree(id: string): SessionTree {
+  const blocks = BLOCKS[id] ?? [];
+  const nodes: Record<string, SessionNode> = {};
+  const roots: string[] = [];
+  let prev: string | null = null;
+  for (const block of blocks) {
+    const nodeId = block.block.id;
+    nodes[nodeId] = { id: nodeId, parentId: prev, block, children: [] };
+    if (prev) nodes[prev].children.push(nodeId);
+    else roots.push(nodeId);
+    prev = nodeId;
+  }
+  return { nodes, roots, activeLeaf: prev ?? "" };
+}
+
+// Live, in-memory session trees so retry-branches persist across reads.
+const TREES: Record<string, SessionTree> = {};
+function treeOf(id: string): SessionTree {
+  return (TREES[id] ??= buildTree(id));
+}
+
+let branchSeq = 0;
+
+/**
+ * Broker grant store (§3 return channel). `resolvePermission` records the human
+ * decision per its axis. A `deny` is recorded as `deny`; an `once` is NOT
+ * persisted beyond the call. There is no path to record a forever-grant — the
+ * `GrantAxis` type has no such value, so it is structurally unconstructable.
+ */
+const GRANTS = new Map<string, GrantAxis>();
+export function grantOf(sessionId: string, requestId: string): GrantAxis | undefined {
+  return GRANTS.get(`${sessionId}:${requestId}`);
+}
+
 const BACKEND: BackendConfig = { kind: "api", provider: "Anthropic · Claude" };
 const DETECTED_CLI: BackendConfig = { kind: "cli", provider: "claude 1.4.2", detail: "/usr/local/bin/claude" };
 
+/**
+ * Deterministic event sequence for a session's live stream (§ Phase 0). Tokens
+ * stream the last agent message in two deltas, then a telemetry update, then
+ * `done`. Pure data — the subscribe loop replays it synchronously so tests are
+ * deterministic and nothing is polled.
+ */
+function eventScript(id: string): SessionEvent[] {
+  const session = SESSIONS.find((s) => s.id === id);
+  if (!session) return [{ type: "done" }];
+  const lastAgent = [...messagesOf(id)].reverse().find((m) => m.role === "agent");
+  const events: SessionEvent[] = [{ type: "status", status: session.status }];
+  if (lastAgent) {
+    const mid = lastAgent.id;
+    const half = Math.ceil(lastAgent.body.length / 2);
+    events.push({ type: "token", messageId: mid, delta: lastAgent.body.slice(0, half) });
+    events.push({ type: "token", messageId: mid, delta: lastAgent.body.slice(half) });
+  }
+  const pending = PENDING[id];
+  if (pending) events.push({ type: "permission", request: pending });
+  events.push({ type: "telemetry", telemetry: session.telemetry });
+  events.push({ type: "done" });
+  return events;
+}
+
 export const mockAgentProvider: AgentProvider = {
-  listSessions: () => SESSIONS,
-  getBlocks: (id) => BLOCKS[id] ?? [],
-  getTranscript: (id) => messagesOf(id),
-  getToolActions: (id) => toolsOf(id),
-  getPendingPermission: (id) => PENDING[id] ?? null,
-  getBackend: () => BACKEND,
-  listAgents: () => AGENTS,
-  listEffortLevels: () => EFFORT_LEVELS,
-  getPlanUsage: () => PLAN_USAGE,
-  getDetectedCli: () => DETECTED_CLI,
+  listSessions: () => Promise.resolve(SESSIONS),
+  getBlocks: (id) => Promise.resolve(BLOCKS[id] ?? []),
+  getTree: (id) => Promise.resolve(treeOf(id)),
+  branch: (id, nodeId, label) => {
+    const tree = treeOf(id);
+    const parent = tree.nodes[nodeId];
+    if (!parent) return Promise.resolve(tree.activeLeaf);
+    const newId = `${id}-b${++branchSeq}`;
+    tree.nodes[newId] = {
+      id: newId,
+      parentId: nodeId,
+      // A retry branch re-issues the parent's block as a fresh sibling head.
+      block: parent.block,
+      children: [],
+      branchLabel: label ?? `retry ${parent.children.length + 1}`,
+    };
+    parent.children.push(newId);
+    tree.activeLeaf = newId;
+    return Promise.resolve(newId);
+  },
+  getTranscript: (id) => Promise.resolve(messagesOf(id)),
+  getToolActions: (id) => Promise.resolve(toolsOf(id)),
+  getPendingPermission: (id) => Promise.resolve(PENDING[id] ?? null),
+  resolvePermission: (sessionId, requestId, decision: PermissionDecision) => {
+    // Persist per axis. `once` is single-shot (not stored); everything else is
+    // recorded. A forever-grant is unconstructable — no such GrantAxis exists.
+    const recorded: GrantAxis = decision.axis;
+    if (recorded !== "once") GRANTS.set(`${sessionId}:${requestId}`, recorded);
+    return Promise.resolve(recorded);
+  },
+  subscribe: (id, listener: SessionListener): Unsubscribe => {
+    let live = true;
+    // Replay the deterministic script on a microtask so subscribers can attach
+    // before the first event; cancellable via the returned unsubscribe.
+    void Promise.resolve().then(() => {
+      for (const event of eventScript(id)) {
+        if (!live) return;
+        listener(event);
+      }
+    });
+    return () => {
+      live = false;
+    };
+  },
+  getBackend: () => Promise.resolve(BACKEND),
+  listAgents: () => Promise.resolve(AGENTS),
+  listEffortLevels: () => Promise.resolve(EFFORT_LEVELS),
+  getPlanUsage: () => Promise.resolve(PLAN_USAGE),
+  getDetectedCli: () => Promise.resolve(DETECTED_CLI),
+};
+
+// Synchronous deterministic snapshots for render-only consumers (the async
+// methods above are the contract seam; these are the same data resolved
+// instantly so SNAPSHOT views paint on the first frame without polling).
+export const agentSnapshot = {
+  sessions: SESSIONS,
+  agents: AGENTS,
+  effortLevels: EFFORT_LEVELS,
+  planUsage: PLAN_USAGE,
+  backend: BACKEND,
+  detectedCli: DETECTED_CLI,
+  blocks: (id: string): TranscriptBlock[] => BLOCKS[id] ?? [],
 };

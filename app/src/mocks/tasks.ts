@@ -3,8 +3,10 @@ import type {
   DonutSegment,
   Epic,
   Sprint,
+  TasksProvider,
   Ticket,
   TicketColumn,
+  TicketDetail,
   WipRow,
 } from "@/contracts";
 
@@ -75,7 +77,7 @@ const TYPE_SPLIT: DonutSegment[] = [
 ];
 
 /** Deterministic per-ticket detail (description + activity thread). */
-const TICKET_DETAILS: Record<string, { description: string; comments: { who: string; when: string; text: string }[] }> = {
+const TICKET_DETAILS: Record<string, TicketDetail> = {
   "CAP-142": {
     description:
       "When a session ends, the worktree must be torn down and its allocated port released back to the broker pool. Currently the port leaks on crash.\n\nAcceptance:\n• teardown() releases the port\n• temp worktree dir is removed\n• covered by a test",
@@ -86,9 +88,9 @@ const TICKET_DETAILS: Record<string, { description: string; comments: { who: str
   },
 };
 
-const DEFAULT_DETAIL = {
+const DEFAULT_DETAIL: TicketDetail = {
   description: "No description yet. Edit to add acceptance criteria and context.",
-  comments: [] as { who: string; when: string; text: string }[],
+  comments: [],
 };
 
 /** Chart-palette var per ticket type. */
@@ -98,62 +100,63 @@ const TYPE_CHART_VARS: Record<string, string> = {
   chore: "--chart-6",
 };
 
-export const mockTasksProvider = {
-  /** WIP limit per person (Insights). */
+const ACTIVE_TICKETS = TICKETS.filter(
+  (t) => t.mine && ["progress", "review", "testing"].includes(t.status),
+);
+const MY_TICKETS = TICKETS.filter((t) => t.mine);
+
+// B-pre: the TasksProvider contract is async (real impl reads Jira / Linear /
+// GitHub). The mock resolves deterministically. `wipLimit`, `epicLabel` and
+// `typeChartVar` are pure and stay synchronous per the contract.
+export const mockTasksProvider: TasksProvider = {
   wipLimit: 3,
 
-  getSprint(): Sprint {
-    return SPRINT;
-  },
-  getTickets(): Ticket[] {
-    return TICKETS;
-  },
-  getTicket(id: string): Ticket | undefined {
-    return TICKETS.find((t) => t.id === id);
-  },
-  getEpics(): Epic[] {
-    return EPICS;
-  },
-  getColumns(): TicketColumn[] {
-    return COLUMNS;
-  },
-  getMyTickets(): Ticket[] {
-    return TICKETS.filter((t) => t.mine);
-  },
-  /** My tickets that are actively in flight (progress / review / testing). */
-  getActiveTickets(): Ticket[] {
-    return TICKETS.filter((t) => t.mine && ["progress", "review", "testing"].includes(t.status));
-  },
-  getBurndown(): Burndown {
-    return BURNDOWN;
-  },
-  getTeamWip(): WipRow[] {
-    return TEAM_WIP;
-  },
-  getMyWipSeries(): number[] {
-    return MY_WIP_SERIES;
-  },
-  getReviewsGiven(): number[] {
-    return REVIEWS_GIVEN;
-  },
-  getThroughput(): number[] {
-    return THROUGHPUT;
-  },
-  getSprintDayLabels(): string[] {
-    return SPRINT_DAY_LABELS;
-  },
-  getTypeSplit(): DonutSegment[] {
-    return TYPE_SPLIT;
-  },
-  getTicketDetail(id: string) {
-    return TICKET_DETAILS[id] ?? DEFAULT_DETAIL;
-  },
-  epicLabel(epicId: string | undefined): string {
-    return EPICS.find((e) => e.id === epicId)?.label ?? "—";
-  },
-  typeChartVar(type: string): string {
-    return TYPE_CHART_VARS[type] ?? "--chart-6";
-  },
+  getSprint: () => Promise.resolve(SPRINT),
+  getTickets: () => Promise.resolve(TICKETS),
+  getTicket: (id) => Promise.resolve(TICKETS.find((t) => t.id === id)),
+  getEpics: () => Promise.resolve(EPICS),
+  getColumns: () => Promise.resolve(COLUMNS),
+  getMyTickets: () => Promise.resolve(MY_TICKETS),
+  getActiveTickets: () => Promise.resolve(ACTIVE_TICKETS),
+  getBurndown: () => Promise.resolve(BURNDOWN),
+  getTeamWip: () => Promise.resolve(TEAM_WIP),
+  getMyWipSeries: () => Promise.resolve(MY_WIP_SERIES),
+  getReviewsGiven: () => Promise.resolve(REVIEWS_GIVEN),
+  getThroughput: () => Promise.resolve(THROUGHPUT),
+  getSprintDayLabels: () => Promise.resolve(SPRINT_DAY_LABELS),
+  getTypeSplit: () => Promise.resolve(TYPE_SPLIT),
+  getTicketDetail: (id) => Promise.resolve(TICKET_DETAILS[id] ?? DEFAULT_DETAIL),
+  epicLabel: (epicId) => EPICS.find((e) => e.id === epicId)?.label ?? "—",
+  typeChartVar: (type) => TYPE_CHART_VARS[type] ?? "--chart-6",
+};
+
+/**
+ * Synchronous deterministic facade over the same fixtures — for render-only
+ * dashboards that are SNAPSHOT views, not event streams (build-spec §6). It
+ * mirrors the async `TasksProvider` method names so a consumer swaps one import
+ * line. The async provider above stays the contract seam (real Jira/Linear
+ * swap); this facade is the instant-paint mirror, deterministic and poll-free.
+ */
+export const tasksSnapshot = {
+  wipLimit: 3,
+  getSprint: () => SPRINT,
+  getTickets: () => TICKETS,
+  getTicket: (id: string) => TICKETS.find((t) => t.id === id),
+  getEpics: () => EPICS,
+  getColumns: () => COLUMNS,
+  getMyTickets: () => MY_TICKETS,
+  getActiveTickets: () => ACTIVE_TICKETS,
+  getBurndown: () => BURNDOWN,
+  getTeamWip: () => TEAM_WIP,
+  getMyWipSeries: () => MY_WIP_SERIES,
+  getReviewsGiven: () => REVIEWS_GIVEN,
+  getThroughput: () => THROUGHPUT,
+  getSprintDayLabels: () => SPRINT_DAY_LABELS,
+  getTypeSplit: () => TYPE_SPLIT,
+  getTicketDetail: (id: string): TicketDetail => TICKET_DETAILS[id] ?? DEFAULT_DETAIL,
+  epicLabel: (epicId: string | undefined): string =>
+    EPICS.find((e) => e.id === epicId)?.label ?? "—",
+  typeChartVar: (type: string): string => TYPE_CHART_VARS[type] ?? "--chart-6",
 };
 
 /** Back-compat export consumed by the left-panel TaskPanel (R6). */

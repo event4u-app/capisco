@@ -151,25 +151,49 @@ const BROKER_FOLDS: FoldRange[] = [
 
 const EMPTY_BARS: ChangeBar[] = [];
 
+const WORKTREE_BARS: ChangeBar[] = [
+  { line: 14, kind: "A" },
+  { line: 15, kind: "A" },
+  { line: 18, kind: "A" },
+  { line: 19, kind: "A" },
+  { line: 20, kind: "A" },
+];
+
+function barsOf(file: string): ChangeBar[] {
+  if (file === "broker.ts") return BROKER_BARS;
+  if (file === "worktree.ts") return WORKTREE_BARS;
+  return EMPTY_BARS;
+}
+
+// B-pre: the EditorProvider contract is async (real impl talks to an LSP / the
+// IPC sidecar). The mock resolves deterministically.
 export const mockEditorProvider: EditorProvider = {
+  getDocs: () => Promise.resolve(DOCS),
+  getDoc: (file) => Promise.resolve(DOCS.find((d) => d.file === file)),
+  getCompletions: (file) => Promise.resolve(file === "broker.ts" ? BROKER_COMPLETIONS : []),
+  getInlayHints: (file) => Promise.resolve(file === "broker.ts" ? BROKER_HINTS : []),
+  getBlame: (file) => Promise.resolve(file === "broker.ts" ? BROKER_BLAME : []),
+  getPresence: (file) => Promise.resolve(file === "broker.ts" ? BROKER_PRESENCE : []),
+  getFolds: (file) => Promise.resolve(file === "broker.ts" ? BROKER_FOLDS : []),
+  getChangeBars: (file) => Promise.resolve(barsOf(file)),
+  getActiveLine: (file) => Promise.resolve(file === "broker.ts" ? 18 : 1),
+};
+
+/**
+ * Synchronous deterministic facade over the same fixtures — mirrors the async
+ * `EditorProvider` method names so a consumer swaps one import line. CodeMirror
+ * indexes the doc text synchronously at mount; the provider OUTPUTS (blame,
+ * folds, presence …) are deterministic snapshots laid over it. The async
+ * provider stays the contract seam (real LSP / IPC swap).
+ */
+export const editorSnapshot = {
   getDocs: () => DOCS,
-  getDoc: (file) => DOCS.find((d) => d.file === file),
-  getCompletions: (file) => (file === "broker.ts" ? BROKER_COMPLETIONS : []),
-  getInlayHints: (file) => (file === "broker.ts" ? BROKER_HINTS : []),
-  getBlame: (file) => (file === "broker.ts" ? BROKER_BLAME : []),
-  getPresence: (file) => (file === "broker.ts" ? BROKER_PRESENCE : []),
-  getFolds: (file) => (file === "broker.ts" ? BROKER_FOLDS : []),
-  getChangeBars: (file) =>
-    file === "broker.ts"
-      ? BROKER_BARS
-      : file === "worktree.ts"
-        ? [
-            { line: 14, kind: "A" },
-            { line: 15, kind: "A" },
-            { line: 18, kind: "A" },
-            { line: 19, kind: "A" },
-            { line: 20, kind: "A" },
-          ]
-        : EMPTY_BARS,
-  getActiveLine: (file) => (file === "broker.ts" ? 18 : 1),
+  getDoc: (file: string) => DOCS.find((d) => d.file === file),
+  getCompletions: (file: string) => (file === "broker.ts" ? BROKER_COMPLETIONS : []),
+  getInlayHints: (file: string) => (file === "broker.ts" ? BROKER_HINTS : []),
+  getBlame: (file: string) => (file === "broker.ts" ? BROKER_BLAME : []),
+  getPresence: (file: string) => (file === "broker.ts" ? BROKER_PRESENCE : []),
+  getFolds: (file: string) => (file === "broker.ts" ? BROKER_FOLDS : []),
+  getChangeBars: (file: string) => barsOf(file),
+  getActiveLine: (file: string) => (file === "broker.ts" ? 18 : 1),
 };

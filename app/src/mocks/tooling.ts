@@ -5,6 +5,7 @@ import type {
   SignalProvider,
   SignalRule,
 } from "@/contracts";
+import { makeDatasource } from "@/contracts";
 
 /**
  * Deterministic tooling providers (build-spec §3, prototype shared.jsx
@@ -19,36 +20,38 @@ import type {
 
 /** Datasources grouped by connection (prototype DATASOURCES). `prod` is
  * read-only (invariant) and exposes only a credential *reference*. */
+// `readonly` is NEVER declared — `makeDatasource` derives it from `env` and
+// freezes the object, so prod read-only is a non-settable invariant (§3.3). A
+// "permanently allow prod write" path is structurally unconstructable.
 export const mockDatasources: Datasource[] = [
-  {
+  makeDatasource({
     name: "local",
     engine: "postgres",
     env: "local",
     credentialRef: "local-dev",
     tables: ["users", "sessions", "grants", "worktrees"],
-  },
-  {
+  }),
+  makeDatasource({
     name: "staging",
     engine: "postgres",
     env: "staging",
     credentialRef: "staging-admin",
     tables: ["users", "sessions", "grants"],
-  },
-  {
+  }),
+  makeDatasource({
     name: "prod",
     engine: "postgres",
     env: "production",
-    readonly: true,
     credentialRef: "prod-readonly",
     tables: ["users", "sessions", "grants", "audit_log"],
-  },
-  {
+  }),
+  makeDatasource({
     name: "cache",
     engine: "redis",
     env: "local",
     credentialRef: "local-dev",
     tables: ["keys"],
-  },
+  }),
 ];
 
 /** Containers grouped by loaded project (ctop-style, prototype CONTAINER_GROUPS). */
@@ -98,11 +101,28 @@ const RULES: SignalRule[] = [
   { id: "rule-lint", source: "lint", channel: "inspect", enabled: true },
 ];
 
+function signalsForChannel(channel: "alerts" | "inspect"): SignalItem[] {
+  const sources = new Set(
+    RULES.filter((r) => r.enabled && r.channel === channel).map((r) => r.source),
+  );
+  return SIGNALS.filter((s) => sources.has(s.source));
+}
+
+// B-pre: the SignalProvider contract is async (real impl multiplexes PR /
+// container / observability streams). The mock resolves deterministically.
 export const mockSignalProvider: SignalProvider = {
+  listSignals: () => Promise.resolve(SIGNALS),
+  listRules: () => Promise.resolve(RULES),
+  signalsFor: (channel) => Promise.resolve(signalsForChannel(channel)),
+};
+
+/**
+ * Synchronous deterministic facade over the same fixtures — mirrors the async
+ * `SignalProvider` method names for the render-only signal flyout (a snapshot
+ * view, not an event stream). The async provider stays the contract seam.
+ */
+export const signalSnapshot = {
   listSignals: () => SIGNALS,
   listRules: () => RULES,
-  signalsFor: (channel) => {
-    const sources = new Set(RULES.filter((r) => r.enabled && r.channel === channel).map((r) => r.source));
-    return SIGNALS.filter((s) => sources.has(s.source));
-  },
+  signalsFor: signalsForChannel,
 };
