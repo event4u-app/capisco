@@ -2,3 +2,88 @@ Ich möchte, dass die einzelnen IDE Instanzen voneinander wissen. So soll man ei
 
 ----
 
+Diese Anforderung ist interessant, weil sie zum ersten Mal seit Langem an etwas *reibt*, das im Design schon steht — und in dieser Reibung steckt die eigentliche Erkenntnis. Lass mich erst die Spannung benennen, dann die Anfrage zerlegen, denn sie enthält zwei verschiedene Dinge, die unterschiedlich teuer sind.
+
+Die Spannung: Dein Design-System hat den **Multi-Projekt-Explorer** schon — „mehrere Repos nebeneinander geladen, damit der Agent sie alle als Kontext hat". Das heißt, „Projekte wissen voneinander" existiert bereits — aber *innerhalb eines Fensters*. Deine neue Anforderung sagt explizit das Gegenteil: separate Instanzen, die sich *trotzdem* kennen, ohne beides ins selbe Fenster zu laden. Das ist nicht dasselbe Feature mit anderem Anstrich — es ist ein neuer Mechanismus, und genau deshalb lohnt das Langsammachen.
+
+Jetzt die Zerlegung, und sie ist der wichtigste Teil meiner Antwort: In deinem Satz stecken **zwei Probleme, die du gedanklich gekoppelt hast, die aber technisch getrennt sind** — und das teure ist nicht das, das du eigentlich willst.
+
+Das erste ist ein **Sprach-/Index-Problem**: „von A aus auf B verweisen, mit Autovervollständigung". Das braucht, dass A's Language-Server die Symbole von B kennt. Und dafür müssen die Instanzen *gar nicht* miteinander reden. Der etablierte Weg ist, B als **read-only Bibliotheks-/Referenz-Wurzel** an A's LSP zu hängen — so wie eine IDE ein SDK oder eine Path-Dependency einbindet. B wird nicht als editierbares Projekt „geladen" (keine Tabs, kein Worktree, keine zweite Fläche), sondern nur sein Symbol-Index wird A's Autocomplete zugänglich. Das löst exakt deinen formulierten Wunsch — „verweisen mit Autovervollständigung, ohne beide ins selbe Fenster zu laden" — und es ist pro Language-Pack bounded Arbeit, kein neues Subsystem. Bei PHP/Intelephense ist das ein zusätzlicher Include-Pfad, bei TS Project-References, usw.
+
+Das zweite ist ein **Koordinations-Problem**: „die Instanzen wissen voneinander". Das ist das, was wirklich neu ist — und ehrlich gesagt das teurere Stück. Damit mehrere laufende Capisco-Fenster (jedes mit eigener Tauri-Shell, eigenem Sidecar) voneinander wissen, brauchst du eine **gemeinsame lokale Koordinationsschicht** — einen kleinen Hintergrunddienst auf der Maschine (nenn ihn Capisco-Daemon oder Workspace-Registry), bei dem sich jede Instanz registriert. Er weiß, welches Projekt in welchem Fenster offen ist, und ermöglicht Dinge wie „Go-to-Definition springt ins andere Fenster" oder „zeig mir, was wo offen ist". Das ist real neues Engineering — und in der Ehrlichkeit, die wir uns hier angewöhnt haben: das ist *kein* „nur ein weiterer Provider". Es ist eine querschnittliche Infrastruktur-Komponente in derselben Klasse wie der Broker, mit eigenen Lebenszyklus-Fragen (wer startet sie, was bei Absturz, was wenn zwei Versionen laufen).
+
+Der Punkt, auf den ich mit Nachdruck zeige: **Du brauchst das teure Zweite nicht, um das gewünschte Erste zu bekommen.** Autocomplete von B in A kommt über den Bibliotheks-Attach — der funktioniert sogar, wenn B in *gar keinem* Fenster offen ist, weil A einfach B's Dateien auf der Platte indiziert. Die „Instanzen kennen sich"-Schicht brauchst du erst, wenn du *mehr* willst als Autocomplete: Live-Präsenz (was ist gerade wo offen), Cross-Window-Navigation, oder dass eine Änderung in B sofort in A's Index auftaucht statt beim nächsten Re-Index.
+
+Drei ehrliche Vorbehalte, bevor du das einplanst:
+
+Erstens, die **Sprachrealität**. Sauberes Cross-Projekt-Autocomplete gibt es für *Code-Symbole* (Typen, Klassen, Funktionen) via LSP-External-Roots. Aber „verweisen" meint bei dir vielleicht mehr — B's API-Endpunkte, B's Routen, B's DB-Schema, B's Env. Das geht über LSP hinaus und ist genau die Stelle, wo Capisco *eigenen* Wert schaffen könnte (ein Capisco-spezifisches Cross-Projekt-Referenzmodell), aber es ist auch deutlich mehr Arbeit als Symbol-Indexing. Kläre für dich, ob du Code-Symbole meinst oder das reichere Bild.
+
+Zweitens, die **Broker-Grenze**. Dein Capability-Broker ist aktuell pro Projekt/Principal gedacht. „A kann B lesen" ist für read-only Symbol-Index harmlos. Aber sobald ein *Agent* in A über die Cross-Projekt-Brücke etwas in B *tut*, überquert er eine Sicherheitsgrenze, die das Scope-Modell heute nicht kennt. Lesendes Indizieren: unkritisch. Schreibender Cross-Projekt-Zugriff durch einen Agenten: braucht eine bewusste Erweiterung des Broker-Scopes. Kein Blocker, aber ein Flag.
+
+Drittens, die **Daemon-Kosten gegen deine Leichtigkeits-These**. Ein immer laufender Hintergrunddienst ist genau die Art residenter Footprint, die dein „schlank im Idle"-Versprechen andellt. Klein haltbar, aber es ist eine bewusste Ausnahme vom „der Kern telefoniert nicht"-Prinzip — wie damals der Presence-Dienst bei der Konfliktwarnung. Triff sie bewusst.
+
+Mein Rat zur Sequenz, konsistent mit der wert-zuerst-Disziplin: Bau **zuerst den Bibliotheks-Attach** (B als read-only Referenz an A's Language-Pack, „attach as reference, don't open as project"). Das löst deinen tatsächlich formulierten Bedarf, ist pro Sprache bounded, braucht keinen Daemon und keine Inter-Instanz-Kommunikation. Die **Workspace-Registry/Daemon** ist die separate, spätere Schicht für echte Cross-Instanz-Awareness (Präsenz, Navigation, Live-Index) — wertvoll, aber abgegrenzt, und nicht die Voraussetzung fürs Autocomplete.
+
+Eine letzte, leise Frage, die du dir stellen solltest, ohne dass ich dir die Antwort aufdränge: Wenn das Ziel vor allem Cross-Projekt-Autocomplete ist — ist „separate Instanzen" dann überhaupt die richtige Wahl gegenüber dem Multi-Root-Fenster, das du schon hast? Du hast gute Gründe für Fenster-pro-Projekt (dein Worktree-pro-Fenster-Workflow), also ist das kein Widerspruch. Aber es ist wert, bewusst zu wissen, dass du den teureren Pfad wählst, *weil* dir die getrennten Fenster wichtig sind — nicht, weil der Autocomplete ihn erzwingt.
+
+Soll ich das so ins Konzept und ins Paket einarbeiten — als neuen Querschnitts-Abschnitt „Cross-Projekt-Referenzen & Workspace-Registry", mit der Trennung Bibliotheks-Attach (früh, billig) vs. Koordinations-Daemon (spät, abgegrenzt) und den drei Vorbehalten?
+
+-----
+
+Es soll nicht cross project autocomplete sein, mit methoden, etc. aus den projekten. Das können wir als spätere phase planen. ich will nur auf andere projekte verweisen können, die schon mal in der ide geladen wurde und in recent projects ist. So dass die aktuelle ide einfach weiß wo das projekt liegt und zur not die files einlesen oder nutzen könnte.
+
+-----
+
+Das vereinfacht es drastisch — und es ist gut, dass du mich korrigierst, denn ich habe das Problem zwei Nummern zu groß gedacht. Du willst keinen Cross-Projekt-Index und keine sich kennenden Live-Instanzen. Du willst, dass eine Instanz *weiß, dass es die anderen Projekte gibt und wo sie auf der Platte liegen*. Das ist kein Koordinations-Problem zwischen laufenden Fenstern — es ist ein **geteilter, persistenter Katalog bekannter Projekte**, den jede Instanz liest.
+
+Der entscheidende Unterschied, und er räumt fast alle Kosten aus meiner letzten Antwort ab: Es muss **nichts live miteinander reden**. Kein Daemon, kein Hintergrunddienst, keine Inter-Instanz-Kommunikation, kein residenter Footprint. „Recent Projects" ist ohnehin eine Liste, die du persistierst. Du hebst sie nur aus dem *pro-Instanz*-Zustand in einen **maschinenweiten, geteilten Zustand** — eine kleine Datei an einem festen Ort (z. B. unter dem User-Config-Verzeichnis), die alle Instanzen lesen und um ihre eigenen Einträge ergänzen. Jeder Eintrag ist im Kern: Projektname, absoluter Pfad, vielleicht zuletzt-geöffnet und der Default-Branch. Mehr braucht „die IDE weiß, wo das Projekt liegt" nicht.
+
+Damit wird deine Anforderung zu zwei kleinen, klar abgegrenzten Stücken:
+
+Das eine ist die **geteilte Registry** selbst — die genannte Datei plus die Disziplin, dass jede Instanz beim Öffnen eines Projekts dort einen Eintrag schreibt/aktualisiert. Das ist schlicht „Recent Projects, aber global statt pro Fenster". Der einzige technische Punkt, den man nicht verschludern darf: gleichzeitiges Schreiben mehrerer Instanzen (atomar schreiben oder pro-Eintrag-Dateien, damit sich zwei Fenster nicht gegenseitig die Liste überbügeln). Das ist Standard, aber es ist *die* Stelle, an der so etwas sonst still kaputtgeht.
+
+Das andere ist das **Verweisen** im UI — und hier ist die ehrliche Frage, was „verweisen" für dich konkret heißt, weil davon abhängt, ob es trivial oder leicht-mehr ist. Drei Stufen, von billig nach reicher:
+
+Die einfachste Lesart: Du tippst in einem Markdown-/Notiz-/ToDo-Kontext etwas wie `@projektname` und bekommst aus der Registry eine Vervollständigung der *Projektnamen* (nicht ihrer Methoden) — und daraus wird ein Verweis, der den Pfad kennt. Das ist nur Autocomplete über eine kurze Liete von Strings, geschenkt.
+
+Die mittlere Lesart: Der Verweis ist *anklickbar* — Klick öffnet das Projekt (in neuem Fenster oder als zweite Root) oder springt dorthin. Auch klein, weil „Projekt öffnen" eh existiert; der Verweis ruft nur diesen vorhandenen Pfad auf.
+
+Die reichere Lesart — und das ist die, bei der ich kurz bremse: „zur Not die Files einlesen oder nutzen". Sobald die *aktuelle* Instanz (oder ihr Agent) Dateien aus Projekt B liest, ohne B zu öffnen, überquerst du wieder eine Grenze, die dein Capability-Broker heute nicht kennt. Lesen ist harmlos, aber es ist ein bewusster Schritt: Der Agent in A greift auf fremden Projektcode zu. Das ist kein Blocker und kein Daemon nötig — die Registry liefert den Pfad, der Zugriff ist normales Dateilesen — aber es ist die eine Stelle, wo „verweisen" zu „zugreifen" wird, und der Broker-Scope sollte das später sauber abdecken (read-only Cross-Projekt-Zugriff als eigene, gescopte Capability). Für den Anfang würde ich es bei *Mensch liest bewusst* belassen und Agent-Cross-Projekt-Zugriff als spätere, gescopte Erweiterung markieren.
+
+Drei Dinge, die ich als ehrliche Vorbehalte mitgebe, alle klein:
+
+Pfade veralten — Projekte werden verschoben, umbenannt, gelöscht. Die Registry braucht ein leises „Pfad existiert nicht mehr" statt eines toten Verweises. Kein Drama, aber einplanen.
+
+Die Registry ist maschinenlokal, nicht projektgebunden — sie gehört also *nicht* ins Git eines Projekts (sie ist persönlich und rechnerspezifisch), sondern ins User-Config-Verzeichnis. Das klingt selbstverständlich, ist aber die Art Detail, die man am Anfang falsch verdrahtet.
+
+Und sie passt sauber zu deiner Leichtigkeits-These, *weil* sie passiv ist: eine Datei, die bei Bedarf gelesen wird, kein laufender Prozess. Das ist die billigste Form, in der „Instanzen wissen voneinander" überhaupt existieren kann — sie wissen es nicht *voneinander*, sie wissen es alle aus *derselben Notiz*.
+
+Mein Vorschlag fürs Festhalten: ein knapper Querschnitts-Abschnitt „Geteilte Projekt-Registry (Recent Projects, maschinenweit)" mit der klaren Abgrenzung — passive geteilte Datei statt Daemon, Verweisen in den genannten Stufen, und der explizite Hinweis, dass Agent-Cross-Projekt-*Zugriff* (über bloßes Verweisen hinaus) eine spätere, broker-gescopte Phase ist. Soll ich das so ins Konzept und ins Paket einarbeiten?
+
+-------
+
+Genau. So wie claude sessions von einander wissen. - und vielleicht könnte man zumindest das nehmen und so dafür sorgen, dass man das wissen aus einer speziellen agent konversation von projekt a in projekt b nutzt. um z.b. frontend und backand einfach zu kombinieren und das wissen über projekte/agents hinweg zu teilen
+
+------
+
+Jetzt wird etwas Größeres sichtbar, und ich will ehrlich sein: Der zweite Teil deiner Nachricht ist *nicht* mehr dieselbe billige Registry. Du hast mit „so wie Claude-Sessions voneinander wissen" einen Vergleich gewählt, der genau die Grenze markiert, an der das passive Notiz-Modell aufhört und etwas Anspruchsvolleres anfängt. Lass mich beide Hälften sauber trennen, weil die eine geschenkt ist und die andere ein echtes neues Stück.
+
+Zur Analogie selbst, kurz und ehrlich, damit wir auf gemeinsamem Boden stehen: Claude-Sessions „wissen" nicht spontan voneinander. Was es gibt, ist eine *durchsuchbare Historie* — eine Session kann frühere Konversationen *nachschlagen*, wenn sie danach sucht. Das ist genau das richtige mentale Modell für das, was du willst, und es ist wichtiger, als es klingt: Es ist **Abruf auf Anfrage aus einem geteilten Speicher**, nicht ein Live-Draht zwischen laufenden Agenten. Diese Unterscheidung entscheidet, ob du etwas Billiges oder etwas Teures baust.
+
+Die erste Hälfte — die Projekt-Registry — bleibt unverändert die passive geteilte Datei von eben. Geschenkt.
+
+Die zweite Hälfte — „das Wissen aus einer Agent-Konversation in Projekt A in Projekt B nutzen" — ist neu, und sie ist wertvoll, aber sie hat eine Voraussetzung, die du in Runde 3 schon gelegt hast, ohne dass wir sie bisher in diese Richtung gedreht haben: den **Session-Store**. Erinnerst du dich — Resume, Chat-Suche und Retry zwangen uns zu einem ordentlichen, persistenten, durchsuchbaren Session-Store ab Tag eins. Genau dieser Store ist die Antwort hier. „Frontend-Wissen aus A in B nutzen" heißt mechanisch: B's Agent **durchsucht den Session-Store nach relevanten A-Sessions und zieht sich Auszüge in seinen Kontext**. Es ist Cross-Projekt-*Session-Suche* — dieselbe Bewegung wie Claudes Konversations-Abruf, nur dass der Filter „anderes Projekt" statt „frühere Zeit" ist.
+
+Das ist die gute Nachricht: Du baust kein neues Primitiv. Du **erweiterst den Scope einer Suche**, die du ohnehin baust — von „innerhalb dieser Session/dieses Projekts" auf „über Projektgrenzen hinweg". Das ist real Arbeit, aber es ist *bounded* und sitzt auf vorhandenem Fundament.
+
+Jetzt die ehrlichen Vorbehalte, und der erste ist wichtig genug, dass ich ihn nicht weichspüle:
+
+**Geteiltes Wissen ist geteilter Kontext, und Kontext kann Secrets enthalten.** Das ist die unangenehme Kollision mit deinem eigenen Broker-Prinzip. Eine A-Session, aus der B schöpft, kann in ihrem Verlauf Pfade, interne URLs, Datenbankstrukturen, vielleicht versehentlich Credential-nahe Dinge enthalten. In Runde 3 hast du — richtig — festgelegt, dass Secrets nie in den LLM-Context gelangen. Cross-Projekt-Kontext-Sharing ist *genau der Mechanismus*, der diese Mauer unterlaufen kann, wenn man ihn naiv baut: Wissen aus A landet im Prompt von B's Agenten, der vielleicht zu einem Cloud-Modell geht. Die Regel, die ich dir dringend ans Herz lege: Was geteilt wird, durchläuft **dieselbe Tresor-Disziplin** — Referenzen, keine Klartext-Secrets, und idealerweise teilt man *kuratierte Auszüge oder Zusammenfassungen* einer A-Session, nicht ihren rohen Volltext. Das ist sicherer *und* nebenbei nützlicher, weil ein 40-Nachrichten-Verlauf aus A B's Kontextfenster zumüllen würde.
+
+Zweitens, **Relevanz und Rauschen**. „Nutze das Frontend-Wissen" klingt sauber, aber B's Agent muss entscheiden, *welche* A-Sessions relevant sind. Ungefiltert holst du dir Müll in den Kontext. Anfangs würde ich das **explizit und menschgesteuert** halten — du sagst „zieh Kontext aus *dieser* A-Session" oder „aus Projekt A zum Thema X" —, nicht automatisch-magisch. Automatische Cross-Projekt-Relevanz ist ein späteres, schwereres Feature; der manuelle Verweis ist sofort nützlich und kontrollierbar.
+
+Drittens, und das ist die konzeptionelle Schönheit, die ich nicht übergehen will: Frontend-und-Backend-kombinieren ist ein *echter*, wiederkehrender Schmerz, und dein Worktree-Modell macht ihn normalerweise *schlimmer*, weil es Projekte bewusst isoliert. Diese Cross-Projekt-Session-Brücke ist die Gegenbewegung zur Isolation — sie gibt dir die Trennung der Worktrees *und* einen kontrollierten Kanal, über den Wissen die Grenze überquert. Das ist eine starke Kombination, und sie ist genau deshalb stark, weil der Kanal **schmal und bewusst** ist (Abruf auf Anfrage), nicht weil alles mit allem verschmilzt.
+
+Eine letzte Grenze, damit die Erwartung stimmt: Was hier fließt, ist **Gesprächs-/Wissens-Kontext**, nicht ausführbarer Cross-Projekt-Zugriff. B's Agent *erfährt* aus A's Sessions, wie das Frontend tickt — er *operiert* damit noch nicht in A's Dateien oder Containern. Letzteres wäre der Agent-Cross-Projekt-*Zugriff* von vorhin, der eine eigene Broker-Scope-Erweiterung braucht. Wissen teilen und Zugriff teilen sind zwei verschiedene Stufen; ich würde sie im Dokument bewusst auseinanderhalten, damit sie nicht später stillschweigend ineinanderrutschen.
+
+Mein Vorschlag fürs Festhalten, in einem Abschnitt mit zwei klar getrennten Ebenen: erstens die **passive Projekt-Registry** (maschinenweite Recent-Projects-Datei, kein Daemon) für „wissen, dass es B gibt und wo es liegt"; zweitens die **Cross-Projekt-Session-Brücke** (Abruf auf Anfrage aus dem Session-Store, kuratierte Auszüge, Tresor-Disziplin, anfangs menschgesteuert) für „Wissen aus A in B nutzen" — mit dem expliziten Vermerk, dass Cross-Projekt-*Zugriff* (ausführend, nicht nur wissend) eine spätere, broker-gescopte Stufe ist. Soll ich es so ins Konzept und ins Paket einarbeiten?
