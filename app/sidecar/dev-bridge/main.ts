@@ -1,0 +1,138 @@
+/**
+ * Dev WebSocket bridge entrypoint (DEV-ONLY, road-to-runnable-dev P0).
+ *
+ * `pnpm dev` shows only mocks because no sidecar bridge is injected and the
+ * sidecar speaks a unix socket the browser cannot reach. This process fronts the
+ * REAL sidecar IPC over a localhost WebSocket so the Vite app talks to the live
+ * sidecar — no Tauri/cargo. The Vite dev entry connects a {@link WsClientTransport}
+ * and injects `globalThis.__CAPISCO_SIDECAR__`, so `getProviders()` selects the
+ * real IPC proxies.
+ *
+ * SECURITY / SCOPE (non-negotiable):
+ *  - Binds **127.0.0.1 only**. Never `0.0.0.0`. Dev-only, NOT FOR PRODUCTION.
+ *  - The production transport stays the Tauri unix socket (deferred).
+ *  - Every side effect still flows through the broker chokepoint + the
+ *    first-party `git`/fs execution primitives; this bridge is pure transport.
+ *
+ * Each accepted WebSocket connection is bound to an {@link IpcConnection} over
+ * the same {@link ProviderRegistry} the unix-socket sidecar fronts — identical
+ * wire surface, identical providers.
+ *
+ * Repo selection: the bridge registers the real git + fs providers for a repo
+ * root from `--repo <path>` / `CAPISCO_DEV_REPO`; with no repo configured it
+ * boots mocks-only (the conservative default — the UI opens a real project at
+ * runtime via the path input, which the fs provider serves per-call).
+ */
+
+import { createServer, type IncomingMessage } from "node:http";
+import type { Socket } from "node:net";
+import { ProviderRegistry } from "../registry/registry.ts";
+import { IpcConnection } from "../server/ipc-server.ts";
+import { registerAllProviders } from "../main.ts";
+import { registerDevWorkspace } from "../register-dev-workspace.ts";
+import { isWebSocketUpgrade, WsServerTransport } from "./ws-server-transport.ts";
+
+/** The loopback host the bridge binds — never exposed beyond the machine. */
+export const DEV_BRIDGE_HOST = "127.0.0.1";
+
+export function resolveDevBridgePort(argv: string[] = process.argv.slice(2)): number {
+  const flag = argv.indexOf("--port");
+  if (flag !== -1 && argv[flag + 1]) return Number(argv[flag + 1]);
+  if (process.env.CAPISCO_DEV_BRIDGE_PORT) return Number(process.env.CAPISCO_DEV_BRIDGE_PORT);
+  return 8787;
+}
+
+/** Optional repo root to put live git + fs behind the workspace ids. */
+export function resolveDevRepo(argv: string[] = process.argv.slice(2)): string | undefined {
+  const flag = argv.indexOf("--repo");
+  if (flag !== -1 && argv[flag + 1]) return argv[flag + 1];
+  return process.env.CAPISCO_DEV_REPO || undefined;
+}
+
+export interface DevBridge {
+  port: number;
+  registry: ProviderRegistry;
+  close(): Promise<void>;
+}
+
+/**
+ * Build the dev bridge's provider registry: the full provider stack, then —
+ * when a repo root is configured — the real git/fs workspace swap for it.
+ */
+export function buildDevRegistry(repo?: string): ProviderRegistry {
+  const registry = new ProviderRegistry();
+  // The broker is the chokepoint the editor-save write (P2) runs inside.
+  const broker = registerAllProviders(registry);
+  registerDevWorkspace(registry, { repo, broker });
+  return registry;
+}
+
+/**
+ * Start the dev bridge HTTP+WS server on 127.0.0.1. Resolves once listening.
+ */
+export function startDevBridge(opts: { port?: number; repo?: string } = {}): Promise<DevBridge> {
+  const port = opts.port ?? resolveDevBridgePort();
+  const registry = buildDevRegistry(opts.repo);
+  const transports = new Set<WsServerTransport>();
+
+  const server = createServer((_req, res) => {
+    // The bridge is a WebSocket endpoint; plain HTTP gets a terse hint.
+    res.writeHead(426, { "content-type": "text/plain" });
+    res.end("capisco dev sidecar bridge — connect via WebSocket (dev-only)\n");
+  });
+
+  server.on("upgrade", (req: IncomingMessage, socket: Socket) => {
+    if (!isWebSocketUpgrade(req)) {
+      socket.destroy();
+      return;
+    }
+    const transport = WsServerTransport.accept(req, socket);
+    // One IpcConnection per WS connection, over the shared registry. The
+    // connection wires itself to the transport; the bridge tracks the transport
+    // for orderly shutdown.
+    new IpcConnection(transport, registry);
+    transports.add(transport);
+    transport.onClose(() => transports.delete(transport));
+  });
+
+  return new Promise<DevBridge>((resolve, reject) => {
+    server.once("error", reject);
+    // Bind loopback ONLY — never 0.0.0.0. Dev-only, not for production.
+    server.listen(port, DEV_BRIDGE_HOST, () => {
+      server.removeListener("error", reject);
+      // Read the bound port back (port 0 → an OS-assigned ephemeral port).
+      const addr = server.address();
+      const boundPort = typeof addr === "object" && addr ? addr.port : port;
+      resolve({
+        port: boundPort,
+        registry,
+        close: () =>
+          new Promise<void>((res) => {
+            for (const t of transports) t.close();
+            server.close(() => res());
+            server.unref();
+          }),
+      });
+    });
+  });
+}
+
+export async function main(): Promise<DevBridge> {
+  const repo = resolveDevRepo();
+  const bridge = await startDevBridge({ repo });
+  console.error(
+    `[capisco-dev-bridge] DEV-ONLY WebSocket bridge listening on ws://${DEV_BRIDGE_HOST}:${bridge.port}` +
+      (repo ? ` (repo: ${repo})` : " (mocks; open a project from the UI)"),
+  );
+  const shutdown = (): void => {
+    void bridge.close().then(() => process.exit(0));
+  };
+  process.on("SIGINT", shutdown);
+  process.on("SIGTERM", shutdown);
+  return bridge;
+}
+
+// Run when invoked directly (node sidecar/dev-bridge/main.ts), not when imported.
+if (import.meta.url === `file://${process.argv[1]}`) {
+  void main();
+}
