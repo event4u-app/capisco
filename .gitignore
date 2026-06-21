@@ -1,0 +1,27 @@
+# dependencies
+node_modules/
+app/node_modules/
+
+# build output
+app/dist/
+*.tsbuildinfo
+
+# test / harness artifacts
+app/test-results/
+app/playwright-report/
+app/build/
+app/.ladle/meta.json
+app/test/golden/**/*-actual.png
+app/test/golden/**/*-diff.png
+
+# editor / os
+.DS_Store
+*.local
+
+# logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# editor
+.idea/
