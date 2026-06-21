@@ -1,4 +1,4 @@
-/* @ds-bundle: {"format":3,"namespace":"CapiscoDesignSystem_026f1e","components":[{"name":"Button","sourcePath":"components/core/Button.jsx"},{"name":"IconButton","sourcePath":"components/core/IconButton.jsx"},{"name":"Input","sourcePath":"components/core/Input.jsx"},{"name":"EditorTab","sourcePath":"components/ide/EditorTab.jsx"},{"name":"PermissionPrompt","sourcePath":"components/ide/PermissionPrompt.jsx"},{"name":"ToolAction","sourcePath":"components/ide/ToolAction.jsx"},{"name":"TreeRow","sourcePath":"components/ide/TreeRow.jsx"},{"name":"GitMarker","sourcePath":"components/indicators/GitMarker.jsx"},{"name":"ModelBadge","sourcePath":"components/indicators/ModelBadge.jsx"},{"name":"StatusDot","sourcePath":"components/indicators/StatusDot.jsx"}],"sourceHashes":{"agent.jsx":"97f37454ad82","chrome.jsx":"68877ac341b1","components/core/Button.jsx":"28593341aa9b","components/core/IconButton.jsx":"cc5843997797","components/core/Input.jsx":"02f16f2ae171","components/ide/EditorTab.jsx":"c3a17507a10b","components/ide/PermissionPrompt.jsx":"20e5f37b2ede","components/ide/ToolAction.jsx":"ca027dc86470","components/ide/TreeRow.jsx":"3d7deefa7bd9","components/indicators/GitMarker.jsx":"55dfe12c741c","components/indicators/ModelBadge.jsx":"9aaac6f7737a","components/indicators/StatusDot.jsx":"1294e550df0a","panels.jsx":"e9a2dc91ff50","ui_kits/capisco-ide/agent.jsx":"5503a39cda0c","ui_kits/capisco-ide/charts.jsx":"bc423edd4e1a","ui_kits/capisco-ide/chrome.jsx":"f6d8ab953175","ui_kits/capisco-ide/editor.jsx":"f1d9492c6e13","ui_kits/capisco-ide/panels.jsx":"82ae7dcb0e24","ui_kits/capisco-ide/shared.jsx":"1e712e8c5e3c","ui_kits/capisco-ide/views.jsx":"d823affbf5ed"},"inlinedExternals":[],"unexposedExports":[]} */
+/* @ds-bundle: {"format":3,"namespace":"CapiscoDesignSystem_026f1e","components":[{"name":"Button","sourcePath":"components/core/Button.jsx"},{"name":"IconButton","sourcePath":"components/core/IconButton.jsx"},{"name":"Input","sourcePath":"components/core/Input.jsx"},{"name":"EditorTab","sourcePath":"components/ide/EditorTab.jsx"},{"name":"PermissionPrompt","sourcePath":"components/ide/PermissionPrompt.jsx"},{"name":"ToolAction","sourcePath":"components/ide/ToolAction.jsx"},{"name":"TreeRow","sourcePath":"components/ide/TreeRow.jsx"},{"name":"GitMarker","sourcePath":"components/indicators/GitMarker.jsx"},{"name":"ModelBadge","sourcePath":"components/indicators/ModelBadge.jsx"},{"name":"StatusDot","sourcePath":"components/indicators/StatusDot.jsx"}],"sourceHashes":{"agent.jsx":"97f37454ad82","chrome.jsx":"68877ac341b1","components/core/Button.jsx":"28593341aa9b","components/core/IconButton.jsx":"cc5843997797","components/core/Input.jsx":"02f16f2ae171","components/ide/EditorTab.jsx":"c3a17507a10b","components/ide/PermissionPrompt.jsx":"20e5f37b2ede","components/ide/ToolAction.jsx":"ca027dc86470","components/ide/TreeRow.jsx":"3d7deefa7bd9","components/indicators/GitMarker.jsx":"55dfe12c741c","components/indicators/ModelBadge.jsx":"9aaac6f7737a","components/indicators/StatusDot.jsx":"1294e550df0a","panels.jsx":"e9a2dc91ff50","ui_kits/capisco-ide/agent.jsx":"8d549fd8b9d0","ui_kits/capisco-ide/charts.jsx":"bc423edd4e1a","ui_kits/capisco-ide/chrome.jsx":"5990609ae5c2","ui_kits/capisco-ide/editor.jsx":"4e5e7cb49433","ui_kits/capisco-ide/panels.jsx":"82ae7dcb0e24","ui_kits/capisco-ide/shared.jsx":"cd382631a14e","ui_kits/capisco-ide/views.jsx":"d823affbf5ed"},"inlinedExternals":[],"unexposedExports":[]} */
 
 (() => {
 
@@ -1891,15 +1891,79 @@ function ComposerBar({
   setModel,
   effort,
   setEffort,
-  statusText
+  statusText,
+  used,
+  budget,
+  setBudget
 }) {
   const [panel, setPanel] = React.useState(null);
   const toggle = p => setPanel(x => x === p ? null : p);
+  const fmtK = n => n >= 1000 ? (n / 1000).toFixed(n >= 10000 ? 0 : 1) + 'k' : String(n);
+  const ratio = budget > 0 ? used / budget : 0;
+  const tone = ratio < 0.6 ? 'ok' : ratio < 0.85 ? 'warn' : 'crit';
+  const toneColor = tone === 'ok' ? 'var(--success)' : tone === 'warn' ? 'var(--warning)' : 'var(--error)';
+  const presets = [100000, 150000, 200000, 300000];
   return /*#__PURE__*/React.createElement("div", {
     className: "composer-bar"
   }, /*#__PURE__*/React.createElement("div", {
     className: "cb-stats"
-  }, statusText), /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "cb-ctl-wrap"
+  }, /*#__PURE__*/React.createElement("button", {
+    className: 'cb-meter ' + tone + (panel === 'ctx' ? ' active' : ''),
+    title: "Context budget \u2014 green \u2192 orange \u2192 red",
+    onClick: () => toggle('ctx')
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: tone === 'crit' ? 'triangle-alert' : 'gauge',
+    size: 13,
+    color: toneColor
+  }), /*#__PURE__*/React.createElement("span", {
+    className: "cb-meter-val",
+    style: {
+      color: toneColor
+    }
+  }, fmtK(used), "/", fmtK(budget)), /*#__PURE__*/React.createElement("span", {
+    className: "cb-meter-bar"
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      width: Math.min(100, ratio * 100) + '%',
+      background: toneColor
+    }
+  }))), panel === 'ctx' && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    className: "menu-scrim",
+    onClick: () => setPanel(null)
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "ctx-pop cb-pop"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "bp-head"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "caps"
+  }, "Context budget"), /*#__PURE__*/React.createElement("span", {
+    className: "ctx-pct",
+    style: {
+      color: toneColor
+    }
+  }, Math.round(ratio * 100), "%")), /*#__PURE__*/React.createElement("div", {
+    className: "ctx-row"
+  }, "Warn at ", /*#__PURE__*/React.createElement("b", null, fmtK(budget)), " tokens \xB7 ", fmtK(used), " used"), /*#__PURE__*/React.createElement("input", {
+    type: "range",
+    className: "ctx-range",
+    min: "50000",
+    max: "400000",
+    step: "10000",
+    value: budget,
+    onChange: e => setBudget(+e.target.value)
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "ctx-presets"
+  }, presets.map(v => /*#__PURE__*/React.createElement("button", {
+    key: v,
+    className: 'ctx-preset' + (budget === v ? ' active' : ''),
+    onClick: () => setBudget(v)
+  }, fmtK(v)))), /*#__PURE__*/React.createElement("div", {
+    className: "ctx-note"
+  }, "Turns green, then orange, then red as the session fills. At red we suggest a fresh session to save tokens.")))), /*#__PURE__*/React.createElement("span", {
+    className: "cb-statline"
+  }, statusText)), /*#__PURE__*/React.createElement("div", {
     className: "cb-controls"
   }, /*#__PURE__*/React.createElement("span", {
     className: "cb-ctl-wrap"
@@ -2194,29 +2258,37 @@ function Transcript({
   }, "Describe a task to start the agent."));
 }
 function AgentWorkspace({
-  onOpenFile
+  onOpenFile,
+  kind = 'agents'
 }) {
+  const isChat = kind === 'chat';
+  const seed = isChat ? window.CHAT_SESSIONS : window.SESSIONS;
   const {
     Input,
     IconButton
   } = window.CapiscoDesignSystem_026f1e;
-  const [active, setActive] = React.useState('s1');
+  const [active, setActive] = React.useState(seed[0].id);
   const [diffOpen, setDiffOpen] = React.useState(false);
   const [settingsOpen, setSettingsOpen] = React.useState(false);
   const [backend, setBackend] = React.useState('api');
   const [token, setToken] = React.useState('');
-  const [model, setModel] = React.useState('Opus 4.8');
+  const [model, setModel] = React.useState(isChat ? 'Sonnet 4.8' : 'Opus 4.8');
   const [effort, setEffort] = React.useState(3);
+  const [budget, setBudget] = React.useState(200000);
+  const [used] = React.useState(isChat ? 38000 : 172000);
+  const [ctxDismiss, setCtxDismiss] = React.useState(false);
+  const ratio = used / budget;
+  const ctxCritical = ratio >= 0.85 && !ctxDismiss;
   const [extra, setExtra] = React.useState([]);
   const [closed, setClosed] = React.useState([]);
-  const sessions = [...window.SESSIONS, ...extra].filter(s => !closed.includes(s.id));
+  const sessions = [...seed, ...extra].filter(s => !closed.includes(s.id));
   const cur = sessions.find(s => s.id === active) || sessions[0];
   const createSession = agent => {
     const id = 'n' + (extra.length + 1);
     setExtra(e => [...e, {
       id,
       model: agent.split(' ')[0],
-      title: 'New session',
+      title: isChat ? 'New chat' : 'New session',
       meta: 'idle',
       status: 'idle'
     }]);
@@ -2244,12 +2316,12 @@ function AgentWorkspace({
     onCreate: createSession
   }), /*#__PURE__*/React.createElement("button", {
     className: 'session-gear' + (settingsOpen ? ' active' : ''),
-    title: "Agent backend settings",
+    title: isChat ? 'Chat settings' : 'Agent backend settings',
     onClick: () => setSettingsOpen(v => !v)
   }, /*#__PURE__*/React.createElement(Icon, {
     name: "settings",
     size: 15
-  }))), cur.subs && /*#__PURE__*/React.createElement("div", {
+  }))), !isChat && cur.subs && /*#__PURE__*/React.createElement("div", {
     className: "subagent-row"
   }, /*#__PURE__*/React.createElement("span", {
     className: "branch-stub"
@@ -2270,7 +2342,9 @@ function AgentWorkspace({
     className: "chat"
   }, /*#__PURE__*/React.createElement("div", {
     className: "chat-inner"
-  }, /*#__PURE__*/React.createElement(Transcript, {
+  }, isChat ? /*#__PURE__*/React.createElement(ChatTranscript, {
+    session: cur
+  }) : /*#__PURE__*/React.createElement(Transcript, {
     session: cur,
     diffOpen: diffOpen,
     onToggleDiff: () => setDiffOpen(!diffOpen),
@@ -2279,7 +2353,26 @@ function AgentWorkspace({
     className: "composer"
   }, /*#__PURE__*/React.createElement("div", {
     className: "composer-inner"
-  }, /*#__PURE__*/React.createElement(Input, {
+  }, ctxCritical && /*#__PURE__*/React.createElement("div", {
+    className: "ctx-banner"
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "triangle-alert",
+    size: 16,
+    color: "var(--error)"
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "ctx-banner-text"
+  }, /*#__PURE__*/React.createElement("b", null, "Session is ", Math.round(ratio * 100), "% of its token budget."), " Long sessions cost more and dull responses \u2014 start a fresh one to keep it lean."), /*#__PURE__*/React.createElement("div", {
+    className: "ctx-banner-actions"
+  }, /*#__PURE__*/React.createElement("button", {
+    className: "ctx-btn ctx-btn-primary",
+    onClick: () => {
+      createSession(model);
+      setCtxDismiss(true);
+    }
+  }, "New session"), /*#__PURE__*/React.createElement("button", {
+    className: "ctx-btn",
+    onClick: () => setCtxDismiss(true)
+  }, "Keep going"))), /*#__PURE__*/React.createElement(Input, {
     mono: true,
     placeholder: "Message Capisco\u2026",
     trailing: /*#__PURE__*/React.createElement(IconButton, {
@@ -2296,7 +2389,10 @@ function AgentWorkspace({
     setModel: setModel,
     effort: effort,
     setEffort: setEffort,
-    statusText: (backend === 'api' ? 'API' : 'CLI · claude 1.4.2') + ' · 6.5k tokens · $0.04 · running 2m49s'
+    used: used,
+    budget: budget,
+    setBudget: setBudget,
+    statusText: isChat ? (backend === 'api' ? 'API' : 'CLI · claude 1.4.2') + ' · quick chat · no tools' : (backend === 'api' ? 'API' : 'CLI · claude 1.4.2') + ' · $0.04 · running 2m49s'
   }))), settingsOpen && /*#__PURE__*/React.createElement(AgentSettings, {
     backend: backend,
     setBackend: setBackend,
@@ -2421,8 +2517,40 @@ function FlyoutPanel({
     className: "alert-sub"
   }, a.sub))))));
 }
+
+/* Chat workspace — a single lightweight conversation with Capisco.
+   No session-tree, no subagents, no tool actions: a plain assistant chat. */
+function ChatTranscript({
+  session
+}) {
+  if (session.id === 'c2') {
+    return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(Msg, {
+      role: "user"
+    }, "Explain the session-tree in one paragraph."), /*#__PURE__*/React.createElement(Msg, {
+      role: "agent"
+    }, "A session is one model thread. Subagents are child sessions that share the parent's worktree-workspace, so they see the same files and grants but run their own context. The tree lets you fan out work and still review it in one place."));
+  }
+  return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(Msg, {
+    role: "user"
+  }, "How does the capability broker decide when to prompt me?"), /*#__PURE__*/React.createElement(Msg, {
+    role: "agent"
+  }, "It checks the requested ", /*#__PURE__*/React.createElement("code", null, "(principal, capability, scope)"), " against existing grants. A cached ", /*#__PURE__*/React.createElement("code", null, "session"), " grant passes silently; anything broader \u2014 or a", ' ', /*#__PURE__*/React.createElement("code", null, "production"), " datasource, or a secret \u2014 always escalates to a prompt."), /*#__PURE__*/React.createElement(Msg, {
+    role: "user"
+  }, "Can I pre-approve read-only shell for this session?"), /*#__PURE__*/React.createElement(Msg, {
+    role: "agent"
+  }, "Yes \u2014 grant ", /*#__PURE__*/React.createElement("code", null, "Bash(read-only)"), " at ", /*#__PURE__*/React.createElement("code", null, "session"), " scope from the next prompt. Writes and network still escalate per-command."));
+}
+
+/* Chat workspace — same component as Agents, different system (no tools/subagents). */
+function ChatWorkspace() {
+  return /*#__PURE__*/React.createElement(AgentWorkspace, {
+    kind: "chat"
+  });
+}
 Object.assign(window, {
   AgentWorkspace,
+  ChatWorkspace,
+  ChatTranscript,
   AgentSettings,
   FlyoutPanel
 });
@@ -3064,6 +3192,15 @@ function RightRail({
   }), /*#__PURE__*/React.createElement("span", {
     className: "ab-label"
   }, "Agents")), /*#__PURE__*/React.createElement("button", {
+    className: 'ab-item' + (mode === 'chat' ? ' active' : ''),
+    title: "Chat",
+    onClick: () => onMode('chat')
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "message-square",
+    size: 18
+  }), /*#__PURE__*/React.createElement("span", {
+    className: "ab-label"
+  }, "Chat")), /*#__PURE__*/React.createElement("button", {
     className: 'ab-item' + (mode === 'editor' ? ' active' : ''),
     title: "Editor",
     onClick: () => onMode('editor')
@@ -3358,17 +3495,29 @@ function Autocomplete() {
     className: "ac-hint"
   }, it.hint))));
 }
-function EditorArea() {
+function TabStrip({
+  tabs,
+  active,
+  onSelect
+}) {
   const {
     EditorTab
   } = window.CapiscoDesignSystem_026f1e;
-  const [active, setActive] = React.useState('broker.ts');
-  const [livePop, setLivePop] = React.useState(false);
+  const [rows, setRows] = React.useState(() => Number(localStorage.getItem('capisco-tabrows')) || 1);
+  const [menu, setMenu] = React.useState(false);
+  const setRowsP = n => {
+    setRows(n);
+    localStorage.setItem('capisco-tabrows', n);
+  };
+  const multi = rows > 1;
   return /*#__PURE__*/React.createElement("div", {
-    className: "editor-area"
-  }, /*#__PURE__*/React.createElement("div", {
     className: "tab-strip"
-  }, window.TABS.map(t => /*#__PURE__*/React.createElement(EditorTab, {
+  }, /*#__PURE__*/React.createElement("div", {
+    className: 'tab-scroll' + (multi ? ' multi' : ' single'),
+    style: multi ? {
+      maxHeight: `calc(${rows} * var(--tabbar-h))`
+    } : null
+  }, tabs.map(t => /*#__PURE__*/React.createElement(EditorTab, {
     key: t.name,
     icon: /*#__PURE__*/React.createElement(FileIcon, {
       ext: t.ext
@@ -3377,8 +3526,60 @@ function EditorArea() {
     pinned: t.pinned,
     dirty: t.dirty,
     active: active === t.name,
-    onSelect: () => setActive(t.name)
+    onSelect: () => onSelect(t.name)
   }))), /*#__PURE__*/React.createElement("div", {
+    className: "tab-overflow-wrap"
+  }, /*#__PURE__*/React.createElement("button", {
+    className: 'tab-overflow' + (menu ? ' active' : ''),
+    title: "Show all tabs",
+    onClick: () => setMenu(m => !m)
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "chevron-down",
+    size: 15
+  })), menu && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    className: "menu-scrim",
+    onClick: () => setMenu(false)
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "tab-menu"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "tab-menu-rows"
+  }, /*#__PURE__*/React.createElement("span", null, "Tab rows"), /*#__PURE__*/React.createElement("div", {
+    className: "trow-seg"
+  }, [1, 2, 3].map(n => /*#__PURE__*/React.createElement("button", {
+    key: n,
+    className: 'trow-opt' + (rows === n ? ' active' : ''),
+    onClick: () => setRowsP(n)
+  }, n)))), /*#__PURE__*/React.createElement("div", {
+    className: "tab-menu-list"
+  }, tabs.map(t => /*#__PURE__*/React.createElement("button", {
+    key: t.name,
+    className: 'tab-menu-item' + (active === t.name ? ' active' : ''),
+    onClick: () => {
+      onSelect(t.name);
+      setMenu(false);
+    }
+  }, /*#__PURE__*/React.createElement(FileIcon, {
+    ext: t.ext
+  }), /*#__PURE__*/React.createElement("span", {
+    className: "tmi-name"
+  }, t.name), t.pinned && /*#__PURE__*/React.createElement(Icon, {
+    name: "pin",
+    size: 11,
+    color: "var(--text-tertiary)"
+  }), t.dirty && /*#__PURE__*/React.createElement("span", {
+    className: "tmi-dirty"
+  }))))))));
+}
+function EditorArea() {
+  const [active, setActive] = React.useState('broker.ts');
+  const [livePop, setLivePop] = React.useState(false);
+  return /*#__PURE__*/React.createElement("div", {
+    className: "editor-area"
+  }, /*#__PURE__*/React.createElement(TabStrip, {
+    tabs: window.TABS,
+    active: active,
+    onSelect: setActive
+  }), /*#__PURE__*/React.createElement("div", {
     className: "code-pane"
   }, /*#__PURE__*/React.createElement(Line, {
     num: 1,
@@ -4000,6 +4201,21 @@ const TABS = [{
   ext: 'md',
   name: 'README.md',
   dirty: true
+}, {
+  ext: 'ts',
+  name: 'language-pack.ts'
+}, {
+  ext: 'ts',
+  name: 'task-provider.ts'
+}, {
+  ext: 'rs',
+  name: 'main.rs'
+}, {
+  ext: 'json',
+  name: 'package.json'
+}, {
+  ext: 'ts',
+  name: 'ListProjectsControllerTest.ts'
 }];
 
 // ---- Work Stash · Local Changes (grouped by project) + Shelf ----
@@ -4069,6 +4285,21 @@ const SESSIONS = [{
   status: 'waiting',
   title: 'Search: "where is port allocated?"',
   meta: 'waiting'
+}];
+
+// ---- Chat sessions (lightweight, no subagents / tools) ----
+const CHAT_SESSIONS = [{
+  id: 'c1',
+  model: 'Sonnet',
+  status: 'idle',
+  title: 'How does the broker decide?',
+  meta: '1.1k ↓'
+}, {
+  id: 'c2',
+  model: 'Sonnet',
+  status: 'idle',
+  title: 'Explain the session-tree',
+  meta: '0.8k ↓'
 }];
 
 // ---- Flyout content ----
@@ -4984,6 +5215,7 @@ Object.assign(window, {
   CHANGE_GROUPS,
   SHELF,
   SESSIONS,
+  CHAT_SESSIONS,
   ALERTS,
   INSPECTIONS,
   PRS,

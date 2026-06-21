@@ -335,7 +335,17 @@
       "save": "Save",
       "detected": "{{name}} detected",
       "cliNote": "Capisco shells out to your installed CLI. No token stored.",
-      "redetect": "Re-detect CLI"
+      "redetect": "Re-detect CLI",
+      "backends": "Backends",
+      "statusReady": "Ready",
+      "statusInstallable": "Install available",
+      "statusGuide": "Setup required",
+      "install": "Install",
+      "use": "Use",
+      "inUse": "In use",
+      "guide": "Setup guide",
+      "requires": "Requires: {{deps}}",
+      "installGated": "Install runs through the broker with your approval — never silent."
     },
     "command": {
       "newSession": "New agent session",

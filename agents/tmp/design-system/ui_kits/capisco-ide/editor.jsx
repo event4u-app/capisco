@@ -69,25 +69,61 @@ function Autocomplete() {
   );
 }
 
-function EditorArea() {
+function TabStrip({ tabs, active, onSelect }) {
   const { EditorTab } = window.CapiscoDesignSystem_026f1e;
+  const [rows, setRows] = React.useState(() => Number(localStorage.getItem('capisco-tabrows')) || 1);
+  const [menu, setMenu] = React.useState(false);
+  const setRowsP = (n) => { setRows(n); localStorage.setItem('capisco-tabrows', n); };
+  const multi = rows > 1;
+  return (
+    <div className="tab-strip">
+      <div className={'tab-scroll' + (multi ? ' multi' : ' single')}
+        style={multi ? { maxHeight: `calc(${rows} * var(--tabbar-h))` } : null}>
+        {tabs.map((t) => (
+          <EditorTab key={t.name} icon={<FileIcon ext={t.ext} />} label={t.name}
+            pinned={t.pinned} dirty={t.dirty} active={active === t.name} onSelect={() => onSelect(t.name)} />
+        ))}
+      </div>
+      <div className="tab-overflow-wrap">
+        <button className={'tab-overflow' + (menu ? ' active' : '')} title="Show all tabs" onClick={() => setMenu((m) => !m)}>
+          <Icon name="chevron-down" size={15} />
+        </button>
+        {menu && (
+          <>
+            <div className="menu-scrim" onClick={() => setMenu(false)} />
+            <div className="tab-menu">
+              <div className="tab-menu-rows">
+                <span>Tab rows</span>
+                <div className="trow-seg">
+                  {[1, 2, 3].map((n) => (
+                    <button key={n} className={'trow-opt' + (rows === n ? ' active' : '')} onClick={() => setRowsP(n)}>{n}</button>
+                  ))}
+                </div>
+              </div>
+              <div className="tab-menu-list">
+                {tabs.map((t) => (
+                  <button key={t.name} className={'tab-menu-item' + (active === t.name ? ' active' : '')} onClick={() => { onSelect(t.name); setMenu(false); }}>
+                    <FileIcon ext={t.ext} />
+                    <span className="tmi-name">{t.name}</span>
+                    {t.pinned && <Icon name="pin" size={11} color="var(--text-tertiary)" />}
+                    {t.dirty && <span className="tmi-dirty" />}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function EditorArea() {
   const [active, setActive] = React.useState('broker.ts');
   const [livePop, setLivePop] = React.useState(false);
   return (
     <div className="editor-area">
-      <div className="tab-strip">
-        {window.TABS.map((t) => (
-          <EditorTab
-            key={t.name}
-            icon={<FileIcon ext={t.ext} />}
-            label={t.name}
-            pinned={t.pinned}
-            dirty={t.dirty}
-            active={active === t.name}
-            onSelect={() => setActive(t.name)}
-          />
-        ))}
-      </div>
+      <TabStrip tabs={window.TABS} active={active} onSelect={setActive} />
 
       <div className="code-pane">
         <Line num={1} git="add"><Cm>{'// capability broker — grants scoped access to agent principals'}</Cm></Line>

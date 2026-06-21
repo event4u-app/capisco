@@ -108,6 +108,32 @@ test.describe("agents workspace — interactions", () => {
     await expect(page.getByTestId("agent-settings")).toHaveCount(0);
   });
 
+  test("backend picker lists backends; stub is the default, ACP install is broker-gated", async ({
+    page,
+  }) => {
+    await gotoAgents(page);
+    await page.getByTestId("session-gear").click();
+    const list = page.getByTestId("agent-settings-backends");
+    await expect(list).toBeVisible();
+
+    // Stub / Claude Code native / Claude Code via ACP / Codex all present.
+    await expect(page.getByTestId("agent-backend-stub")).toBeVisible();
+    await expect(page.getByTestId("agent-backend-claude-native")).toBeVisible();
+    await expect(page.getByTestId("agent-backend-claude-code-acp")).toBeVisible();
+    await expect(page.getByTestId("agent-backend-codex")).toBeVisible();
+
+    // Deterministic default: the stub is selected + "In use" (disabled).
+    await expect(page.getByTestId("agent-backend-stub")).toHaveAttribute("data-selected", "true");
+    await expect(page.getByTestId("agent-backend-stub-use")).toBeDisabled();
+
+    // Install is broker-gated — clicking surfaces the exact audited command, never silent.
+    await page.getByTestId("agent-backend-claude-code-acp-install").click();
+    await expect(page.getByTestId("agent-settings-install-gate")).toContainText(
+      "npm i -g @zed-industries/claude-code-acp",
+    );
+    await page.keyboard.press("Escape");
+  });
+
   test("Cmd+Enter sends from the composer (keyboard)", async ({ page }) => {
     await gotoAgents(page);
     const input = page.getByTestId("composer-input");

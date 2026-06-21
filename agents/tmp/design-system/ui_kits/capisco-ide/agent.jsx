@@ -22,12 +22,40 @@ function BudgetRing({ pct = 87, size = 16 }) {
 }
 
 /* Composer control bar — model · effort · budget, under the chat (Claude-Desktop style). */
-function ComposerBar({ model, setModel, effort, setEffort, statusText }) {
+function ComposerBar({ model, setModel, effort, setEffort, statusText, used, budget, setBudget }) {
   const [panel, setPanel] = React.useState(null);
   const toggle = (p) => setPanel((x) => (x === p ? null : p));
+  const fmtK = (n) => (n >= 1000 ? (n / 1000).toFixed(n >= 10000 ? 0 : 1) + 'k' : String(n));
+  const ratio = budget > 0 ? used / budget : 0;
+  const tone = ratio < 0.6 ? 'ok' : ratio < 0.85 ? 'warn' : 'crit';
+  const toneColor = tone === 'ok' ? 'var(--success)' : tone === 'warn' ? 'var(--warning)' : 'var(--error)';
+  const presets = [100000, 150000, 200000, 300000];
   return (
     <div className="composer-bar">
-      <div className="cb-stats">{statusText}</div>
+      <div className="cb-stats">
+        <span className="cb-ctl-wrap">
+          <button className={'cb-meter ' + tone + (panel === 'ctx' ? ' active' : '')} title="Context budget — green → orange → red" onClick={() => toggle('ctx')}>
+            <Icon name={tone === 'crit' ? 'triangle-alert' : 'gauge'} size={13} color={toneColor} />
+            <span className="cb-meter-val" style={{ color: toneColor }}>{fmtK(used)}/{fmtK(budget)}</span>
+            <span className="cb-meter-bar"><span style={{ width: Math.min(100, ratio * 100) + '%', background: toneColor }} /></span>
+          </button>
+          {panel === 'ctx' && (
+            <>
+              <div className="menu-scrim" onClick={() => setPanel(null)} />
+              <div className="ctx-pop cb-pop">
+                <div className="bp-head"><span className="caps">Context budget</span><span className="ctx-pct" style={{ color: toneColor }}>{Math.round(ratio * 100)}%</span></div>
+                <div className="ctx-row">Warn at <b>{fmtK(budget)}</b> tokens · {fmtK(used)} used</div>
+                <input type="range" className="ctx-range" min="50000" max="400000" step="10000" value={budget} onChange={(e) => setBudget(+e.target.value)} />
+                <div className="ctx-presets">
+                  {presets.map((v) => <button key={v} className={'ctx-preset' + (budget === v ? ' active' : '')} onClick={() => setBudget(v)}>{fmtK(v)}</button>)}
+                </div>
+                <div className="ctx-note">Turns green, then orange, then red as the session fills. At red we suggest a fresh session to save tokens.</div>
+              </div>
+            </>
+          )}
+        </span>
+        <span className="cb-statline">{statusText}</span>
+      </div>
       <div className="cb-controls">
         <span className="cb-ctl-wrap">
           <button className={'cb-ctl' + (panel === 'model' ? ' active' : '')} onClick={() => toggle('model')}>{model}<Icon name="chevron-down" size={11} /></button>
@@ -210,22 +238,29 @@ function Transcript({ session, diffOpen, onToggleDiff, onOpenFile }) {
   );
 }
 
-function AgentWorkspace({ onOpenFile }) {
+function AgentWorkspace({ onOpenFile, kind = 'agents' }) {
+  const isChat = kind === 'chat';
+  const seed = isChat ? window.CHAT_SESSIONS : window.SESSIONS;
   const { Input, IconButton } = window.CapiscoDesignSystem_026f1e;
-  const [active, setActive] = React.useState('s1');
+  const [active, setActive] = React.useState(seed[0].id);
   const [diffOpen, setDiffOpen] = React.useState(false);
   const [settingsOpen, setSettingsOpen] = React.useState(false);
   const [backend, setBackend] = React.useState('api');
   const [token, setToken] = React.useState('');
-  const [model, setModel] = React.useState('Opus 4.8');
+  const [model, setModel] = React.useState(isChat ? 'Sonnet 4.8' : 'Opus 4.8');
   const [effort, setEffort] = React.useState(3);
+  const [budget, setBudget] = React.useState(200000);
+  const [used] = React.useState(isChat ? 38000 : 172000);
+  const [ctxDismiss, setCtxDismiss] = React.useState(false);
+  const ratio = used / budget;
+  const ctxCritical = ratio >= 0.85 && !ctxDismiss;
   const [extra, setExtra] = React.useState([]);
   const [closed, setClosed] = React.useState([]);
-  const sessions = [...window.SESSIONS, ...extra].filter((s) => !closed.includes(s.id));
+  const sessions = [...seed, ...extra].filter((s) => !closed.includes(s.id));
   const cur = sessions.find((s) => s.id === active) || sessions[0];
   const createSession = (agent) => {
     const id = 'n' + (extra.length + 1);
-    setExtra((e) => [...e, { id, model: agent.split(' ')[0], title: 'New session', meta: 'idle', status: 'idle' }]);
+    setExtra((e) => [...e, { id, model: agent.split(' ')[0], title: isChat ? 'New chat' : 'New session', meta: 'idle', status: 'idle' }]);
     setActive(id);
   };
   const closeSession = (id) => {
@@ -244,12 +279,12 @@ function AgentWorkspace({ onOpenFile }) {
           ))}
         </div>
         <NewSessionButton onCreate={createSession} />
-        <button className={'session-gear' + (settingsOpen ? ' active' : '')} title="Agent backend settings" onClick={() => setSettingsOpen((v) => !v)}>
+        <button className={'session-gear' + (settingsOpen ? ' active' : '')} title={isChat ? 'Chat settings' : 'Agent backend settings'} onClick={() => setSettingsOpen((v) => !v)}>
           <Icon name="settings" size={15} />
         </button>
       </div>
 
-      {cur.subs && (
+      {!isChat && cur.subs && (
         <div className="subagent-row">
           <span className="branch-stub">└</span>
           {cur.subs.map((sub) => {
@@ -266,12 +301,24 @@ function AgentWorkspace({ onOpenFile }) {
 
       <div className="chat">
         <div className="chat-inner">
-          <Transcript session={cur} diffOpen={diffOpen} onToggleDiff={() => setDiffOpen(!diffOpen)} onOpenFile={onOpenFile} />
+          {isChat
+            ? <ChatTranscript session={cur} />
+            : <Transcript session={cur} diffOpen={diffOpen} onToggleDiff={() => setDiffOpen(!diffOpen)} onOpenFile={onOpenFile} />}
         </div>
       </div>
 
       <div className="composer">
         <div className="composer-inner">
+          {ctxCritical && (
+            <div className="ctx-banner">
+              <Icon name="triangle-alert" size={16} color="var(--error)" />
+              <div className="ctx-banner-text"><b>Session is {Math.round(ratio * 100)}% of its token budget.</b> Long sessions cost more and dull responses — start a fresh one to keep it lean.</div>
+              <div className="ctx-banner-actions">
+                <button className="ctx-btn ctx-btn-primary" onClick={() => { createSession(model); setCtxDismiss(true); }}>New session</button>
+                <button className="ctx-btn" onClick={() => setCtxDismiss(true)}>Keep going</button>
+              </div>
+            </div>
+          )}
           <Input
             mono
             placeholder="Message Capisco…"
@@ -280,7 +327,10 @@ function AgentWorkspace({ onOpenFile }) {
           <ComposerBar
             model={model} setModel={setModel}
             effort={effort} setEffort={setEffort}
-            statusText={(backend === 'api' ? 'API' : 'CLI · claude 1.4.2') + ' · 6.5k tokens · $0.04 · running 2m49s'}
+            used={used} budget={budget} setBudget={setBudget}
+            statusText={isChat
+              ? (backend === 'api' ? 'API' : 'CLI · claude 1.4.2') + ' · quick chat · no tools'
+              : (backend === 'api' ? 'API' : 'CLI · claude 1.4.2') + ' · $0.04 · running 2m49s'}
           />
         </div>
       </div>
@@ -353,4 +403,37 @@ function FlyoutPanel({ kind }) {
   );
 }
 
-Object.assign(window, { AgentWorkspace, AgentSettings, FlyoutPanel });
+/* Chat workspace — a single lightweight conversation with Capisco.
+   No session-tree, no subagents, no tool actions: a plain assistant chat. */
+function ChatTranscript({ session }) {
+  if (session.id === 'c2') {
+    return (
+      <>
+        <Msg role="user">Explain the session-tree in one paragraph.</Msg>
+        <Msg role="agent">A session is one model thread. Subagents are child sessions that share
+          the parent's worktree-workspace, so they see the same files and grants but run their own
+          context. The tree lets you fan out work and still review it in one place.</Msg>
+      </>
+    );
+  }
+  return (
+    <>
+      <Msg role="user">How does the capability broker decide when to prompt me?</Msg>
+      <Msg role="agent">
+        It checks the requested <code>(principal, capability, scope)</code> against existing grants.
+        A cached <code>session</code> grant passes silently; anything broader — or a
+        {' '}<code>production</code> datasource, or a secret — always escalates to a prompt.
+      </Msg>
+      <Msg role="user">Can I pre-approve read-only shell for this session?</Msg>
+      <Msg role="agent">Yes — grant <code>Bash(read-only)</code> at <code>session</code> scope from
+        the next prompt. Writes and network still escalate per-command.</Msg>
+    </>
+  );
+}
+
+/* Chat workspace — same component as Agents, different system (no tools/subagents). */
+function ChatWorkspace() {
+  return <AgentWorkspace kind="chat" />;
+}
+
+Object.assign(window, { AgentWorkspace, ChatWorkspace, ChatTranscript, AgentSettings, FlyoutPanel });

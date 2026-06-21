@@ -69,6 +69,11 @@ const TABS = [
   { ext: 'ts', name: 'broker.ts' },
   { ext: 'ts', name: 'session-tree.ts' },
   { ext: 'md', name: 'README.md', dirty: true },
+  { ext: 'ts', name: 'language-pack.ts' },
+  { ext: 'ts', name: 'task-provider.ts' },
+  { ext: 'rs', name: 'main.rs' },
+  { ext: 'json', name: 'package.json' },
+  { ext: 'ts', name: 'ListProjectsControllerTest.ts' },
 ];
 
 // ---- Work Stash · Local Changes (grouped by project) + Shelf ----
@@ -101,6 +106,12 @@ const SESSIONS = [
   },
   { id: 's2', model: 'GPT-5', status: 'idle', title: 'Refactor broker grant model', meta: 'idle · 18k ↓' },
   { id: 's3', model: 'Local', status: 'waiting', title: 'Search: "where is port allocated?"', meta: 'waiting' },
+];
+
+// ---- Chat sessions (lightweight, no subagents / tools) ----
+const CHAT_SESSIONS = [
+  { id: 'c1', model: 'Sonnet', status: 'idle', title: 'How does the broker decide?', meta: '1.1k ↓' },
+  { id: 'c2', model: 'Sonnet', status: 'idle', title: 'Explain the session-tree', meta: '0.8k ↓' },
 ];
 
 // ---- Flyout content ----
@@ -362,4 +373,4 @@ const AWARENESS = [
   { who: 'lea', branch: 'refactor/session-store', pr: '#1255', act: 'left 2 comments', when: '3h ago', files: ['session-store.ts'], status: 'idle' },
 ];
 
-Object.assign(window, { Icon, FileIcon, PROJECTS, SCRATCH, TABS, CHANGE_GROUPS, SHELF, SESSIONS, ALERTS, INSPECTIONS, PRS, GIT_STATS, SEARCH, STRUCTURE, DATASOURCES, GIT_WEEKS, GIT_SERIES, GIT_DORA, PR_CATEGORIES, WORK_HEATMAP, CONTAINER_GROUPS, SPRINT, TICKETS, TICKET_COLUMNS, TICKET_EPICS, BURNDOWN, CHANGES_HAS_PR, TEAM_WIP, MY_WIP_SERIES, REVIEWS_GIVEN, THROUGHPUT, TASK_TYPE_SPLIT, TASKS, DIFF, GIT_PRS, LABEL_COLORS, COMPARE_BRANCHES, CHANGESET, AWARENESS });
+Object.assign(window, { Icon, FileIcon, PROJECTS, SCRATCH, TABS, CHANGE_GROUPS, SHELF, SESSIONS, CHAT_SESSIONS, ALERTS, INSPECTIONS, PRS, GIT_STATS, SEARCH, STRUCTURE, DATASOURCES, GIT_WEEKS, GIT_SERIES, GIT_DORA, PR_CATEGORIES, WORK_HEATMAP, CONTAINER_GROUPS, SPRINT, TICKETS, TICKET_COLUMNS, TICKET_EPICS, BURNDOWN, CHANGES_HAS_PR, TEAM_WIP, MY_WIP_SERIES, REVIEWS_GIVEN, THROUGHPUT, TASK_TYPE_SPLIT, TASKS, DIFF, GIT_PRS, LABEL_COLORS, COMPARE_BRANCHES, CHANGESET, AWARENESS });

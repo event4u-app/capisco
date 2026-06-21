@@ -555,6 +555,72 @@ Diese Liste ist bewusst als "erben, nicht bauen" markiert: Der Aufwand liegt im
 - "Einfache Übersetzung" als Inhalt = nur ein Agent-Task.
 - **Update-System**: Tauri-Updater (simpel, kein Risiko).
 
+### 5.10 Token-Ökonomie
+
+Ziel: Tokens sparen, ohne Grounding/Präzision (die Kernthese) zu opfern. Drei Teile,
+die *unterschiedliche* Hälften des Token-Problems treffen — Telemetrie/Handoff, die
+Beobachtungs-Seite (was der LLM liest) und die Output-Seite (was der Agent sagt).
+
+#### 5.10.1 Telemetrie-Ampel + komprimierter Session-Handoff
+
+Sitzt auf der vorhandenen Session-Tree-Telemetrie (`Telemetry {tokensIn,tokensOut,
+runtimeMs}`, `aggregateTelemetry`). Ein **konfigurierbarer Schwellwert** färbt ein
+Indikator-Icon im Chat **grün → orange → rot**. Bei **rot** fragt Capisco (wie Claude
+Code), ob eine **neue Session** gestartet werden soll.
+
+- Der „neue Session"-Pfad nutzt den Session-Store (`copy`/`retryAsBranch`/`resume`).
+- **Besser als ein leerer Neustart:** Option, die neue Session **mit einer komprimierten
+  Zusammenfassung** der alten zu starten (über die Memory-Kompression aus §5.10.3). Der
+  Handoff-Schritt ist der natürliche Treffpunkt von Telemetrie und Kompression.
+- Schwellwerte (orange/rot) sind pro Session/Projekt einstellbar.
+
+#### 5.10.2 RTK — Observation-Compressor (installieren/anbieten)
+
+RTK (Rust-Binary, Apache-2.0) komprimiert **Tool-Ausgaben, bevor sie in den Kontext
+gelangen** (60–90 % auf `ls`/`find`/`docker ps`/beliebigem CLI). **Input-Seite.**
+
+- **Wird angeboten/installiert, nicht gebündelt** (Shell-out aus dem Sidecar). Fehlt es,
+  degradiert Capisco sauber (kein Hard-Fail).
+- **Nur auf dem LLM-zugewandten Beobachtungs-Pfad** und **nur für den unstrukturierten
+  Long-Tail** — also Kommandos *ohne* nativen strukturierten Parser. git (B1) und
+  Quality-Tools (B5) parsen Capisco bereits typisiert/strukturiert; diese **autoritative**
+  Ausgabe bleibt unverändert die Quelle für UI und Broker. RTK ersetzt sie nie.
+- **Nie auf dem Audit-/Diagnostic-/Broker-Pfad.** Eine externe Kompression darf die
+  Fakten, auf die der Broker sich verlässt, nicht anfassen (Trust-Surface-Grenze).
+
+#### 5.10.3 Caveman — nativer Terse-Modus (Default an, opt-out)
+
+Caveman (MIT) ist mechanisch eine **Verhaltens-/Prompt-Schicht**, die den Agenten terse
+antworten lässt (~65–75 % weniger **Output**-Tokens, Reasoning unberührt). Da Capisco den
+ACP-Client selbst besitzt, wird der **Regelsatz vendored/adaptiert** (mit Attribution) und
+nativ in den System-Kontext der Session injiziert — **kein** installierter Skill.
+
+- **Default an, opt-out pro Session.** Level-Switch (lite/full/ultra) in der
+  Composer-Control-Bar, direkt neben „reasoning effort".
+- **Opt-out muss trivial erreichbar sein** (sichtbarer Toggle), weil der Chat
+  menschen-zugewandt ist. **Einmaliger Hinweis** beim ersten terse Output, damit er nicht
+  als „kaputt/unhöflich" missverstanden wird.
+- **Harte Grenze — Caveman formt *Erklärung*, nie *Fakten oder Safety-Flächen*.**
+  Unabhängig vom Toggle bleiben **immer voll ausführlich/präzise**: Quality-Diagnostics &
+  Tool-Fakten (die KI-Erdung — sie terser zu machen unterliefe die Grounding-These),
+  Broker-Permission-Prompts (Sicherheits-Sprache), Secret-Referenzen, Audit-Log,
+  Commit-Messages. Diese Flächen umgehen den Terse-Modus strukturell.
+- **Memory-Kompression** (caveman-compress-Äquivalent): komprimiert getragenen Kontext /
+  Handoff-Zusammenfassungen → speist den „neue Session mit Zusammenfassung"-Pfad (§5.10.1).
+
+#### 5.10.4 Querschnitt
+
+- **Determinismus:** RTK ist ein Parser → in den deterministischen Harness integrierbar.
+  Caveman ist LLM-*Verhalten* → getestet wird die **Injektion** des Regelsatzes, nicht der
+  terse Output selbst.
+- **Benchmark-Skepsis:** Die 65–90 %-Zahlen beider sind selbstberichtet → als Richtung
+  behandeln, nicht als Zusage.
+- **Lizenz:** RTK Apache-2.0 (Dependency/Install). Caveman MIT (Regelsatz vendored, mit
+  Attribution).
+- **These-Konsistenz:** Default-Terse wählt Kosten/Tempo — legitim für ein internes
+  Power-Tool, *solange* die harte Grenze (Fakten/Safety bleiben präzise) und der sichtbare
+  Opt-out gelten. Sonst kollidiert „Capisco = ich verstehe" mit genuscheltem Output.
+
 ---
 
 ## 6. Technischer Stack

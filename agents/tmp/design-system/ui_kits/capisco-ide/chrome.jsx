@@ -136,6 +136,7 @@ function RightRail({ mode, onMode, rightTop, rightBottom, topActive, botActive, 
     <div className="activitybar right">
       <div className="ab-top-fixed">
         <button className={'ab-item' + (mode === 'agents' ? ' active' : '')} title="Agents" onClick={() => onMode('agents')}><Icon name="bot" size={18} /><span className="ab-label">Agents</span></button>
+        <button className={'ab-item' + (mode === 'chat' ? ' active' : '')} title="Chat" onClick={() => onMode('chat')}><Icon name="message-square" size={18} /><span className="ab-label">Chat</span></button>
         <button className={'ab-item' + (mode === 'editor' ? ' active' : '')} title="Editor" onClick={() => onMode('editor')}><Icon name="square-code" size={18} /><span className="ab-label">Editor</span></button>
         <button className={'ab-item' + (mode === 'git' ? ' active' : '')} title="Git" onClick={() => onMode('git')}><Icon name="git-graph" size={18} /><span className="ab-label">Git</span></button>
         <button className={'ab-item' + (mode === 'tasks' ? ' active' : '')} title="Tasks" onClick={() => onMode('tasks')}><Icon name="kanban" size={18} /><span className="ab-label">Tasks</span></button>
