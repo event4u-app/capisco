@@ -81,6 +81,37 @@ export interface AcpSessionUpdate {
   event: SessionEvent;
 }
 
+/**
+ * Params for the client→agent `initialize` handshake (ACP spec, B8 P2b). The
+ * real `@zed-industries/claude-code-acp` bridge — like any standard ACP agent —
+ * REQUIRES an `initialize` exchange before `session/new`: the client announces
+ * the protocol version it speaks and its own capabilities, and the agent replies
+ * with the version it agreed on plus the agent capabilities it offers. The
+ * deterministic stub does not require this (it is our own protocol half); the
+ * handshake is opt-in via {@link AcpSessionOptions.handshake} so the stub path
+ * stays byte-identical while the bridge path negotiates first.
+ */
+export interface AcpInitializeParams {
+  /** The ACP protocol version the client (IDE) speaks. */
+  protocolVersion: number;
+  /** Client capabilities the agent may rely on (fs access is mediated by us). */
+  clientCapabilities?: {
+    /** The client mediates file-system reads/writes through the broker seam. */
+    fs?: { readTextFile?: boolean; writeTextFile?: boolean };
+  };
+}
+
+/** Result of the `initialize` handshake — the agent's agreed version + caps. */
+export interface AcpInitializeResult {
+  /** The protocol version the agent agreed to speak. */
+  protocolVersion: number;
+  /** Agent capabilities (e.g. whether it supports loading prior sessions). */
+  agentCapabilities?: {
+    loadSession?: boolean;
+    promptCapabilities?: { image?: boolean; embeddedContext?: boolean };
+  };
+}
+
 /** Params for the client→agent `session/new` request. */
 export interface AcpNewSessionParams {
   /** The working directory (worktree) the run acts in (§2.1). */
@@ -96,8 +127,16 @@ export interface AcpPromptParams {
   prompt: string;
 }
 
+/**
+ * The ACP protocol version this client speaks. The bridge replies with the
+ * version it agreed on; a mismatch the agent can't satisfy is a handshake error.
+ */
+export const ACP_PROTOCOL_VERSION = 1;
+
 /** Reserved ACP method names (the wire vocabulary). */
 export const ACP_METHODS = {
+  /** client → agent (B8 P2b — required by the real bridge before session/new). */
+  initialize: "initialize",
   /** client → agent. */
   newSession: "session/new",
   /** client → agent. */

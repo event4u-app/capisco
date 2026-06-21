@@ -18,6 +18,7 @@ function renderWorkspace() {
 }
 
 beforeEach(() => {
+  localStorage.removeItem("capisco-agents");
   useAgents.setState({
     extra: [],
     closed: [],
@@ -27,6 +28,7 @@ beforeEach(() => {
     effort: 3,
     backendKind: "api",
     settingsOpen: false,
+    selectedBackendId: "stub",
   });
 });
 
@@ -103,6 +105,47 @@ describe("AgentWorkspace", () => {
     expect(screen.getByTestId("agent-settings-api-body")).toBeInTheDocument();
     await user.click(screen.getByTestId("agent-settings-cli"));
     expect(screen.getByTestId("agent-settings-cli-body")).toHaveTextContent("/usr/local/bin/claude");
+  });
+
+  it("lists the agent backends with status + actions; the stub is the default in-use backend", async () => {
+    const user = userEvent.setup();
+    renderWorkspace();
+    await user.click(screen.getByTestId("session-gear"));
+    const list = screen.getByTestId("agent-settings-backends");
+
+    // All four backends are present (Stub / native / ACP bridge / Codex).
+    expect(within(list).getByTestId("agent-backend-stub")).toBeInTheDocument();
+    expect(within(list).getByTestId("agent-backend-claude-native")).toBeInTheDocument();
+    expect(within(list).getByTestId("agent-backend-claude-code-acp")).toBeInTheDocument();
+    expect(within(list).getByTestId("agent-backend-codex")).toBeInTheDocument();
+
+    // The deterministic stub is ready + the selected default ("In use", disabled).
+    expect(screen.getByTestId("agent-backend-stub")).toHaveAttribute("data-selected", "true");
+    expect(screen.getByTestId("agent-backend-stub-use")).toBeDisabled();
+
+    // The ACP bridge is installable — Install is broker-gated, never silent.
+    const install = screen.getByTestId("agent-backend-claude-code-acp-install");
+    expect(install).toBeInTheDocument();
+    await user.click(install);
+    const gate = screen.getByTestId("agent-settings-install-gate");
+    expect(gate).toHaveTextContent("npm i -g @zed-industries/claude-code-acp");
+    expect(gate).toHaveTextContent("never silent");
+
+    // The native backend needs a guided setup (link, not an auto-install).
+    expect(screen.getByTestId("agent-backend-claude-native-guide")).toHaveAttribute("href");
+  });
+
+  it("selecting a ready backend persists the choice", async () => {
+    const user = userEvent.setup();
+    // The Stub backend is `ready` and selectable; selecting it is a no-op when
+    // already in use, so assert the store wiring directly via setSelectedBackend.
+    renderWorkspace();
+    await user.click(screen.getByTestId("session-gear"));
+    expect(useAgents.getState().selectedBackendId).toBe("stub");
+    useAgents.getState().setSelectedBackend("claude-code-acp");
+    expect(useAgents.getState().selectedBackendId).toBe("claude-code-acp");
+    // Persisted under the agents store key.
+    expect(localStorage.getItem("capisco-agents")).toContain("claude-code-acp");
   });
 
   it("renders empty / loading / error transcript states", async () => {

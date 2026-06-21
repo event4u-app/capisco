@@ -1,4 +1,5 @@
 import type {
+  AgentBackend,
   AgentOption,
   AgentProvider,
   BackendConfig,
@@ -309,6 +310,52 @@ const BACKEND: BackendConfig = { kind: "api", provider: "Anthropic · Claude" };
 const DETECTED_CLI: BackendConfig = { kind: "cli", provider: "claude 1.4.2", detail: "/usr/local/bin/claude" };
 
 /**
+ * Deterministic agent-backend catalog (B8 P3) — the structured `AgentBackend[]`
+ * the AgentSettings backend picker renders in the browser/stub default. On the
+ * desktop sidecar the real `provision.detect` replaces this; here it is a fixed
+ * snapshot so the mock/visual harness stays byte-identical (no real host probe,
+ * no `which` call). The Stub backend is the always-ready default so CI and the
+ * Playwright goldens never need a real agent. The native + bridge backends show
+ * the install/guide affordances without performing any install.
+ */
+const BACKEND_CATALOG: AgentBackend[] = [
+  {
+    id: "stub",
+    label: "Stub Agent",
+    driver: "prerequisite",
+    status: "ready",
+    detail: "deterministic · no key",
+  },
+  {
+    id: "claude-native",
+    label: "Claude Code (native)",
+    driver: "native-stream-json",
+    status: "guide",
+    guideUrl: "https://docs.claude.com/en/docs/claude-code/overview",
+    requires: ["claude"],
+  },
+  {
+    id: "claude-code-acp",
+    label: "Claude Code (via ACP)",
+    driver: "acp-bridge",
+    status: "installable",
+    installCommand: ["npm", "i", "-g", "@zed-industries/claude-code-acp"],
+    requires: ["npm", "claude"],
+  },
+  {
+    id: "codex",
+    label: "Codex (via ACP)",
+    driver: "acp-bridge",
+    status: "guide",
+    guideUrl: "https://docs.claude.com/en/docs/claude-code/overview",
+    requires: ["codex"],
+  },
+];
+
+/** The default selected backend id — the deterministic stub (CI/goldens-safe). */
+const DEFAULT_BACKEND_ID = "stub";
+
+/**
  * Deterministic event sequence for a session's live stream (§ Phase 0). Tokens
  * stream the last agent message in two deltas, then a telemetry update, then
  * `done`. Pure data — the subscribe loop replays it synchronously so tests are
@@ -394,5 +441,7 @@ export const agentSnapshot = {
   planUsage: PLAN_USAGE,
   backend: BACKEND,
   detectedCli: DETECTED_CLI,
+  backends: BACKEND_CATALOG,
+  defaultBackendId: DEFAULT_BACKEND_ID,
   blocks: (id: string): TranscriptBlock[] => BLOCKS[id] ?? [],
 };

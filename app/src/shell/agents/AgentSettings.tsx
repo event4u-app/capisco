@@ -1,11 +1,20 @@
 import * as React from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronDown, CircleCheck, Lock, X } from "lucide-react";
+import {
+  ChevronDown,
+  CircleCheck,
+  Download,
+  ExternalLink,
+  Lock,
+  X,
+} from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { agentSnapshot } from "@/mocks";
+import type { AgentBackend } from "@/contracts";
+import { useAgents } from "./store";
 
 /**
  * Agent backend settings — API client (provider + token, "stored in your OS
@@ -28,6 +37,13 @@ export function AgentSettings({
   const [token, setToken] = React.useState("");
   const ref = React.useRef<HTMLDivElement>(null);
   const cli = agentSnapshot.detectedCli;
+  const backends = agentSnapshot.backends;
+  const selectedBackendId = useAgents((s) => s.selectedBackendId);
+  const setSelectedBackend = useAgents((s) => s.setSelectedBackend);
+  // Records the last install attempt's audited target (broker-gated, never
+  // silent). The real install runs through `provision.install` on the sidecar;
+  // here it surfaces the exact command the broker would authorize.
+  const [installAttempt, setInstallAttempt] = React.useState<string | null>(null);
 
   // Focus the first control on open; trap Tab within the panel; Esc closes.
   React.useEffect(() => {
@@ -171,6 +187,126 @@ export function AgentSettings({
           </Button>
         </div>
       )}
+
+      {/* Backend catalog (B8 P3) — Stub / Claude Code native / Claude Code via
+          ACP / Codex, each with status + Use/Install/Guide. The stub stays the
+          default; selecting a backend persists. Install is broker-gated. */}
+      <div className="mt-2.5 border-t border-border pt-2.5" data-testid="agent-settings-backends">
+        <span className="mb-1.5 block text-[10.5px] font-semibold uppercase tracking-wide text-muted-foreground">
+          {t("agents.settings.backends")}
+        </span>
+        <ul className="flex flex-col gap-1">
+          {backends.map((b) => (
+            <BackendRow
+              key={b.id}
+              backend={b}
+              selected={b.id === selectedBackendId}
+              onUse={() => setSelectedBackend(b.id)}
+              onInstall={() =>
+                setInstallAttempt((b.installCommand ?? []).join(" "))
+              }
+            />
+          ))}
+        </ul>
+        {installAttempt !== null && (
+          <div
+            className="mt-1.5 flex items-start gap-1.5 text-micro text-muted-foreground"
+            data-testid="agent-settings-install-gate"
+          >
+            <Lock className="mt-0.5 size-3 shrink-0 text-muted-foreground" strokeWidth={1.6} />
+            <span>
+              {t("agents.settings.installGated")}
+              <code className="ml-1 font-mono text-foreground">{installAttempt}</code>
+            </span>
+          </div>
+        )}
+      </div>
     </div>
+  );
+}
+
+/** Status → translation-key + tone for the backend badge. */
+const STATUS_META: Record<
+  AgentBackend["status"],
+  { key: string; tone: string }
+> = {
+  ready: { key: "agents.settings.statusReady", tone: "text-success" },
+  installable: { key: "agents.settings.statusInstallable", tone: "text-primary" },
+  guide: { key: "agents.settings.statusGuide", tone: "text-muted-foreground" },
+};
+
+/**
+ * One backend row: label + status badge + the right action. `ready` backends
+ * are selectable (Use / In use); `installable` backends offer a broker-gated
+ * Install; `guide` backends link to the setup doc. No action mutates the host —
+ * Install only surfaces the audited command the broker would authorize.
+ */
+function BackendRow({
+  backend,
+  selected,
+  onUse,
+  onInstall,
+}: {
+  backend: AgentBackend;
+  selected: boolean;
+  onUse: () => void;
+  onInstall: () => void;
+}) {
+  const { t } = useTranslation();
+  const meta = STATUS_META[backend.status];
+  return (
+    <li
+      data-testid={`agent-backend-${backend.id}`}
+      data-selected={selected ? "true" : undefined}
+      className={cn(
+        "flex items-center justify-between gap-2 rounded-sm border px-2 py-1.5",
+        selected ? "border-primary/60 bg-primary/10" : "border-border bg-muted",
+      )}
+    >
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-1.5">
+          {selected && (
+            <CircleCheck className="size-3 shrink-0 text-primary" strokeWidth={1.8} />
+          )}
+          <span className="truncate text-ui text-foreground">{backend.label}</span>
+        </div>
+        <span className={cn("text-micro", meta.tone)} data-testid={`agent-backend-${backend.id}-status`}>
+          {t(meta.key)}
+        </span>
+      </div>
+
+      {backend.status === "ready" ? (
+        <Button
+          variant={selected ? "ghost" : "outline"}
+          size="sm"
+          disabled={selected}
+          data-testid={`agent-backend-${backend.id}-use`}
+          onClick={onUse}
+        >
+          {selected ? t("agents.settings.inUse") : t("agents.settings.use")}
+        </Button>
+      ) : backend.status === "installable" ? (
+        <Button
+          variant="outline"
+          size="sm"
+          data-testid={`agent-backend-${backend.id}-install`}
+          onClick={onInstall}
+        >
+          <Download className="mr-1 size-3" strokeWidth={1.8} />
+          {t("agents.settings.install")}
+        </Button>
+      ) : (
+        <a
+          href={backend.guideUrl}
+          target="_blank"
+          rel="noreferrer"
+          data-testid={`agent-backend-${backend.id}-guide`}
+          className="inline-flex items-center gap-1 text-micro text-primary hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+        >
+          {t("agents.settings.guide")}
+          <ExternalLink className="size-3" strokeWidth={1.8} />
+        </a>
+      )}
+    </li>
   );
 }
