@@ -1,0 +1,41 @@
+/* ============================================================
+   Capisco — Syntax highlighting tokens
+   Muted, never neon. Reads as calm color over the #1E1F22 editor.
+   ============================================================ */
+
+:root {
+  --syn-keyword: #c586d9; /* soft violet  — class, return, const, async */
+  --syn-control: #6e9fd6; /* soft blue    — if/for/while flow words */
+  --syn-string: #7aa66a; /* muted green  — strings, template literals */
+  --syn-number: #c9925e; /* soft orange  — numeric + boolean literals */
+  --syn-comment: #6b6e76; /* gray italic  — comments */
+  --syn-function: #56a8c7; /* desaturated cyan — fn / method names */
+  --syn-type: #4ec9a8; /* teal-green   — types, interfaces */
+  --syn-variable: #dfe1e5; /* primary text — identifiers */
+  --syn-property: #b9bcc2; /* slightly dim — object members */
+  --syn-operator: #9da0a6; /* punctuation, operators */
+
+  /* Rainbow brackets — staggered, damped: teal → violet → orange → gray */
+  --bracket-1: #3fb6a8;
+  --bracket-2: #c586d9;
+  --bracket-3: #c9925e;
+  --bracket-4: #9da0a6;
+}
+
+[data-theme="light"] {
+  --syn-keyword: #9333a8;
+  --syn-control: #2e6cc4;
+  --syn-string: #4e8c3f;
+  --syn-number: #b5832f;
+  --syn-comment: #9a9da4;
+  --syn-function: #2e7d9e;
+  --syn-type: #1f8a6e;
+  --syn-variable: #1a1b1e;
+  --syn-property: #44474d;
+  --syn-operator: #6e7178;
+
+  --bracket-1: #2e9488;
+  --bracket-2: #9333a8;
+  --bracket-3: #b5832f;
+  --bracket-4: #6e7178;
+}

@@ -1,0 +1,102 @@
+/* ============================================================
+   Capisco — Color tokens (Dark Theme is canonical)
+   A JetBrains New UI / PhpStorm-Dark derived palette. Surfaces
+   are separated by minute brightness steps, never heavy borders.
+   Teal accent is used sparingly — active/important states only.
+   ============================================================ */
+
+:root {
+  /* --- Base surface ramp (dark) --- */
+  --bg-editor: #1e1f22; /* editor + active-tab content */
+  --bg-tool: #2b2d30; /* tool windows, activity bars, title/status bar */
+  --bg-raised: #1c1d20; /* inputs, terminal — the "sunken/raised" field tone */
+  --bg-hover: #34373b; /* row / icon hover wash */
+  --bg-selected: #2e436e; /* editor text selection (muted blue) */
+
+  /* --- Lines --- */
+  --border: #393b40; /* 1px subtle separators */
+  --border-strong: #4b4e55; /* focused field outline */
+  --indent-guide: #2f3136; /* editor indent rails */
+  --indent-guide-active: #4a4d54;
+
+  /* --- Text ramp --- */
+  --text-primary: #dfe1e5; /* code, labels */
+  --text-secondary: #868781; /* paths, hints, inactive tabs */
+  --text-tertiary: #5a5d63; /* disabled, very recessed */
+  --text-on-accent: #0e1413; /* text atop a solid teal fill */
+
+  /* --- Accent (teal) --- */
+  --accent: #3fb6a8; /* active states, links, focus, progress */
+  --accent-hover: #4fc7b8;
+  --accent-muted: #2c6e68; /* accent tints / backgrounds */
+  --accent-tint: rgba(63, 182, 168, 0.12); /* active-row wash */
+  --accent-tint-strong: rgba(63, 182, 168, 0.2);
+
+  /* --- Semantic / diff --- */
+  --success: #4fa85a; /* diff added, "done" */
+  --success-tint: rgba(79, 168, 90, 0.14);
+  --error: #d16e6e; /* diff removed, errors */
+  --error-tint: rgba(209, 110, 110, 0.14);
+  --warning: #d8a65c; /* hints, "waiting" */
+  --warning-tint: rgba(216, 166, 92, 0.14);
+
+  /* --- Git status marker colors --- */
+  --git-modified: #d8a65c;
+  --git-added: #4fa85a;
+  --git-deleted: #d16e6e;
+  --git-untracked: #3fb6a8;
+
+  /* ===== Semantic surface aliases (theme-swappable) ===== */
+  --surface-app: var(--bg-tool);
+  --surface-editor: var(--bg-editor);
+  --surface-panel: var(--bg-tool);
+  --surface-input: var(--bg-raised);
+  --surface-terminal: var(--bg-raised);
+
+  --text-body: var(--text-primary);
+  --text-muted: var(--text-secondary);
+  --text-disabled: var(--text-tertiary);
+  --focus-ring: var(--accent);
+}
+
+/* ============================================================
+   Light Theme — same token ROLES, inverted surfaces.
+   Proves the system is token-driven. Apply with
+   <html data-theme="light"> or any [data-theme="light"] scope.
+   ============================================================ */
+
+[data-theme="light"] {
+  --bg-editor: #ffffff;
+  --bg-tool: #f2f3f5;
+  --bg-raised: #fafafa;
+  --bg-hover: #e6e8eb;
+  --bg-selected: #c9ddf7;
+
+  --border: #d9dce1;
+  --border-strong: #bcc0c7;
+  --indent-guide: #e8eaed;
+  --indent-guide-active: #c7cad0;
+
+  --text-primary: #1a1b1e;
+  --text-secondary: #6e7178;
+  --text-tertiary: #9a9da4;
+  --text-on-accent: #0e1413;
+
+  --accent: #2e9488;
+  --accent-hover: #38a99b;
+  --accent-muted: #bce2dc;
+  --accent-tint: rgba(46, 148, 136, 0.12);
+  --accent-tint-strong: rgba(46, 148, 136, 0.18);
+
+  --success: #3e8c49;
+  --success-tint: rgba(62, 140, 73, 0.12);
+  --error: #c0504f;
+  --error-tint: rgba(192, 80, 79, 0.12);
+  --warning: #b5832f;
+  --warning-tint: rgba(181, 131, 47, 0.12);
+
+  --git-modified: #b5832f;
+  --git-added: #3e8c49;
+  --git-deleted: #c0504f;
+  --git-untracked: #2e9488;
+}

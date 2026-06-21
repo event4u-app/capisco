@@ -1,0 +1,150 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   Capisco × shadcn — design tokens.
+   shadcn variable NAMES, Capisco JetBrains-dark VALUES.
+   HSL triplets (consumed as hsl(var(--x)) in tailwind.config.ts).
+   .dark is the canonical Capisco theme; :root is the light variant.
+   ============================================================ */
+
+@layer base {
+  /* Light theme (Capisco [data-theme=light]) */
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 225 7% 11%;
+
+    --card: 220 11% 96%;
+    --card-foreground: 225 7% 11%;
+    --popover: 220 11% 96%;
+    --popover-foreground: 225 7% 11%;
+
+    --primary: 173 53% 38%; /* Capisco teal (light) */
+    --primary-foreground: 170 30% 97%;
+
+    --secondary: 220 11% 96%;
+    --secondary-foreground: 225 7% 11%;
+
+    --muted: 0 0% 98%;
+    --muted-foreground: 222 4% 45%;
+
+    --accent: 220 13% 90%; /* hover wash */
+    --accent-foreground: 225 7% 11%;
+
+    --destructive: 1 47% 53%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 130 38% 40%;
+    --success-foreground: 0 0% 100%;
+    --warning: 36 58% 45%;
+    --warning-foreground: 0 0% 100%;
+
+    --border: 218 12% 87%;
+    --input: 218 12% 87%;
+    --ring: 173 53% 38%;
+
+    --editor: 0 0% 100%;
+    --git-modified: 36 58% 45%;
+    --git-added: 130 38% 40%;
+    --git-deleted: 1 47% 53%;
+
+    /* --- Chart palette (R5 dashboards) — HSL triplets, consumed as
+       hsl(var(--chart-x)). A small categorical ramp + semantic chart roles.
+       Light variant; .dark overrides below. No hardcoded hex in components. */
+    --chart-line: 173 53% 38%; /* primary line / accent series (teal) */
+    --chart-ideal: 222 4% 45%; /* dashed "ideal" reference line (muted) */
+    --chart-grid: 218 12% 87%; /* horizontal grid lines (= border) */
+    --chart-good: 130 42% 42%; /* heatmap core-hours green */
+    --chart-bad: 1 55% 55%; /* heatmap off-hours red */
+    --chart-1: 173 53% 38%; /* teal */
+    --chart-2: 262 45% 55%; /* violet */
+    --chart-3: 28 60% 50%; /* orange */
+    --chart-4: 210 50% 50%; /* blue */
+    --chart-5: 130 38% 40%; /* green */
+    --chart-6: 222 4% 45%; /* gray */
+
+    --radius: 0.25rem; /* near-square IDE chrome */
+  }
+
+  /* Dark theme — CANONICAL Capisco (JetBrains New UI / PhpStorm Dark) */
+  .dark {
+    --background: 225 6% 13%; /* #1E1F22 editor */
+    --foreground: 220 10% 89%; /* #DFE1E5 */
+
+    --card: 216 6% 18%; /* #2B2D30 tool window */
+    --card-foreground: 220 10% 89%;
+    --popover: 216 6% 18%;
+    --popover-foreground: 220 10% 89%;
+
+    --primary: 173 49% 48%; /* #3FB6A8 teal accent */
+    --primary-foreground: 170 17% 7%; /* #0E1413 */
+
+    --secondary: 216 6% 18%;
+    --secondary-foreground: 220 10% 89%;
+
+    --muted: 225 7% 12%; /* #1C1D20 raised/input */
+    --muted-foreground: 72 4% 62%; /* #9d9f96 — nudged from #868781 to meet WCAG AA (4.5:1) on the editor surface while keeping the muted JetBrains-dark feel (DECISIONS.md, option 1) */
+
+    --accent: 214 6% 22%; /* #34373B hover wash */
+    --accent-foreground: 220 10% 89%;
+
+    --destructive: 0 52% 63%; /* #D16E6E */
+    --destructive-foreground: 220 10% 89%;
+    --success: 127 36% 48%; /* #4FA85A */
+    --success-foreground: 170 17% 7%;
+    --warning: 36 61% 60%; /* #D8A65C */
+    --warning-foreground: 170 17% 7%;
+
+    --border: 223 6% 24%; /* #393B40 */
+    --input: 223 6% 24%;
+    --ring: 173 49% 48%;
+
+    --editor: 225 6% 13%;
+    --git-modified: 36 61% 60%;
+    --git-added: 127 36% 48%;
+    --git-deleted: 0 52% 63%;
+
+    /* Chart palette — dark (canonical). Brighter, muted JetBrains-dark tones. */
+    --chart-line: 173 49% 48%; /* teal accent */
+    --chart-ideal: 72 4% 62%; /* dashed ideal line (= muted-foreground) */
+    --chart-grid: 223 6% 24%; /* grid lines (= border) */
+    --chart-good: 130 38% 47%; /* heatmap core-hours green */
+    --chart-bad: 1 60% 62%; /* heatmap off-hours red */
+    --chart-1: 173 49% 48%; /* teal */
+    --chart-2: 282 53% 69%; /* soft violet (= syn-keyword feel) */
+    --chart-3: 28 52% 58%; /* soft orange */
+    --chart-4: 211 55% 64%; /* soft blue */
+    --chart-5: 127 36% 48%; /* green */
+    --chart-6: 72 4% 62%; /* gray */
+
+    --radius: 0.25rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-sans;
+    font-feature-settings:
+      "rlig" 1,
+      "calt" 1;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Honor prefers-reduced-motion globally (Tischstakes / Overview §5): collapse
+     transitions + animations so nothing pulses, blinks, or interpolates. This
+     also settles theme-dependent color transitions instantly — the source of
+     the mount-time primary-button color flash documented in DECISIONS.md. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}

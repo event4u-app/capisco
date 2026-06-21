@@ -1,0 +1,506 @@
+{
+  "app": {
+    "tagline": "Agent-native IDE shell. Dark theme is canonical; surfaces separate by brightness."
+  },
+  "theme": {
+    "toggle": "Toggle theme"
+  },
+  "titlebar": {
+    "project": "Project",
+    "branch": "Branch",
+    "run": "Run",
+    "runConfig": "Run configuration",
+    "search": "Search",
+    "more": "More",
+    "settings": "Settings",
+    "commandPalette": "Command palette"
+  },
+  "rail": {
+    "explorer": "Explorer",
+    "changes": "Changes",
+    "commit": "Commit",
+    "pr": "PR",
+    "tasks": "Tasks",
+    "dashboard": "Git",
+    "search": "Search",
+    "structure": "Structure",
+    "data": "Data",
+    "services": "Services",
+    "terminal": "Terminal",
+    "alerts": "Alerts",
+    "inspect": "Inspect",
+    "leftTools": "Left tools",
+    "rightTools": "Right tools",
+    "dropZone": "Drop a tool to dock it here",
+    "dock": "Dock"
+  },
+  "mode": {
+    "agents": "Agents",
+    "editor": "Editor",
+    "git": "Git",
+    "tasks": "Tasks"
+  },
+  "workspace": {
+    "placeholder": "{{mode}} workspace"
+  },
+  "panel": {
+    "close": "Close panel",
+    "empty": "Nothing docked here",
+    "emptyHint": "Click a tool icon or drop one onto the rail",
+    "notWired": "Not wired in this shell"
+  },
+  "services": {
+    "head": "Services",
+    "startAll": "Start all",
+    "refresh": "Refresh",
+    "empty": "No containers in the loaded projects",
+    "cpu": "cpu",
+    "console": "Open console (exec -it)",
+    "start": "Start",
+    "status": {
+      "exited": "exited",
+      "error": "error"
+    }
+  },
+  "data": {
+    "head": "Database",
+    "label": "Datasources",
+    "newConnection": "New connection",
+    "refresh": "Refresh",
+    "empty": "No datasources connected",
+    "readonly": "read-only",
+    "credential": "credential: {{ref}}"
+  },
+  "signals": {
+    "sharedRail": "one shared signal rail",
+    "empty": "No signals",
+    "pin": "Pin as a docked column",
+    "unpin": "Unpin (float as overlay)",
+    "alerts": {
+      "title": "Alerts"
+    },
+    "inspect": {
+      "title": "Inspections"
+    },
+    "source": {
+      "pr": "PR",
+      "container": "container",
+      "observability": "obs",
+      "agent": "agent",
+      "lint": "lint"
+    }
+  },
+  "explorer": {
+    "label": "Project files",
+    "head": "Project",
+    "addProject": "Add project to workspace",
+    "collapseAll": "Collapse all",
+    "refresh": "Refresh",
+    "externalLibraries": "External Libraries",
+    "scratches": "Scratches and Consoles"
+  },
+  "changes": {
+    "head": "Changes",
+    "refresh": "Refresh",
+    "tree": "Changed files",
+    "pickBase": "Pick the base branch",
+    "findBranch": "Find branch…",
+    "noBranches": "No branches match",
+    "current": "current",
+    "currentTitle": "Current branch — {{branch}}",
+    "role": {
+      "target": "target",
+      "parent": "parent"
+    },
+    "summary": "{{count}} files changed",
+    "empty": "No changes against {{base}}"
+  },
+  "commit": {
+    "tabs": {
+      "changes": "Local Changes",
+      "shelf": "Shelf"
+    },
+    "tabsLabel": "Work stash",
+    "refresh": "Refresh",
+    "more": "More",
+    "changesHead": "Changes",
+    "messageLabel": "Commit message",
+    "messagePlaceholder": "Commit message…",
+    "resize": "Resize commit message",
+    "commitTo": "Commit to {{branch}}",
+    "commitAndPush": "Commit and Push…",
+    "shelfEmpty": "Nothing on the shelf",
+    "changesEmpty": "No local changes"
+  },
+  "search": {
+    "label": "Search results",
+    "queryLabel": "Search the workspace",
+    "queryPlaceholder": "Search…",
+    "replaceLabel": "Replace matches",
+    "replacePlaceholder": "Replace…",
+    "summary": "{{results}} results in {{files}} files",
+    "empty": "No results"
+  },
+  "structure": {
+    "label": "Symbol outline",
+    "head": "Structure",
+    "sort": "Sort by position",
+    "collapseAll": "Collapse all",
+    "empty": "No symbols in this file",
+    "kind": {
+      "C": "class",
+      "m": "method",
+      "p": "property",
+      "I": "interface",
+      "E": "enum"
+    }
+  },
+  "terminal": {
+    "title": "Terminal",
+    "tabsLabel": "Terminal sessions",
+    "kill": "Kill session",
+    "split": "Split terminal",
+    "newTab": "New terminal",
+    "rename": "Rename terminal",
+    "session": "Session {{n}}",
+    "close": "Close",
+    "resize": "Resize terminal",
+    "tabs": {
+      "local": "Local",
+      "py2ts": "Py2Ts",
+      "evidence": "Evidence"
+    }
+  },
+  "editor": {
+    "empty": "No file open",
+    "tabStrip": "Open editors",
+    "autocomplete": "Code completions",
+    "blame": "Inline blame for the active line",
+    "inlayHints": "Inlay hints",
+    "tab": {
+      "pin": "Pin tab",
+      "unpin": "Unpin tab",
+      "rename": "Rename tab",
+      "unsaved": "Unsaved changes",
+      "close": "Close {{name}}"
+    },
+    "presence": {
+      "lane": "Colleague presence",
+      "openLabel": "Open live presence for {{who}}",
+      "popupLabel": "Live presence — {{who}}",
+      "close": "Close presence",
+      "cherryPick": "Cherry-pick this block"
+    },
+    "command": {
+      "focusEditor": "Focus the editor"
+    }
+  },
+  "split": {
+    "resize": "Resize panes"
+  },
+  "diff": {
+    "split": "Split",
+    "unified": "Unified",
+    "close": "Close diff",
+    "added": "added",
+    "removed": "removed",
+    "open": "Open diff"
+  },
+  "palette": {
+    "placeholder": "Type a command or search…",
+    "empty": "No matching commands",
+    "groups": {
+      "modes": "Workspaces",
+      "tools": "Tools",
+      "view": "View",
+      "presets": "Presets"
+    },
+    "openTool": "Open {{tool}}",
+    "openToolHidden": "Open {{tool}} (hidden)",
+    "switchMode": "Switch to {{mode}}",
+    "toggleTerminal": "Toggle terminal",
+    "toggleTheme": "Toggle theme",
+    "openDiff": "Open diff view",
+    "applyPreset": "Apply preset: {{preset}}",
+    "showTool": "Show {{tool}} in rail",
+    "hideTool": "Hide {{tool}} from rail",
+    "pinFlyout": "Pin {{tool}} as a docked column",
+    "unpinFlyout": "Unpin {{tool}} (float as overlay)"
+  },
+  "preset": {
+    "default": "Default",
+    "po": "Product owner",
+    "label": "Preset",
+    "visibility": "Tool visibility"
+  },
+  "broker": {
+    "approvalRequired": "Approval required",
+    "scope": {
+      "allowOnce": "Allow once",
+      "thisSession": "This session",
+      "deny": "Deny"
+    }
+  },
+  "agents": {
+    "tabbar": {
+      "label": "Agent sessions",
+      "newSession": "New session",
+      "newSessionWith": "New session with…",
+      "settings": "Agent backend settings",
+      "closeSession": "Close session"
+    },
+    "session": {
+      "newTitle": "New session",
+      "idle": "idle"
+    },
+    "subagents": {
+      "label": "Subagents"
+    },
+    "transcript": {
+      "label": "Chat transcript",
+      "you": "You",
+      "agent": "Claude",
+      "retry": "Retry",
+      "copy": "Copy",
+      "branch": "Branch from here",
+      "openInEditor": "Open in editor"
+    },
+    "empty": {
+      "title": "New session · {{model}}",
+      "sub": "Describe a task to start the agent."
+    },
+    "loading": {
+      "title": "Starting agent…",
+      "sub": "Allocating a worktree and connecting to the backend."
+    },
+    "error": {
+      "title": "Agent run failed",
+      "sub": "The backend returned an error. Retry the last turn or open the log.",
+      "retry": "Retry run"
+    },
+    "permission": {
+      "label": "Approval required",
+      "credential": "credential: {{ref}}",
+      "credentialNote": "Secret shown as a reference, never its value.",
+      "prodNote": "Production datasources are read-only — per-command approval only, no “allow permanently”."
+    },
+    "composer": {
+      "placeholder": "Message Capisco…",
+      "send": "Send",
+      "model": "Model",
+      "effort": "Effort",
+      "effortFaster": "Faster",
+      "effortSmarter": "Smarter",
+      "effortHelp": "Higher effort thinks longer for stronger answers.",
+      "budget": "Plan usage",
+      "planUsage": "Plan usage"
+    },
+    "settings": {
+      "title": "Agent backend",
+      "close": "Close",
+      "apiClient": "API client",
+      "installedCli": "Installed CLI",
+      "provider": "Provider",
+      "apiToken": "API token",
+      "keychainNote": "Stored in your OS keychain.",
+      "save": "Save",
+      "detected": "{{name}} detected",
+      "cliNote": "Capisco shells out to your installed CLI. No token stored.",
+      "redetect": "Re-detect CLI"
+    },
+    "command": {
+      "newSession": "New agent session",
+      "settings": "Open agent backend settings"
+    }
+  },
+  "chart": {
+    "empty": "No data yet",
+    "lineLabel": "Line chart",
+    "burndownLabel": "Burndown chart",
+    "donutLabel": "Donut chart",
+    "tool": {
+      "image": "Save as image",
+      "download": "Download data",
+      "expand": "Expand",
+      "bookmark": "Bookmark"
+    },
+    "day": {
+      "mon": "Mon",
+      "tue": "Tue",
+      "wed": "Wed",
+      "thu": "Thu",
+      "fri": "Fri",
+      "sat": "Sat",
+      "sun": "Sun"
+    }
+  },
+  "git": {
+    "title": "Git Dashboard",
+    "refresh": "Refresh",
+    "filter": "Filter the date range",
+    "range": {
+      "all": "All",
+      "day": "Day",
+      "week": "Week",
+      "month": "Month",
+      "custom": "Custom"
+    },
+    "rangePreset": {
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "thisWeek": "This week",
+      "lastWeek": "Last week",
+      "thisMonth": "This month",
+      "lastMonth": "Last month",
+      "thisYear": "This year"
+    },
+    "from": "From",
+    "to": "To",
+    "tabs": {
+      "mine": "My PRs",
+      "review": "Review Requested",
+      "overdue": "Overdue",
+      "team": "Team",
+      "overview": "Overview",
+      "activity": "Activity",
+      "working": "Working Times"
+    },
+    "tabsLabel": "Git dashboard tabs",
+    "honest": "Activity, not performance · stays on this machine · never compared across people",
+    "pr": {
+      "draft": "draft",
+      "open": "open",
+      "reReview": "you reviewed before",
+      "ready": "{{days}}d ready",
+      "openedAgo": "{{repo}} · opened {{days}}d ago by @{{author}}",
+      "checks": {
+        "passing": "checks passing",
+        "failing": "checks failing",
+        "pending": "checks running"
+      },
+      "review": {
+        "approved": "approved",
+        "changes": "changes requested",
+        "pending": "review pending"
+      }
+    },
+    "empty": {
+      "mine": "No open PRs in your projects.",
+      "review": "No reviews awaiting you.",
+      "overdue": "Nothing overdue — nice.",
+      "team": "No live team activity."
+    },
+    "overdue": {
+      "threshold": "Older than",
+      "days": "{{count}} days",
+      "note": "Non-draft PRs open longer than the threshold."
+    },
+    "team": {
+      "hint": "Who's working where — live across open work",
+      "byPr": "By PR",
+      "byBranch": "By branch",
+      "overlap": "overlaps your uncommitted {{file}}",
+      "viewDiff": "View their diff",
+      "cherryPick": "Cherry-pick"
+    },
+    "overview": {
+      "cycleTime": "Cycle Time Trend",
+      "prCategories": "PR Categories"
+    },
+    "activity": {
+      "commits": "Commits",
+      "prs": "PRs open / merged",
+      "lines": "Lines changed",
+      "commitsPerWeek": "Commits per week",
+      "prsPerWeek": "PRs merged per week",
+      "locPerWeek": "Lines changed per week",
+      "reviewsPerWeek": "Reviews given per week",
+      "languages": "Languages",
+      "commitsPerDay": "Commits / day"
+    },
+    "working": {
+      "hours": "Working hours",
+      "outsideHint": "Activity outside these hours shows red.",
+      "heatmap": "Activity heatmap",
+      "sub": "Commits (author time), PR reviews & creation, Jira / Linear activity. Darker = more activity.",
+      "core": "Core hours ({{start}}–{{end}})",
+      "off": "Off-hours / weekend"
+    },
+    "command": {
+      "open": "Open Git Dashboard"
+    }
+  },
+  "tasks": {
+    "title": "Tasks · {{sprint}}",
+    "sprintMeta": "Day {{day}}/{{days}} · {{done}}/{{committed}} pts · {{pct}}%",
+    "tabsLabel": "Tasks workspace tabs",
+    "tabs": {
+      "board": "Board",
+      "mine": "My Tickets",
+      "active": "Active",
+      "insights": "Insights"
+    },
+    "workspaceTabs": "Open tickets",
+    "overview": "Overview",
+    "closeTab": "Close {{id}}",
+    "status": {
+      "backlog": "Backlog",
+      "todo": "To do",
+      "progress": "In Progress",
+      "review": "Review",
+      "testing": "Testing",
+      "done": "Done"
+    },
+    "card": {
+      "mine": "mine",
+      "points": "{{points}} pts"
+    },
+    "empty": "Nothing here",
+    "colMeta": "{{count}} · {{points}}p",
+    "insights": {
+      "myWip": "My WIP",
+      "myWipSub": "In progress vs your limit",
+      "throughput": "Throughput",
+      "throughputSub": "Closed this week",
+      "reviewsReq": "Reviews requested",
+      "reviewsReqSub": "Awaiting your review",
+      "cycleTime": "Avg cycle time",
+      "cycleTimeSub": "First commit → merge",
+      "sprintBurndown": "Sprint burndown",
+      "myBurndown": "My burndown",
+      "ideal": "Ideal",
+      "remaining": "Remaining ({{remaining}} of {{total}})",
+      "myWipOverSprint": "My WIP over sprint",
+      "wipHint": "WIP limit {{limit}} — keep flow steady, avoid context-switching",
+      "teamWip": "Team WIP",
+      "reviewsGiven": "Reviews given / day",
+      "throughputChart": "Throughput (tickets closed / day)",
+      "workType": "Work type split"
+    },
+    "detail": {
+      "breadcrumb": "tasks",
+      "openedBy": "opened by @{{who}} · {{sprint}}",
+      "description": "Description",
+      "edit": "Edit",
+      "save": "Save",
+      "activity": "Activity · {{count}} comments",
+      "commentPlaceholder": "Write a comment…",
+      "commentSend": "Comment",
+      "commentHint": "⌘↵ to send",
+      "fields": {
+        "status": "Status",
+        "assignee": "Assignee",
+        "type": "Type",
+        "points": "Points",
+        "epic": "Epic",
+        "pullRequest": "Pull request",
+        "subtasks": "Sub-tasks"
+      },
+      "createBranch": "Create branch",
+      "startWorktree": "Start in a worktree"
+    },
+    "command": {
+      "open": "Open Tasks workspace"
+    }
+  }
+}

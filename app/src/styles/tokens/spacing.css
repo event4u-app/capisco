@@ -1,0 +1,48 @@
+/* ============================================================
+   Capisco — Spacing, sizing, radius
+   Strict 4 / 8 / 12 raster. Tight, consistent, dense.
+   ============================================================ */
+
+:root {
+  /* Spacing raster */
+  --space-0: 0;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+
+  /* Row / control heights (dense lists breathe at ~24–28px) */
+  --row-h: 26px; /* tree + list rows */
+  --row-h-lg: 30px; /* session rows */
+  --control-h: 24px; /* small buttons / inputs */
+  --control-h-md: 28px;
+
+  /* Chrome zone sizes (from the layout spec) */
+  --titlebar-h: 40px;
+  --tabbar-h: 36px;
+  --statusbar-h: 26px;
+  --activitybar-w: 48px;
+  --panel-left-w: 260px;
+  --panel-right-w: 360px;
+  --terminal-h: 200px;
+
+  /* Radius — minimal. IDE chrome is nearly square. */
+  --radius-0: 0;
+  --radius-1: 3px; /* buttons, badges, inputs */
+  --radius-2: 5px; /* popups, prompt blocks */
+  --radius-pill: 999px;
+
+  /* Borders */
+  --border-w: 1px;
+  --accent-strip-w: 2px; /* active-edge indicator */
+
+  /* Elevation — the ONLY shadow in the system (popups/menus).
+     Surfaces separate by brightness, not shadow. */
+  --shadow-popup: 0 6px 20px rgba(0, 0, 0, 0.45);
+  --shadow-popup-light: 0 6px 20px rgba(0, 0, 0, 0.14);
+
+  /* Focus ring */
+  --ring-w: 1px;
+}
