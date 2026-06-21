@@ -1,0 +1,13 @@
+{
+  "backend": "github",
+  "me": "you",
+  "staleThresholdDays": 7,
+  "pulls": [
+    { "num": 1284, "title": "Worktree teardown frees its allocated port", "repo": "capisco/core", "branch": "feat/worktree-teardown", "author": "you", "draft": false, "days": 2, "checks": "passing", "comments": 3, "add": 142, "del": 38, "labels": ["broker"], "reviews": [{ "who": "mara", "state": "changes" }] },
+    { "num": 1283, "title": "Capability scope cache", "repo": "capisco/core", "branch": "feat/scope-cache", "author": "you", "draft": false, "days": 1, "checks": "pending", "comments": 1, "add": 90, "del": 12, "labels": ["broker"], "reviews": [{ "who": "kai", "state": "approved" }] },
+    { "num": 1276, "title": "Port allocator avoids TOCTOU race", "repo": "capisco/core", "branch": "fix/port-toctou", "author": "you", "draft": false, "days": 9, "checks": "failing", "comments": 5, "add": 31, "del": 7, "labels": ["bug"], "reviews": [] },
+    { "num": 1290, "title": "Broker: immutable grants once issued", "repo": "capisco/core", "branch": "feat/immutable-grants", "author": "mara", "draft": false, "days": 4, "checks": "passing", "comments": 2, "add": 210, "del": 44, "labels": ["broker"], "reviews": [{ "who": "you", "state": "pending" }], "requested": true },
+    { "num": 1271, "title": "Datasource: prod read-only guard", "repo": "capisco/core", "branch": "feat/prod-readonly", "author": "lea", "draft": false, "days": 11, "checks": "passing", "comments": 8, "add": 64, "del": 9, "labels": ["broker"], "reviews": [{ "who": "you", "state": "pending" }], "requested": true },
+    { "num": 1295, "title": "Telemetry opt-in screen", "repo": "capisco/core", "branch": "feat/telemetry-optin", "author": "kai", "draft": true, "days": 1, "checks": "pending", "comments": 0, "add": 120, "del": 4, "labels": ["shell"], "reviews": [] }
+  ]
+}

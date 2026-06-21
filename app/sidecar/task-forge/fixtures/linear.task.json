@@ -1,0 +1,14 @@
+{
+  "backend": "linear",
+  "me": "mara",
+  "sprint": "Cycle 12",
+  "tickets": [
+    { "id": "ENG-204", "title": "ACP transport: tolerate partial NDJSON frames", "type": "bug", "points": 2, "status": "progress", "who": "mara", "mine": true, "epic": "acp" },
+    { "id": "ENG-210", "title": "Stub agent cannot act around the broker", "type": "feature", "points": 3, "status": "review", "who": "mara", "mine": true, "epic": "acp", "branch": "#88" },
+    { "id": "ENG-198", "title": "Secret store: no get(ref): string path", "type": "feature", "points": 5, "status": "todo", "who": "mara", "mine": true, "epic": "broker" },
+    { "id": "ENG-221", "title": "Prod datasource read-only invariant", "type": "feature", "points": 3, "status": "todo", "who": "mara", "mine": true, "epic": "broker" },
+    { "id": "ENG-215", "title": "Quality runner parses vitest JSON", "type": "feature", "points": 5, "status": "todo", "who": "kai", "epic": "quality" },
+    { "id": "ENG-230", "title": "Fixture forge: whose-turn union", "type": "feature", "points": 2, "status": "backlog", "who": "mara", "mine": true, "epic": "forge" },
+    { "id": "ENG-189", "title": "Session search index", "type": "chore", "points": 3, "status": "done", "who": "mara", "mine": true, "epic": "sessions" }
+  ]
+}

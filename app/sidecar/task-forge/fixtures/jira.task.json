@@ -1,0 +1,18 @@
+{
+  "backend": "jira",
+  "me": "you",
+  "sprint": "Sprint 24",
+  "tickets": [
+    { "id": "CAP-142", "title": "Worktree teardown frees its allocated port", "type": "feature", "points": 3, "status": "progress", "who": "you", "mine": true, "epic": "broker", "branch": "#1284", "sub": "2/3" },
+    { "id": "CAP-151", "title": "Port allocator avoids TOCTOU race", "type": "bug", "points": 2, "status": "progress", "who": "you", "mine": true, "epic": "broker", "branch": "#1276" },
+    { "id": "CAP-139", "title": "Capability scope cache", "type": "feature", "points": 3, "status": "review", "who": "you", "mine": true, "epic": "broker", "branch": "#1283" },
+    { "id": "CAP-160", "title": "Session-tree token aggregation", "type": "feature", "points": 5, "status": "testing", "who": "you", "mine": true, "epic": "sessions", "sub": "4/4" },
+    { "id": "CAP-155", "title": "Provider registry hot-reload", "type": "feature", "points": 5, "status": "todo", "who": "you", "mine": true, "epic": "sessions" },
+    { "id": "CAP-148", "title": "Broker: immutable grants once issued", "type": "feature", "points": 5, "status": "todo", "who": "mara", "epic": "broker" },
+    { "id": "CAP-153", "title": "Session resume from store", "type": "feature", "points": 8, "status": "todo", "who": "kai", "epic": "sessions" },
+    { "id": "CAP-167", "title": "Audit store rejects value-shaped credentialRef", "type": "chore", "points": 2, "status": "todo", "who": "you", "mine": true, "epic": "broker" },
+    { "id": "CAP-162", "title": "Worktree GC on crash", "type": "chore", "points": 3, "status": "backlog", "who": "—", "epic": "broker" },
+    { "id": "CAP-164", "title": "Telemetry opt-in screen", "type": "feature", "points": 5, "status": "backlog", "who": "—", "epic": "shell" },
+    { "id": "CAP-131", "title": "Terminal: renameable tabs", "type": "feature", "points": 2, "status": "done", "who": "you", "mine": true, "epic": "shell" }
+  ]
+}

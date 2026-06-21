@@ -1,0 +1,10 @@
+{
+  "backend": "gitlab",
+  "me": "mara",
+  "staleThresholdDays": 7,
+  "pulls": [
+    { "num": 88, "title": "Stub agent cannot act around the broker", "repo": "capisco/sidecar", "branch": "feat/stub-broker-gate", "author": "mara", "draft": false, "days": 3, "checks": "passing", "comments": 4, "add": 88, "del": 20, "labels": ["acp"], "reviews": [{ "who": "kai", "state": "changes" }] },
+    { "num": 91, "title": "ACP transport: tolerate partial NDJSON frames", "repo": "capisco/sidecar", "branch": "fix/ndjson-partial", "author": "mara", "draft": false, "days": 1, "checks": "passing", "comments": 0, "add": 22, "del": 3, "labels": ["acp"], "reviews": [{ "who": "you", "state": "approved" }] },
+    { "num": 84, "title": "Session search index", "repo": "capisco/sidecar", "branch": "feat/session-search", "author": "kai", "draft": false, "days": 8, "checks": "passing", "comments": 6, "add": 140, "del": 11, "labels": ["sessions"], "reviews": [{ "who": "mara", "state": "pending" }], "requested": true }
+  ]
+}
