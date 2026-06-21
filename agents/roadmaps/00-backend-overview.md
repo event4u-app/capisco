@@ -115,3 +115,40 @@ eigener Track, sondern eine **broker-scoped Cross-Projekt-Session-Suche** als B3
 - **CI hängt NICHT von einem Tauri-Build ab.** Die bestehenden UI-Gates (vitest/playwright/ladle)
   bleiben grün; Sidecar bekommt eigene Integrationstests.
 - Rust-Shell: dünn, minimal getestet, **explizit deferred**.
+
+---
+
+## 8. Folge-Roadmaps (post-B8) — Council-geprüft 2026-06-21
+
+Aus `agents/tmp` (Konzept §5.10 Token-Ökonomie + die drei `feature-*.txt` + `design-update-v1.md`
++ externe Review) abgeleitet; vom Council (3 Linsen: Architektur/Sequencing · Autonomie/
+Verifizierbarkeit · Security/Scope) geprüft. **Reihenfolge wert-zuerst, Befunde in den Files
+verankert.**
+
+| # | Roadmap | Block | Autonomie | Reihenfolge |
+|---|---|---|---|---|
+| F1 | `road-to-design-sync-v1` | UI-Sync | A (Struktur) / C (Fidelity) | **zuerst** — schließt offenes R2-Gate, baut das Meter (Projektion) |
+| F2 | `road-to-local-artifact-hygiene` | Backend | A (voll auto, Temp-Repos) | **parallel zu F1** (disjunkter Code) |
+| F3 | `road-to-token-economy` | Token-Ökonomie | A/B/C | nach F1 (erbt Meter), baut Mechanik |
+| F4 | `road-to-cross-project-knowledge` | Cross-Projekt | A (P1) / human-gated (P2) | **zuletzt** — höchstes Risiko, Voll-Trifecta in P2 |
+
+**Drei load-bearing Council-Korrekturen** (sonst falsch gebaut):
+
+1. **Token-Meter-Naht:** das *visuelle* Meter + Schwellwert-Popover gehört in **F1** (Prototyp-
+   Delta, reine Projektion); die *Mechanik* (Rot→Handoff mit Kompression, RTK, Caveman) in **F3**.
+   F1 baut kein Verhalten („New session" = Stub), F3 füllt es.
+2. **Die unterschätzten neuen Primitive** sind **Memory-Kompression** (F3 P0, nicht das Meter)
+   und die **Broker-Scope-Erweiterung `cross-project-read`** (F4 P2) — nicht der `@projekt`-Verweis.
+   Caveman muss in **beide** Agent-Backends injizieren (native stream-json **und** ACP).
+3. **F4 ist die einzige Voll-Trifecta** (private-data × untrusted × Cloud-Egress): zwei Beine
+   brechen — Egress-Human-Gate **und** Redaction/kuratierte-Auszüge-Quarantäne. P1 (autonom)
+   strikt von P2 (human-gated) durch eine Decision-Gate-Grenze getrennt.
+
+**Drei harte Pflicht-Tests** (Akzeptanz, sonst rottet Security still): Caveman-Negativ-Assert
+(Grenz-Flächen tragen den Regelsatz nie) · RTK-Degrade + RTK-nie-im-autoritativen-Pfad ·
+Cross-Projekt-Auszug-secret-frei.
+
+**Neue human-gated Einträge (§4-Ergänzung):** Cross-Projekt-Egress an ein externes/Cloud-Modell ·
+Auswahl der Cross-Projekt-Quell-Session · erster `.git/info/exclude`-Write pro Repo ·
+RTK-Binary-Install. **Decision-Gates (PO):** Ampel-Schwellwerte (%-vom-Context als Default) ·
+RTK harte-Dep-vs-Angebot · `.capisco/` persönlich-vs-geteilt-Grenze · Caveman-Grenz-Flächen-Liste.
