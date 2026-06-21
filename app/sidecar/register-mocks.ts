@@ -14,6 +14,7 @@ import {
   mockAgentProvider,
   mockEditorProvider,
   mockGitProvider,
+  mockProjectFsProvider,
   mockRecentProjects,
   mockShadowStore,
   mockSignalProvider,
@@ -34,6 +35,7 @@ export const PROVIDER_IDS = {
   history: "history",
   recent: "recent",
   runtime: "runtime",
+  projectFs: "projectFs",
 } as const;
 
 /**
@@ -53,6 +55,10 @@ export function registerMockProviders(
   registry.register(PROVIDER_IDS.signal, mockSignalProvider as never);
   registry.register(PROVIDER_IDS.history, mockShadowStore as never);
   registry.register(PROVIDER_IDS.recent, recent as never);
+  // P1 — the project file-tree + content provider. Default boot is the
+  // deterministic mock (browser/visual parity); the dev bridge swaps in the
+  // real fs+git provider for an opened repo behind the same id.
+  registry.register(PROVIDER_IDS.projectFs, mockProjectFsProvider as never);
   // FakeRuntimeProvider feeds the Services view (B2). Only `listServices` is
   // RPC-able over the wire (subscribeStats is out-of-band streaming, ports() a
   // local allocator); the registry routes the flat method, the in-process

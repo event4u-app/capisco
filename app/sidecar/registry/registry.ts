@@ -32,6 +32,15 @@ export class ProviderRegistry {
     this.providers.set(id, provider);
   }
 
+  /**
+   * Register a provider, replacing any existing entry under the id. Used by the
+   * dev bridge to swap the mock workspace for the real git/fs providers behind
+   * the same wire id once a repo is opened — same contract, same method surface.
+   */
+  replace(id: string, provider: ProviderMethods): void {
+    this.providers.set(id, provider);
+  }
+
   has(id: string): boolean {
     return this.providers.has(id);
   }

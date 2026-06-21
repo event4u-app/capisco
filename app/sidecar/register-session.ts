@@ -22,6 +22,11 @@ import { InMemorySessionStore } from "./session/in-memory-session-store.ts";
 import { TodoProviderImpl } from "./todo/todo-provider.ts";
 import { createAcpTodoStarter } from "./todo/acp-todo-starter.ts";
 import type { PermissionResolver } from "./acp/acp-session.ts";
+import {
+  readRealAcpEnv,
+  resolveRealAcpAdapter,
+  type RealAcpConfig,
+} from "./acp/real-acp-config.ts";
 
 export const SESSION_PROVIDER_ID = "session";
 export const TODO_PROVIDER_ID = "todo";
@@ -34,6 +39,15 @@ export interface RegisterSessionOptions {
   /** Spawn override (tests). Defaults to the stub agent. */
   command?: string;
   args?: string[];
+  /** Model/agent label override (tests). Defaults to the resolved label or stub. */
+  model?: string;
+  /**
+   * Real ACP adapter config (P4, key-gated). Defaults to {@link readRealAcpEnv}.
+   * When it resolves LIVE (CLI installed + key present) the session spawns the
+   * real CLI; otherwise the deterministic stub stays the default. An explicit
+   * `command` (test override) always wins over the real-adapter resolution.
+   */
+  realAcp?: RealAcpConfig;
 }
 
 export interface SessionWiring {
@@ -51,12 +65,31 @@ export function registerSession(
   opts: RegisterSessionOptions = {},
 ): SessionWiring {
   const store = opts.store ?? new InMemorySessionStore();
+
+  // P4 — key-gated real ACP adapter. An explicit test `command` override wins.
+  // Otherwise resolve the real adapter from config/env: LIVE only when the CLI
+  // is installed AND the key is in the vault; dormant (stub) otherwise. The key
+  // (if any) is moved into the broker vault inside `resolveRealAcpAdapter` — only
+  // the reference name leaves it.
+  let command = opts.command;
+  let args = opts.args;
+  let model = opts.model;
+  if (command === undefined) {
+    const resolution = resolveRealAcpAdapter(opts.realAcp ?? readRealAcpEnv(), broker);
+    if (resolution.spawn) {
+      command = resolution.spawn.command;
+      args = resolution.spawn.args;
+      model = model ?? resolution.spawn.model;
+    }
+  }
+
   const starter = createAcpTodoStarter({
     broker,
     store,
+    model,
     resolvePermission: opts.resolvePermission,
-    command: opts.command,
-    args: opts.args,
+    command,
+    args,
   });
   const todo = new TodoProviderImpl(store, starter);
 
