@@ -24,6 +24,7 @@ import { RealWorkspaceProvider } from "./git/real-workspace-provider.ts";
 import { RealWorktreeProvider } from "./git/real-worktree-provider.ts";
 import { RealFsProvider } from "./fs/real-fs-provider.ts";
 import { BrokerFsWriter } from "./fs/fs-write-broker.ts";
+import { BrokerExcludeWriter } from "./git/git-exclude-broker.ts";
 import { GITOPS_PROVIDER_ID, WORKTREE_PROVIDER_ID } from "./register-git.ts";
 import { PROVIDER_IDS } from "./register-mocks.ts";
 
@@ -73,4 +74,20 @@ export function registerDevWorkspace(
   // Always serve the REAL fs provider (path-keyed) so the UI can open any
   // project at runtime via the path input, whether or not a default repo is set.
   registry.replace(PROVIDER_IDS.projectFs, new RealFsProvider(git, writer) as never);
+
+  // Local-artifact hygiene: when a `repo` is configured, keep Capisco's personal
+  // project-local files (`.capisco/local/`, `.capisco/cache/`) out of the
+  // consumer's Git via an idempotent `.git/info/exclude` marked block. The write
+  // is broker-gated (the `ask` IS the first-time visible confirmation); a Save-
+  // style session resolver clears it. No-repo / already-excluded are safe no-ops.
+  // Best-effort: a denied gate or no repo never blocks opening the project.
+  if (repo && broker) {
+    const excludeWriter = new BrokerExcludeWriter({
+      broker,
+      resolvePermission: () => ({ axis: "session" }),
+    });
+    void excludeWriter.ensureExcluded(repo).catch(() => {
+      /* hygiene is best-effort; never fail the dev-workspace boot on it */
+    });
+  }
 }
