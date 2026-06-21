@@ -104,7 +104,25 @@
     "collapseAll": "Collapse all",
     "refresh": "Refresh",
     "externalLibraries": "External Libraries",
-    "scratches": "Scratches and Consoles"
+    "scratches": "Scratches and Consoles",
+    "openProject": "Open a project",
+    "pathPlaceholder": "Absolute path to a repo…",
+    "open": "Open",
+    "opening": "Opening…",
+    "closeProject": "Close project",
+    "openError": "Could not open project: {{message}}",
+    "emptyTree": "No files in this project",
+    "openHint": "Open a real project to see its live file tree"
+  },
+  "worktree": {
+    "head": "Worktrees",
+    "main": "(main)",
+    "branchPlaceholder": "New branch name…",
+    "create": "New worktree",
+    "startSession": "Start session here",
+    "sessionPrompt": "Work in this worktree",
+    "sessionStarted": "Session started: {{id}}",
+    "switch": "Switch to {{branch}}"
   },
   "changes": {
     "head": "Changes",
@@ -184,6 +202,10 @@
     "autocomplete": "Code completions",
     "blame": "Inline blame for the active line",
     "inlayHints": "Inlay hints",
+    "save": "Save",
+    "unsaved": "Unsaved changes",
+    "saved": "Saved",
+    "saveGated": "Save blocked by the broker",
     "tab": {
       "pin": "Pin tab",
       "unpin": "Unpin tab",

@@ -11,11 +11,15 @@ import {
   mockAgentProvider,
   mockEditorProvider,
   mockGitProvider,
+  mockProjectFsProvider,
   mockRecentProjects,
+  mockSessionStore,
   mockShadowStore,
   mockSignalProvider,
   mockTasksProvider,
+  mockTodoProvider,
   mockWorkspaceProvider,
+  mockWorktreeProvider,
 } from "@/mocks";
 import type { ProviderBundle } from "./providers.ts";
 
@@ -29,5 +33,9 @@ export function createMockProviders(): ProviderBundle {
     signal: mockSignalProvider,
     history: mockShadowStore,
     recent: mockRecentProjects,
+    projectFs: mockProjectFsProvider,
+    worktree: mockWorktreeProvider,
+    session: mockSessionStore,
+    todo: mockTodoProvider,
   };
 }

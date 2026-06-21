@@ -14,6 +14,7 @@ export {
   mockStructure,
   mockWorkStash,
 } from "./workspace";
+export { mockProjectFsProvider } from "./fs-tree";
 export { mockGitProvider, gitSnapshot } from "./git";
 export { mockTasksProvider, mockTickets, tasksSnapshot } from "./tasks";
 export {
@@ -33,3 +34,5 @@ export {
   createInMemoryRecentProjects,
   THIS_INSTANCE_ID,
 } from "./recent";
+export { mockWorktreeProvider } from "./worktree";
+export { mockSessionStore, mockTodoProvider } from "./session";

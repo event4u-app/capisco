@@ -16,7 +16,12 @@ import { VirtualList } from "@/components/ui/virtual-list";
 import { GitMarker } from "@/components/capisco/git-marker";
 import { FileIcon } from "@/shell/editor/FileIcon";
 import { mockProjects, mockScratches } from "@/mocks";
+import { useOpenProject } from "@/shell/open-project-store";
+import { useEditor } from "@/shell/editor/store";
 import { PanelHead, PanelHeadAction } from "./PanelHead";
+import { RealProjectTree } from "./RealProjectTree";
+import { OpenProjectBar } from "./OpenProjectBar";
+import { WorktreePanel } from "./WorktreePanel";
 
 const ROW_HEIGHT = 26;
 
@@ -62,6 +67,24 @@ export function ExplorerPanel() {
   const [collapsed, setCollapsed] = React.useState<Set<string>>(() => new Set(["tauri"]));
   const [scratchOpen, setScratchOpen] = React.useState(true);
   const [externalOpen, setExternalOpen] = React.useState(false);
+
+  // P1 — the REAL opened project (null in the mock/visual harness). When a
+  // project is open, the Explorer renders its live on-disk tree instead of the
+  // mock-driven view; clicking a file loads real content into the editor.
+  const project = useOpenProject((s) => s.project);
+  const openProject = useOpenProject((s) => s.open);
+  const closeProject = useOpenProject((s) => s.close);
+  const readFile = useOpenProject((s) => s.readFile);
+  const openRealDoc = useEditor((s) => s.openRealDoc);
+  const [showOpenBar, setShowOpenBar] = React.useState(false);
+
+  const onOpenFile = React.useCallback(
+    async (relPath: string) => {
+      const content = await readFile(relPath);
+      openRealDoc({ file: content.relPath, ext: content.ext, text: content.text });
+    },
+    [readFile, openRealDoc],
+  );
 
   const toggle = React.useCallback((id: string) => {
     setCollapsed((s) => {
@@ -179,37 +202,59 @@ export function ExplorerPanel() {
 
   return (
     <div data-testid="explorer-panel" className="flex h-full min-h-0 flex-col">
-      <PanelHead title={t("explorer.head")}>
-        <PanelHeadAction icon={Plus} label={t("explorer.addProject")} />
+      <PanelHead title={project ? project.name : t("explorer.head")}>
+        <PanelHeadAction
+          icon={Plus}
+          label={t("explorer.openProject")}
+          onClick={() => setShowOpenBar((v) => !v)}
+        />
         <PanelHeadAction icon={ListCollapse} label={t("explorer.collapseAll")} onClick={collapseAll} />
         <PanelHeadAction icon={RefreshCw} label={t("explorer.refresh")} />
       </PanelHead>
-      <div
-        ref={treeRef}
-        role="tree"
-        aria-label={t("explorer.label")}
-        tabIndex={0}
-        onKeyDown={onKeyDown}
-        className="min-h-0 flex-1 select-none text-ui outline-none focus-visible:ring-1 focus-visible:ring-ring"
-      >
-        <VirtualList
-          testid="explorer-tree"
-          items={rows}
-          rowHeight={ROW_HEIGHT}
-          className="h-full"
-          renderRow={(row, i) => (
-            <ExplorerRowView
-              row={row}
-              active={"id" in row && row.id === active}
-              focused={i === focusIdx}
-              onActivate={() => {
-                setFocusIdx(i);
-                onActivate(row);
-              }}
-            />
-          )}
+      {(showOpenBar || project) && (
+        <OpenProjectBar
+          onOpen={(path) => {
+            setShowOpenBar(false);
+            void openProject(path);
+          }}
+          onClose={project ? closeProject : undefined}
         />
-      </div>
+      )}
+      {project ? (
+        // P1 — the REAL opened-project tree (live on-disk + git markers); P3 —
+        // the live worktree panel (create/switch + start a stub session).
+        <>
+          <WorktreePanel />
+          <RealProjectTree onOpenFile={(rel) => void onOpenFile(rel)} />
+        </>
+      ) : (
+        <div
+          ref={treeRef}
+          role="tree"
+          aria-label={t("explorer.label")}
+          tabIndex={0}
+          onKeyDown={onKeyDown}
+          className="min-h-0 flex-1 select-none text-ui outline-none focus-visible:ring-1 focus-visible:ring-ring"
+        >
+          <VirtualList
+            testid="explorer-tree"
+            items={rows}
+            rowHeight={ROW_HEIGHT}
+            className="h-full"
+            renderRow={(row, i) => (
+              <ExplorerRowView
+                row={row}
+                active={"id" in row && row.id === active}
+                focused={i === focusIdx}
+                onActivate={() => {
+                  setFocusIdx(i);
+                  onActivate(row);
+                }}
+              />
+            )}
+          />
+        </div>
+      )}
     </div>
   );
 }

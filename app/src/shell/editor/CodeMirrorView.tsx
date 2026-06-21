@@ -81,15 +81,41 @@ function changeBarGutter(bars: ChangeBar[]) {
 
 
 /**
- * CodeMirror 6 read-only mount (roadmap Phase 0). Renders the mock EditorDoc
- * with the JetBrains-dark theme, muted syntax highlighting, rainbow brackets,
- * indent guides, code folding (ranges from the mock provider) and a git
- * change-bar gutter. Read-only: production datasource is read-only invariant +
- * this is a fidelity shell, not an editing surface.
+ * CodeMirror 6 mount (roadmap Phase 0 read-only · Phase 2 editable). Renders the
+ * EditorDoc with the JetBrains-dark theme, muted syntax highlighting, rainbow
+ * brackets, indent guides, code folding (ranges from the mock provider) and a
+ * git change-bar gutter.
+ *
+ * Editing (P2): when `onChange` is given (a REAL opened-from-disk doc), the view
+ * is editable — keystrokes push the buffer up via `onChange`, and ⌘/Ctrl-S
+ * fires `onSave` (the broker-gated write). Without `onChange` (the mock
+ * snapshot, always so in the visual harness) the view stays read-only, so the
+ * pixel goldens are byte-identical.
  */
-export function CodeMirrorView({ doc }: { doc: EditorDoc }) {
+export function CodeMirrorView({
+  doc,
+  onChange,
+  onSave,
+}: {
+  doc: EditorDoc;
+  /** Push buffer updates as the user types (P2). Read-only when omitted. */
+  onChange?: (text: string) => void;
+  /** ⌘/Ctrl-S handler (P2 save). */
+  onSave?: () => void;
+}) {
   const hostRef = React.useRef<HTMLDivElement>(null);
   const viewRef = React.useRef<EditorView | null>(null);
+  // Keep the latest callbacks reachable from the (stable) CM6 extensions
+  // without re-mounting the view on every render. Updated in an effect (never
+  // during render) so the ref stays a side-channel for the imperative editor.
+  const onChangeRef = React.useRef(onChange);
+  const onSaveRef = React.useRef(onSave);
+  React.useEffect(() => {
+    onChangeRef.current = onChange;
+    onSaveRef.current = onSave;
+  });
+
+  const editable = !!onChange;
 
   React.useEffect(() => {
     const host = hostRef.current;
@@ -97,12 +123,28 @@ export function CodeMirrorView({ doc }: { doc: EditorDoc }) {
     const folds = editorSnapshot.getFolds(doc.file);
     const bars = editorSnapshot.getChangeBars(doc.file);
 
+    const saveKeymap = keymap.of([
+      {
+        key: "Mod-s",
+        preventDefault: true,
+        run: () => {
+          onSaveRef.current?.();
+          return true;
+        },
+      },
+    ]);
+
     const state = EditorState.create({
       doc: doc.text,
       extensions: [
-        EditorState.readOnly.of(true),
-        EditorView.editable.of(false),
+        EditorState.readOnly.of(!editable),
+        EditorView.editable.of(editable),
         EditorView.contentAttributes.of({ "aria-label": `${doc.file} source` }),
+        // Push edits up to the store (P2). No-op for the read-only mock path.
+        EditorView.updateListener.of((u) => {
+          if (u.docChanged) onChangeRef.current?.(u.state.doc.toString());
+        }),
+        saveKeymap,
         lineNumbers(),
         changeBarGutter(bars),
         codeFolding(),
@@ -125,13 +167,16 @@ export function CodeMirrorView({ doc }: { doc: EditorDoc }) {
       view.destroy();
       viewRef.current = null;
     };
-  }, [doc.file, doc.text]);
+    // `editable` is derived from whether onChange is present; the doc identity
+    // (file + initial text) drives re-mounts. Callback identity is ref-tracked.
+  }, [doc.file, doc.text, editable]);
 
   return (
     <div
       ref={hostRef}
       data-testid="cm-editor"
       data-file={doc.file}
+      data-editable={editable || undefined}
       role="presentation"
       className="relative min-h-0 flex-1 overflow-hidden"
     />

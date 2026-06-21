@@ -25,11 +25,15 @@ import type {
   AgentProvider,
   EditorProvider,
   GitProvider,
+  ProjectFsProvider,
   RecentProjectsProvider,
+  SessionStore,
   ShadowStore,
   SignalProvider,
   TasksProvider,
+  TodoProvider,
   WorkspaceProvider,
+  WorktreeOpsProvider,
 } from "@/contracts";
 import { mockGitProvider, mockTasksProvider } from "@/mocks";
 import type { SidecarClient } from "./sidecar-client.ts";
@@ -44,6 +48,14 @@ export interface ProviderBundle {
   signal: SignalProvider;
   history: ShadowStore;
   recent: RecentProjectsProvider;
+  /** Real on-disk project tree + file content (P1) — mock fallback in browser. */
+  projectFs: ProjectFsProvider;
+  /** Git-worktree primitive (P3) — real (git-backed) over the dev bridge. */
+  worktree: WorktreeOpsProvider;
+  /** Persistent session store (P3) — real over the dev bridge, mock in browser. */
+  session: SessionStore;
+  /** ToDo→agent micro-north-star (P3) — broker-gated stub session over the bridge. */
+  todo: TodoProvider;
 }
 
 /**
@@ -88,5 +100,11 @@ export function createIpcProviders(client: SidecarClient): ProviderBundle {
     signal: rpcProxy<SignalProvider>(client, "signal"),
     history: rpcProxy<ShadowStore>(client, "history"),
     recent: rpcProxy<RecentProjectsProvider>(client, "recent"),
+    projectFs: rpcProxy<ProjectFsProvider>(client, "projectFs"),
+    // P3 — the worktree primitive (wire id "worktree-ops"), the session store,
+    // and the ToDo provider. All async-method surfaces → pure RPC proxies.
+    worktree: rpcProxy<WorktreeOpsProvider>(client, "worktree-ops"),
+    session: rpcProxy<SessionStore>(client, "session"),
+    todo: rpcProxy<TodoProvider>(client, "todo"),
   };
 }
