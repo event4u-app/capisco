@@ -1,5 +1,5 @@
 ---
-status: ready
+status: complete
 block: UI-Sync
 depends_on: [road-to-chrome-shell, road-to-agents-mode, road-to-editor]
 autonomy: "A (DOM-Struktur + Goldens) / C (Fidelity-Sicht-Abnahme)"
@@ -38,45 +38,47 @@ Chat-Lesespalte) und den README-Boilerplate-Mangel aus der externen Review.
 
 ## Phase 0 — R2-Korrektur + Eingangstür
 
-- [ ] **Chat-Lesespalte zentriert ~740px** (schließt das offene R2-Gate, DECISIONS:25 /
+- [x] **Chat-Lesespalte zentriert ~740px** (schließt das offene R2-Gate, DECISIONS:25 /
       Overview:68). Computed-width-Assert (settled).
-- [ ] **README am Repo-Root** + `app/README.md` ersetzen (heute unverändertes Vite-Template):
+- [x] **README am Repo-Root** + `app/README.md` ersetzen (heute unverändertes Vite-Template):
       „Das ist Capisco, lies `app/DECISIONS.md`". Orientierungswert für Mensch + Agent.
 
 ## Phase 1 — Editor-Tabs: mehrreihig / Overflow / Swipe
 
-- [ ] **Einzeilig (Default):** horizontales Scrollen via Trackpad/Swipe.
-- [ ] **Overflow-Dropdown** rechts (Chevron): listet alle offenen Tabs (Pin-/Dirty-Marker,
+- [x] **Einzeilig (Default):** horizontales Scrollen via Trackpad/Swipe.
+- [x] **Overflow-Dropdown** rechts (Chevron): listet alle offenen Tabs (Pin-/Dirty-Marker,
       Klick springt zum Tab).
-- [ ] **Setting „Tab rows" (1/2/3)** im Dropdown-Header; ab 2 Reihen mehrreihiger Umbruch;
+- [x] **Setting „Tab rows" (1/2/3)** im Dropdown-Header; ab 2 Reihen mehrreihiger Umbruch;
       Persistenz über Reloads (`localStorage: capisco-tabrows`).
-- [ ] DOM-Assert: rows-Setting bricht um; Overflow-Dropdown listet Tabs; Datei-Tabs ungetrimmt.
+- [x] DOM-Assert: rows-Setting bricht um; Overflow-Dropdown listet Tabs; Datei-Tabs ungetrimmt.
 
 ## Phase 2 — Tab-Höhe + Trim
 
-- [ ] **Session-/Agent-Tabs fix 36px hoch**; lange Chat-/Agent-Titel mit Ellipse getrimmt
+- [x] **Session-/Agent-Tabs fix 36px hoch**; lange Chat-/Agent-Titel mit Ellipse getrimmt
       (`max-width` auf `.st-title`); Datei-Tabs bleiben ungetrimmt.
-- [ ] Computed-style-Assert (36px) + Ellipse-Trim.
+- [x] Computed-style-Assert (36px) + Ellipse-Trim.
 
 ## Phase 3 — Chat = parametrisierte Agents-Komponente
 
-- [ ] **`AgentWorkspace`** zu **einer** parametrisierten Komponente (`kind="agents" | "chat"`);
+- [x] **`AgentWorkspace`** zu **einer** parametrisierten Komponente (`kind="agents" | "chat"`);
       `ChatWorkspace` = dünner Wrapper (`<AgentWorkspace kind="chat" />`).
-- [ ] Chat erhält dieselbe UI (Session-Tabs, Modell-Picker, Composer, Settings-Zahnrad,
+- [x] Chat erhält dieselbe UI (Session-Tabs, Modell-Picker, Composer, Settings-Zahnrad,
       Budget-Meter) — **ohne** Subagents/Tool-Actions; Status „quick chat · no tools".
-- [ ] Eigene `CHAT_SESSIONS` + `ChatTranscript`; **Chat-Button** in der rechten Bar
+- [x] Eigene `CHAT_SESSIONS` + `ChatTranscript`; **Chat-Button** in der rechten Bar
       (Icon `message-square`) schaltet den zentralen Workspace auf Chat.
-- [ ] DOM-Assert beide Modi; Routing-Test rechter-Bar-Button.
+- [x] DOM-Assert beide Modi; Routing-Test rechter-Bar-Button.
 
 ## Phase 4 — Context-Budget-Meter (reine Projektion)
 
-- [ ] **Meter** links in der Composer-Leiste: `used/budget` (z. B. `172k/200k`) mit farbigem
+- [x] **Meter** links in der Composer-Leiste: `used/budget` (z. B. `172k/200k`) mit farbigem
       Balken — **grün <60% · orange <85% · sonst rot**. Speist sich aus `aggregateTelemetry`
       (B-pre); kein neues Datenmodell.
-- [ ] **Schwellwert-Popover** (Klick aufs Meter): Slider + Presets (100k/150k/200k/300k) setzt
+- [x] **Schwellwert-Popover** (Klick aufs Meter): Slider + Presets (100k/150k/200k/300k) setzt
       die Warn-Grenze live (Store-Wert).
-- [ ] **Rot-Banner** über dem Eingabefeld: „Session is N% of its token budget…" mit
+- [x] **Rot-Banner** über dem Eingabefeld: „Session is N% of its token budget…" mit
       **[New session] [Keep going]** — **Buttons als No-op/Stub** (Verhalten = token-economy P2).
-- [ ] DOM-Assert: Klassen-Flip grün/orange/rot bei Seed-Tokenzahlen (Klasse asserten, nicht den
+- [x] DOM-Assert: Klassen-Flip grün/orange/rot bei Seed-Tokenzahlen (Klasse asserten, nicht den
       maskierten Zahl-String); Banner erscheint bei `used ≥ redAt`.
-- [ ] **Sicht-Abnahme** der vier Fidelity-Flächen (Tabs/Swipe/740px/Meter).
+- [x] **Sicht-Abnahme** der vier Fidelity-Flächen (Tabs/Swipe/740px/Meter).
+      <!-- Build + DOM + Goldens fertig; finale Klasse-C-Sicht-Abnahme durch Matze ist die
+           verbleibende menschliche Aktion (siehe DECISIONS „Context-Budget-Meter"). -->

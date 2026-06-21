@@ -6,21 +6,21 @@
 
 ## Overall
 
-**0 / 59 steps done · 0%**
+**50 / 65 steps done · 77%**
 
 ```text
-░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░   0%
+███████████████████████████████░░░░░░░░░   77%
 ```
 
 ## Open roadmaps
 
 | # | Roadmap | Phases | Steps | Open | Done | Deferred | Cancelled | Progress |
 |---|---|---:|---:|---:|---:|---:|---:|---|
-| 1 | [road-to-cross-project-knowledge.md](roadmaps/road-to-cross-project-knowledge.md) | 2 | 7 | 7 | 0 | 0 | 0 | ░░░░░░░░░░ 0% |
-| 2 | [road-to-design-sync-v1.md](roadmaps/road-to-design-sync-v1.md) | 5 | 17 | 17 | 0 | 0 | 0 | ░░░░░░░░░░ 0% |
-| 3 | [road-to-local-artifact-hygiene.md](roadmaps/road-to-local-artifact-hygiene.md) | 3 | 8 | 8 | 0 | 0 | 0 | ░░░░░░░░░░ 0% |
+| 1 | [road-to-cross-project-knowledge.md](roadmaps/road-to-cross-project-knowledge.md) | 2 | 7 | 0 | 7 | 0 | 0 | ██████████ 100% |
+| 2 | [road-to-design-sync-v1.md](roadmaps/road-to-design-sync-v1.md) | 5 | 17 | 0 | 17 | 0 | 0 | ██████████ 100% |
+| 3 | [road-to-local-artifact-hygiene.md](roadmaps/road-to-local-artifact-hygiene.md) | 3 | 8 | 0 | 8 | 0 | 0 | ██████████ 100% |
 | 4 | [road-to-model-routing.md](roadmaps/road-to-model-routing.md) | 4 | 12 | 12 | 0 | 0 | 0 | ░░░░░░░░░░ 0% |
-| 5 | [road-to-token-economy.md](roadmaps/road-to-token-economy.md) | 4 | 15 | 15 | 0 | 0 | 0 | ░░░░░░░░░░ 0% |
+| 5 | [road-to-token-economy.md](roadmaps/road-to-token-economy.md) | 5 | 21 | 3 | 18 | 0 | 0 | █████████░ 86% |
 
 ---
 
@@ -28,34 +28,34 @@
 
 ### [road-to-cross-project-knowledge.md](roadmaps/road-to-cross-project-knowledge.md)
 
-**Road to Cross-Projekt-Wissen — Verweis + Session-Brücke** — 0 / 7 done (0%)
+**Road to Cross-Projekt-Wissen — Verweis + Session-Brücke** — 7 / 7 done (100%)
 
 | # | Phase | State | Open | Done | Deferred | Cancelled | % |
 |---|---|---|---:|---:|---:|---:|---:|
-| 1 | UI-Verweis (autonom, Wert sofort, Gate-frei) | ⬜ not started | 3 | 0 | 0 | 0 | 0% |
-| 2 | Cross-Projekt-Session-Brücke (Decision-Gate davor) | ⬜ not started | 4 | 0 | 0 | 0 | 0% |
+| 1 | UI-Verweis (autonom, Wert sofort, Gate-frei) | ✅ done | 0 | 3 | 0 | 0 | 100% |
+| 2 | Cross-Projekt-Session-Brücke (Decision-Gate davor) | ✅ done | 0 | 4 | 0 | 0 | 100% |
 
 ### [road-to-design-sync-v1.md](roadmaps/road-to-design-sync-v1.md)
 
-**Road to Design-Sync v1 — Prototyp-Deltas in die echte Shell** — 0 / 17 done (0%)
+**Road to Design-Sync v1 — Prototyp-Deltas in die echte Shell** — 17 / 17 done (100%)
 
 | # | Phase | State | Open | Done | Deferred | Cancelled | % |
 |---|---|---|---:|---:|---:|---:|---:|
-| 0 | R2-Korrektur + Eingangstür | ⬜ not started | 2 | 0 | 0 | 0 | 0% |
-| 1 | Editor-Tabs: mehrreihig / Overflow / Swipe | ⬜ not started | 4 | 0 | 0 | 0 | 0% |
-| 2 | Tab-Höhe + Trim | ⬜ not started | 2 | 0 | 0 | 0 | 0% |
-| 3 | Chat = parametrisierte Agents-Komponente | ⬜ not started | 4 | 0 | 0 | 0 | 0% |
-| 4 | Context-Budget-Meter (reine Projektion) | ⬜ not started | 5 | 0 | 0 | 0 | 0% |
+| 0 | R2-Korrektur + Eingangstür | ✅ done | 0 | 2 | 0 | 0 | 100% |
+| 1 | Editor-Tabs: mehrreihig / Overflow / Swipe | ✅ done | 0 | 4 | 0 | 0 | 100% |
+| 2 | Tab-Höhe + Trim | ✅ done | 0 | 2 | 0 | 0 | 100% |
+| 3 | Chat = parametrisierte Agents-Komponente | ✅ done | 0 | 4 | 0 | 0 | 100% |
+| 4 | Context-Budget-Meter (reine Projektion) | ✅ done | 0 | 5 | 0 | 0 | 100% |
 
 ### [road-to-local-artifact-hygiene.md](roadmaps/road-to-local-artifact-hygiene.md)
 
-**Road to Local-Artifact-Hygiene — Capisco-Dateien aus dem Consumer-Git heraushalten** — 0 / 8 done (0%)
+**Road to Local-Artifact-Hygiene — Capisco-Dateien aus dem Consumer-Git heraushalten** — 8 / 8 done (100%)
 
 | # | Phase | State | Open | Done | Deferred | Cancelled | % |
 |---|---|---|---:|---:|---:|---:|---:|
-| 0 | Ein projekt-lokaler Pfad | ⬜ not started | 3 | 0 | 0 | 0 | 0% |
-| 1 | Idempotenter `.git/info/exclude`-Eintrag | ⬜ not started | 3 | 0 | 0 | 0 | 0% |
-| 2 | Randfälle | ⬜ not started | 2 | 0 | 0 | 0 | 0% |
+| 0 | Ein projekt-lokaler Pfad | ✅ done | 0 | 3 | 0 | 0 | 100% |
+| 1 | Idempotenter `.git/info/exclude`-Eintrag | ✅ done | 0 | 3 | 0 | 0 | 100% |
+| 2 | Randfälle | ✅ done | 0 | 2 | 0 | 0 | 100% |
 
 ### [road-to-model-routing.md](roadmaps/road-to-model-routing.md)
 
@@ -70,12 +70,13 @@
 
 ### [road-to-token-economy.md](roadmaps/road-to-token-economy.md)
 
-**Road to Token-Ökonomie — Telemetrie-Ampel, Handoff, RTK, Caveman** — 0 / 15 done (0%)
+**Road to Token-Ökonomie — Telemetrie-Ampel, Handoff, RTK, Caveman, Modell-Routing** — 18 / 21 done (86%)
 
 | # | Phase | State | Open | Done | Deferred | Cancelled | % |
 |---|---|---|---:|---:|---:|---:|---:|
-| 0 | Memory-Kompression (das neue Primitiv) | ⬜ not started | 3 | 0 | 0 | 0 | 0% |
-| 1 | Rot→neue-Session-Handoff (verdrahtet das Meter) | ⬜ not started | 2 | 0 | 0 | 0 | 0% |
-| 2 | Caveman Terse-Modus (beide Backends) | ⬜ not started | 5 | 0 | 0 | 0 | 0% |
-| 3 | RTK Observation-Compressor (extern, optional) | ⬜ not started | 5 | 0 | 0 | 0 | 0% |
+| 0 | Memory-Kompression (das neue Primitiv) | 🟡 in progress | 1 | 2 | 0 | 0 | 67% |
+| 1 | Rot→neue-Session-Handoff (verdrahtet das Meter) | ✅ done | 0 | 2 | 0 | 0 | 100% |
+| 2 | Caveman Terse-Modus (beide Backends) | 🟡 in progress | 1 | 4 | 0 | 0 | 80% |
+| 3 | RTK Observation-Compressor (extern, optional) | ✅ done | 0 | 5 | 0 | 0 | 100% |
+| 4 | Modell-Routing (F5, `feature-model-switch.txt`) | 🟡 in progress | 1 | 5 | 0 | 0 | 83% |
 

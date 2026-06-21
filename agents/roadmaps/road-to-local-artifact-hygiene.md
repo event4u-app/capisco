@@ -1,5 +1,5 @@
 ---
-status: ready
+status: complete
 block: Backend
 depends_on: [road-to-real-git, road-to-runnable-dev]
 autonomy: "A (voll auto — gegen Temp-Repos, B1/B2-Muster)"
@@ -39,24 +39,30 @@ landen** — **ohne** die geteilte `.gitignore` des Teams anzufassen. Lösung:
 
 ## Phase 0 — Ein projekt-lokaler Pfad
 
-- [ ] **Festlegung:** Alles Capisco-Projekt-Lokale unter **einem** Pfad (`.capisco/`), damit der
+- [x] **Festlegung:** Alles Capisco-Projekt-Lokale unter **einem** Pfad (`.capisco/`), damit der
       Exclude-Eintrag **eine** Zeile bleibt statt einer wachsenden Liste verstreuter Muster.
-- [ ] Bestehende projekt-lokale Schreibpfade dorthin konsolidieren; Test: Capisco-Writes landen
-      unter `.capisco/`.
-- [ ] **Decision-Gate (PO):** Persönlich-vs-geteilt-Grenze innerhalb `.capisco/` —
+      <!-- sidecar/local/project-paths.ts: CAPISCO_DIR + localArtifactPath/cacheArtifactPath -->
+- [x] Bestehende projekt-lokale Schreibpfade dorthin konsolidieren; Test: Capisco-Writes landen
+      unter `.capisco/`. <!-- keine projekt-lokalen Writes existierten (recent-projects ist machine-weit, homedir); Konvention etabliert + path-resolver, isExcludedArtifact-Test -->
+- [x] **Decision-Gate (PO):** Persönlich-vs-geteilt-Grenze innerhalb `.capisco/` —
       `.capisco/local/` + `.capisco/cache/` → exclude; ein evtl. geteiltes `.capisco/project.toml`
       bleibt versioniert. Default: nur persönliche Unterpfade excludieren.
+      <!-- CAPISCO_EXCLUDED_PATHS = [.capisco/local/, .capisco/cache/]; project.toml NICHT excludiert -->
 
 ## Phase 1 — Idempotenter `.git/info/exclude`-Eintrag
 
-- [ ] Beim ersten Öffnen/Schreiben: markierten Block in `.git/info/exclude` eintragen — **vorher
+- [x] Beim ersten Öffnen/Schreiben: markierten Block in `.git/info/exclude` eintragen — **vorher
       prüfen**, ob er da ist (idempotent), nur Fehlendes ergänzen.
-- [ ] Geht durch den Broker (AK-G1) → `ask` + sichtbare Erst-Notiz (AK-G2).
-- [ ] Test gegen Temp-Repo: Block geschrieben; zweiter Lauf = no-op (Idempotenz-Assert);
-      `.gitignore` unberührt.
+      <!-- sidecar/git/git-exclude-exec.ts: ensureExcludeBlockWrite (upsert, stale-block-upgrade) -->
+- [x] Geht durch den Broker (AK-G1) → `ask` + sichtbare Erst-Notiz (AK-G2).
+      <!-- sidecar/git/git-exclude-broker.ts: file-write authorize→ask→execute; im chokepoint-allowlist -->
+- [x] Test gegen Temp-Repo: Block geschrieben; zweiter Lauf = no-op (Idempotenz-Assert);
+      `.gitignore` unberührt. <!-- sidecar/test/git-exclude.test.ts -->
 
 ## Phase 2 — Randfälle
 
-- [ ] **No-Repo:** Temp-Dir ohne `git init` → still nichts tun, kein Throw (AK-G4).
-- [ ] **`core.excludesFile`** des Nutzers respektieren: Temp-Repo mit gesetztem
+- [x] **No-Repo:** Temp-Dir ohne `git init` → still nichts tun, kein Throw (AK-G4).
+      <!-- resolveGitDir → undefined; ensureExcluded returns {hasRepo:false}, Broker nie berührt; Test: kein .git angelegt -->
+- [x] **`core.excludesFile`** des Nutzers respektieren: Temp-Repo mit gesetztem
       `core.excludesFile` → kein Doppel-Schaden, Fall bekannt statt angenommen.
+      <!-- read-only `git config --get core.excludesFile` via git-exec; in ExcludeOutcome.globalExcludesFile surfaced, nie geschrieben -->

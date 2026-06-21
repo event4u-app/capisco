@@ -1,5 +1,5 @@
 ---
-status: ready
+status: complete
 block: Cross-Projekt
 depends_on: [road-to-tauri-sidecar, road-to-session-store-and-acp, road-to-capability-broker]
 autonomy: "A (P1 @-Verweis gegen Registry) / C+human-gated (P2 Session-Brücke — Broker-Scope + Secret-Leak-Gate)"
@@ -60,11 +60,11 @@ Cloud-Egress). **Zwei Beine brechen**, bewusst redundant: **Egress-Gate** (AK-C3
 
 ## Phase 1 — UI-Verweis (autonom, Wert sofort, Gate-frei)
 
-- [ ] **`@projekt`-Autocomplete** in Markdown-/Notiz-/ToDo-Kontext über die Registry
+- [x] **`@projekt`-Autocomplete** in Markdown-/Notiz-/ToDo-Kontext über die Registry
       (Projektnamen, nicht Methoden); Verweis kennt den Pfad.
-- [ ] **Klickbarer Verweis:** öffnet das Projekt (neues Fenster / zweite Root) bzw. springt
+- [x] **Klickbarer Verweis:** öffnet das Projekt (neues Fenster / zweite Root) bzw. springt
       dorthin — ruft den vorhandenen „Projekt öffnen"-Pfad auf.
-- [ ] Veraltete-Pfade leise behandeln; DOM-/Routing-Test bei Seed-Registry.
+- [x] Veraltete-Pfade leise behandeln; DOM-/Routing-Test bei Seed-Registry.
 
 ## Phase 2 — Cross-Projekt-Session-Brücke (Decision-Gate davor)
 
@@ -73,13 +73,13 @@ Cloud-Egress). **Zwei Beine brechen**, bewusst redundant: **Egress-Gate** (AK-C3
 > + die Redaction-Stufe + das Egress-Gate stehen. Default konservativ: nur menschgesteuerter,
 > kuratierter Auszug, nie automatisch.
 
-- [ ] **Voraussetzung:** persistenter, projekt-übergreifend lesbarer Session-Store (heute
+- [x] **Voraussetzung:** persistenter, projekt-übergreifend lesbarer Session-Store (heute
       in-memory/pro-Store) — oder Föderation über Projekt-Stores.
-- [ ] **Broker-Scope-Erweiterung:** neue gescopte Capability `cross-project-read` (AK-C4),
+- [x] **Broker-Scope-Erweiterung:** neue gescopte Capability `cross-project-read` (AK-C4),
       fail-closed, nicht in Default-Allowlist.
-- [ ] **Redaction/Inject-Stufe** A→B (AK-C1) + **kuratierte Auszüge** statt Volltext (AK-C2);
+- [x] **Redaction/Inject-Stufe** A→B (AK-C1) + **kuratierte Auszüge** statt Volltext (AK-C2);
       secret-frei-Assert (Pflicht).
-- [ ] **Egress-Gate** vor Cloud-Prompt (AK-C3, harter Human-Gate); menschgesteuerte
+- [x] **Egress-Gate** vor Cloud-Prompt (AK-C3, harter Human-Gate); menschgesteuerte
       Relevanz (AK-C5); **Wissen ≠ Zugriff**-Invariante (AK-C6).
 
 ## Out of scope (bewusst, Flag — nicht bauen)

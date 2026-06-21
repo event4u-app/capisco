@@ -1,73 +1,45 @@
-# React + TypeScript + Vite
+# Capisco — app
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+The Capisco IDE front end: a Vite + React UI shell plus a headless TypeScript
+sidecar (`sidecar/`) it talks to over JSON-RPC. This is Capisco, not a Vite
+starter — start from **`DECISIONS.md`**, which records every foundation gate
+and its rationale, then the roadmaps under `../agents/roadmaps/`.
 
-Currently, two official plugins are available:
+## Layout
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- `src/` — the React shell.
+  - `shell/` — chrome (title/status/activity bars), dockable panels, and the
+    center workspaces (`agents`, `editor`, `git`, `tasks`, `chat`).
+  - `contracts/` — the provider interfaces; the seam where mocks swap for the
+    real sidecar.
+  - `mocks/` — deterministic in-process providers (no `Date.now` / `Math.random`)
+    so the shell, unit tests, and Playwright visual specs run with no bridge or
+    agent attached.
+  - `components/` — `ui/` (shadcn-derived primitives) and `capisco/` (app-specific).
+  - `i18n/`, `styles/`, `lib/`.
+- `sidecar/` — Node-only providers (real git, worktrees, capability broker, ACP)
+  behind the same `contracts/`.
 
-## React Compiler
+## Develop
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+pnpm install
+pnpm dev        # UI + real sidecar over a 127.0.0.1 WebSocket bridge
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+The mock fallback stays intact: with no bridge the UI is fully functional on
+deterministic data.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Quality gates
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+pnpm exec tsc -b
+pnpm lint                  # 0 errors (3 known react-refresh warnings)
+pnpm exec vitest run
+pnpm build
+pnpm exec ladle build
+pnpm exec playwright test  # DOM + axe; pixel goldens local-only (darwin)
 ```
+
+Conventions: every user-visible string goes through `t()`; interactive nodes
+carry a stable `data-testid`; colours come from design tokens, never raw hex.
