@@ -16,3 +16,4 @@ export * from "./quality";
 export * from "./ai-review";
 export * from "./task-forge";
 export * from "./lifecycle";
+export * from "./provisioning";

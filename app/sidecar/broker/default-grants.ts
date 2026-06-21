@@ -32,6 +32,13 @@ export const DEFAULT_GRANT_CONFIG: GrantConfig = {
     { kind: "shell", pattern: "cat*", verdict: "ask" },
     { kind: "shell", pattern: "git commit*", verdict: "ask" },
     { kind: "shell", pattern: "git push*", verdict: "ask" },
+    // Agent-tooling installs (B8) are consequential shell egress — ALWAYS ask,
+    // never auto. The IDE surfaces the exact command + a human gate; the build
+    // never widens these to `allow`. A `sudo`-prefixed install still hits the
+    // deny rule below.
+    { kind: "shell", pattern: "npm i*", verdict: "ask" },
+    { kind: "shell", pattern: "npm install*", verdict: "ask" },
+    { kind: "shell", pattern: "npx*", verdict: "ask" },
     // Destructive shell is denied outright in the default config — never allow.
     { kind: "shell", pattern: "rm*", verdict: "deny" },
     { kind: "shell", pattern: "sudo*", verdict: "deny" },
