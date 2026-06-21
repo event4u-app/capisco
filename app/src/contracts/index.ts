@@ -1,6 +1,7 @@
 export * from "./agents";
 export * from "./broker";
 export * from "./workspace";
+export * from "./fs-tree";
 export * from "./git-ops";
 export * from "./worktree";
 export * from "./runtime";
