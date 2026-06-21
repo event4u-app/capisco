@@ -131,6 +131,7 @@ verankert.**
 | F2 | `road-to-local-artifact-hygiene` | Backend | A (voll auto, Temp-Repos) | **parallel zu F1** (disjunkter Code) |
 | F3 | `road-to-token-economy` | Token-Ökonomie | A/B/C | nach F1 (erbt Meter), baut Mechanik |
 | F4 | `road-to-cross-project-knowledge` | Cross-Projekt | A (P1) / human-gated (P2) | **zuletzt** — höchstes Risiko, Voll-Trifecta in P2 |
+| F5 | `road-to-model-routing` | Token-Ökonomie | A (Routing+Eskalation) / C (Ersparnis-Kalibrierung) | nach F3 (teilt Model-Picker + Quality-Feedback) |
 
 **Drei load-bearing Council-Korrekturen** (sonst falsch gebaut):
 
@@ -139,7 +140,10 @@ verankert.**
    F1 baut kein Verhalten („New session" = Stub), F3 füllt es.
 2. **Die unterschätzten neuen Primitive** sind **Memory-Kompression** (F3 P0, nicht das Meter)
    und die **Broker-Scope-Erweiterung `cross-project-read`** (F4 P2) — nicht der `@projekt`-Verweis.
-   Caveman muss in **beide** Agent-Backends injizieren (native stream-json **und** ACP).
+   Caveman muss in **beide** Agent-Backends injizieren (native stream-json **und** ACP). **F5
+   (Modell-Routing)** routet nach **Herkunft, nicht Inhalt** (deterministisch), nutzt **B5-Quality
+   als Eskalations-Signal**, und hält Broker/Review/untrusted-egress als **nie-heruntergestufte
+   Invariante** (Asymmetrie: unterschätztes Haiku = „fast richtig" = der Marktschmerz).
 3. **F4 ist die einzige Voll-Trifecta** (private-data × untrusted × Cloud-Egress): zwei Beine
    brechen — Egress-Human-Gate **und** Redaction/kuratierte-Auszüge-Quarantäne. P1 (autonom)
    strikt von P2 (human-gated) durch eine Decision-Gate-Grenze getrennt.
