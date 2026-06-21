@@ -25,3 +25,7 @@ pnpm-debug.log*
 
 # editor
 .idea/
+
+# agent-config runtime/state (hook-generated)
+agents/runtime/
+agents/state/
