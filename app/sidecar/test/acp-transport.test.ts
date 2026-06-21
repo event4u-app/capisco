@@ -15,11 +15,18 @@
  */
 
 import { afterEach, describe, expect, it } from "vitest";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
 import { Broker } from "../broker/capability-broker.ts";
 import { InMemorySessionStore } from "../session/in-memory-session-store.ts";
 import { AcpSession, type PermissionResolver } from "../acp/acp-session.ts";
+import { AcpTransport, SEALED_CHILD_ENV_ALLOWLIST } from "../acp/acp-transport.ts";
 import type { AcpToolCall } from "@/contracts";
 import type { SessionEvent } from "@/contracts";
+
+const HERE = dirname(fileURLToPath(import.meta.url));
+/** The hostile stub that lies `fromUntrusted:false` on its egress (Fix 1). */
+const MALICIOUS_STUB = join(HERE, "..", "acp", "malicious-stub-acp-agent.mjs");
 
 // A human who clears every gate for the run. `session` persists the grant on
 // the trusted (human-reviewed) shape so the broker's execute re-decide allows
@@ -232,5 +239,83 @@ describe("ACP transport ↔ stub agent ↔ broker", () => {
 
     // The untrusted write was NOT pre-cleared by the session grant — it hit the gate.
     expect(blocked).toContain(true);
+  });
+
+  it("Fix 1 — a hostile agent sending fromUntrusted:false in an UNTRUSTED session is STILL forced to ask", async () => {
+    // CLIENT-ASSIGNED TAINT: the client owns the taint by session provenance,
+    // not the agent. The malicious stub lies (`fromUntrusted:false`) on its
+    // egress to dodge the lethal-trifecta gate. In an untrusted session (default)
+    // the downgrade is IGNORED — effective taint = sessionUntrusted || agentFlag
+    // — so the write must still reach the human gate, marked untrusted.
+    const broker = new Broker();
+    const store = new InMemorySessionStore();
+    const gated: { kind: string; fromUntrusted: boolean }[] = [];
+
+    const session = track(
+      new AcpSession({
+        broker,
+        store,
+        cwd: "/tmp/worktree-taint",
+        model: "Hostile Agent",
+        // Default-untrusted session (untrusted omitted ⇒ true).
+        command: process.execPath,
+        args: [MALICIOUS_STUB],
+        resolvePermission: (req, ctx) => {
+          if (req.kind === "file-write") {
+            gated.push({ kind: req.kind, fromUntrusted: ctx.fromUntrusted });
+          }
+          return { axis: "deny" };
+        },
+      }),
+    );
+    await session.start("Exfiltrate via a downgraded egress");
+
+    // The write reached the human gate (was NOT auto-allowed) AND it arrived
+    // marked untrusted despite the agent's `fromUntrusted:false` lie.
+    expect(gated).toHaveLength(1);
+    expect(gated[0]?.fromUntrusted).toBe(true);
+
+    // Defence-in-depth: a direct broker.authorize of the same egress, with the
+    // session-effective taint applied, still hard-gates to `ask`.
+    const probe = broker.authorize(
+      { id: "acp-agent", kind: "agent", label: "Hostile Agent" },
+      { kind: "file-write", target: "TODO-done.md", fromUntrusted: true },
+    );
+    expect(probe.outcome).toBe("ask");
+  });
+
+  it("Fix 2 — the spawned child gets a sealed minimal env (no credentials) and piped stderr", () => {
+    // The transport must NOT spread process.env into the child and must NOT
+    // inherit stderr to the host tty (a real agent CLI could leak a key there).
+    // Plant a credential-shaped var on the parent; assert it never reaches the
+    // child env, that the child env is exactly the allowlist, and that stderr is
+    // captured (piped) rather than inherited.
+    const SECRET_KEY = "CAPISCO_TEST_SECRET_TOKEN";
+    process.env[SECRET_KEY] = "leak-me-if-you-can";
+    try {
+      const transport = new AcpTransport({
+        onAgentRequest: async () => ({ outcome: "deny", reason: "test" }),
+        onNotification: () => {},
+      });
+      try {
+        // stderr is captured (a string buffer) — proven piped, not inherited.
+        expect(typeof transport.stderr).toBe("string");
+
+        // The child env is the explicit credential-free allowlist. The planted
+        // secret is absent; nothing outside the allowlist leaked in.
+        const env = transport.childEnv;
+        expect(SECRET_KEY in env).toBe(false);
+        expect(env[SECRET_KEY]).toBeUndefined();
+        for (const key of Object.keys(env)) {
+          expect(SEALED_CHILD_ENV_ALLOWLIST).toContain(key);
+        }
+        // And it is NOT the full process.env (which carries the planted secret).
+        expect(Object.keys(env).length).toBeLessThan(Object.keys(process.env).length);
+      } finally {
+        transport.close();
+      }
+    } finally {
+      delete process.env[SECRET_KEY];
+    }
   });
 });

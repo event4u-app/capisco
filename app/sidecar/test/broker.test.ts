@@ -167,6 +167,37 @@ describe("MUST-NOT 4 — untrusted-derived egress is a hard human gate, never au
     expect(engine.decide(agent, trusted).outcome).toBe("ask");
   });
 
+  it("Fix 5 — approving untrusted egress to target A does NOT clear untrusted egress to target B", () => {
+    // S2 — the single-use consumable grant is keyed by kind+target(+command),
+    // not kind:scope alone. Clearing target A must leave a DIFFERENT target B's
+    // untrusted egress still hard-gated.
+    const engine = new GrantPolicyEngine(DEFAULT_GRANT_CONFIG);
+    const toA: CapabilityRequest = {
+      kind: "network",
+      target: "https://api.internal/a",
+      fromUntrusted: true,
+    };
+    const toB: CapabilityRequest = {
+      kind: "network",
+      target: "https://api.internal/b",
+      fromUntrusted: true,
+    };
+    // Human approves egress to A (per-call). This mints a single-use grant for A.
+    engine.resolve(agent, toA, { axis: "session" });
+
+    // The trusted form of B (what execute would re-decide) must NOT be cleared
+    // by A's grant — it still asks.
+    const trustedB: CapabilityRequest = { kind: "network", target: "https://api.internal/b" };
+    expect(engine.decide(agent, trustedB).outcome).toBe("ask");
+    // And the untrusted B still hard-gates.
+    expect(engine.decide(agent, toB).outcome).toBe("ask");
+
+    // The approved target A's one call IS cleared exactly once (sanity).
+    const trustedA: CapabilityRequest = { kind: "network", target: "https://api.internal/a" };
+    expect(engine.decide(agent, trustedA).outcome).toBe("allow");
+    expect(engine.decide(agent, trustedA).outcome).toBe("ask"); // consumed
+  });
+
   it("a `deny` on an untrusted egress IS still sticky (sticky deny is safe)", () => {
     const engine = new GrantPolicyEngine(DEFAULT_GRANT_CONFIG);
     const untrusted: CapabilityRequest = {
@@ -234,9 +265,9 @@ describe("MUST-NOT 2 — secrets never leave as a value / env / CLI-arg", () => 
       credentialRef: "staging-admin",
     };
     broker.resolve(human, req, { axis: "session" });
+    const grant = broker.authorize(human, req).grant;
     broker.execute(human, req, (ctx: ExecutionContext) =>
-      ctx.withSecret("staging-admin", (v) => v.length),
-    );
+      ctx.withSecret("staging-admin", (v) => v.length), { grant });
     const dump = JSON.stringify(broker.audit.list());
     expect(dump).toContain("staging-admin"); // the reference name is fine
     expect(dump).not.toContain("p@ssw0rd-LEAK"); // the value is NOT
@@ -249,6 +280,7 @@ describe("MUST-NOT 2 — secrets never leave as a value / env / CLI-arg", () => 
     const broker = new Broker({ config: DEFAULT_GRANT_CONFIG });
     broker.secrets.put("k", "v");
     const req: CapabilityRequest = { kind: "file-read", target: "x" };
+    const grant = broker.authorize(human, req).grant;
     broker.execute(human, req, (ctx) => {
       const members = Object.keys(ctx);
       expect(members).toEqual(["withSecret"]);
@@ -257,7 +289,7 @@ describe("MUST-NOT 2 — secrets never leave as a value / env / CLI-arg", () => 
       expect("env" in ctx).toBe(false);
       expect("spawn" in ctx).toBe(false);
       return null;
-    });
+    }, { grant });
   });
 
   it("the audit store refuses a value-shaped credentialRef", () => {
@@ -296,8 +328,38 @@ describe("MUST-NOT 1 — the broker is the only path to execution (chokepoint)",
   it("execute RUNS an allowed capability and returns the callback result", () => {
     const broker = new Broker({ config: DEFAULT_GRANT_CONFIG });
     const req: CapabilityRequest = { kind: "shell", target: "git status" };
-    const out = broker.execute(agent, req, () => "ran");
+    const grant = broker.authorize(agent, req).grant;
+    const out = broker.execute(agent, req, () => "ran", { grant });
     expect(out).toBe("ran");
+  });
+
+  it("execute REFUSES a forged 'trusted' request with no authorize grant (C3)", () => {
+    // C3 — a caller who hand-rolls an allow-shaped request and calls execute()
+    // WITHOUT a prior authorize() has no valid grant; the chokepoint refuses it.
+    const broker = new Broker({ config: DEFAULT_GRANT_CONFIG });
+    const req: CapabilityRequest = { kind: "shell", target: "git status" };
+    expect(() => broker.execute(agent, req, () => "ran")).toThrow(/not authorized/);
+  });
+
+  it("execute REFUSES a mismatched grant (issued for a DIFFERENT request) (C3)", () => {
+    // A grant minted for request A cannot authorize execution of request B —
+    // the fingerprint (principal × kind × target × …) must match exactly.
+    const broker = new Broker({ config: DEFAULT_GRANT_CONFIG });
+    const reqA: CapabilityRequest = { kind: "file-read", target: "a.ts" };
+    const reqB: CapabilityRequest = { kind: "file-read", target: "b.ts" };
+    const grantA = broker.authorize(agent, reqA).grant;
+    expect(() => broker.execute(agent, reqB, () => "ran", { grant: grantA })).toThrow(
+      /not authorized/,
+    );
+  });
+
+  it("an execution grant is single-use — a replay with the same grant is refused (C3)", () => {
+    const broker = new Broker({ config: DEFAULT_GRANT_CONFIG });
+    const req: CapabilityRequest = { kind: "file-read", target: "once.ts" };
+    const grant = broker.authorize(agent, req).grant;
+    expect(broker.execute(agent, req, () => "ran", { grant })).toBe("ran");
+    // The same handle cannot run a second time — it was consumed.
+    expect(() => broker.execute(agent, req, () => "again", { grant })).toThrow(/not authorized/);
   });
 });
 
@@ -312,7 +374,8 @@ describe("MUST-NOT 3 — prod read-only invariant; permanent prod-write unconstr
       command: "UPDATE orders SET status='x'",
     };
     broker.resolve(agent, req, { axis: "session" }); // even a session grant…
-    expect(() => broker.execute(agent, req, () => "wrote")).toThrow(/read-only/);
+    const grant = broker.authorize(agent, req).grant;
+    expect(() => broker.execute(agent, req, () => "wrote", { grant })).toThrow(/read-only/);
   });
 
   it("a single-shot write escape authorizes ONE write, then auto-reverts", () => {
@@ -322,14 +385,23 @@ describe("MUST-NOT 3 — prod read-only invariant; permanent prod-write unconstr
     broker.resolve(agent, req, { axis: "session" });
     const escape = makeWriteEscape("orders-prod", command);
 
-    // First write rides the escape.
-    expect(broker.execute(agent, req, () => "wrote", { writeEscape: escape })).toBe("wrote");
-    expect(escape.consumed).toBe(true);
+    // First write rides the escape (with its single-use execution grant).
+    const grant1 = broker.authorize(agent, req).grant;
+    expect(broker.execute(agent, req, () => "wrote", { writeEscape: escape, grant: grant1 })).toBe(
+      "wrote",
+    );
+    // S3 — consumption is tracked by the broker registry (keyed on escape.id),
+    // NOT by a mutable flag the supplier could reset. The frozen escape's
+    // `consumed` mirror stays false; the broker still refuses a replay.
+    expect(escape.consumed).toBe(false);
+    expect(Object.isFrozen(escape)).toBe(true);
 
     // The SAME escape cannot authorize a second write — prod is read-only again.
-    expect(() => broker.execute(agent, req, () => "again", { writeEscape: escape })).toThrow(
-      /already consumed/,
-    );
+    // (A fresh grant gets us past the C3 check so we hit the escape registry.)
+    const grant2 = broker.authorize(agent, req).grant;
+    expect(() =>
+      broker.execute(agent, req, () => "again", { writeEscape: escape, grant: grant2 }),
+    ).toThrow(/already consumed/);
   });
 
   it("a write escape for a DIFFERENT command cannot ride", () => {
@@ -341,19 +413,22 @@ describe("MUST-NOT 3 — prod read-only invariant; permanent prod-write unconstr
     };
     broker.resolve(agent, req, { axis: "session" });
     const escape = makeWriteEscape("orders-prod", "UPDATE orders SET x=1");
-    expect(() => broker.execute(agent, req, () => "x", { writeEscape: escape })).toThrow(
+    const grant = broker.authorize(agent, req).grant;
+    expect(() => broker.execute(agent, req, () => "x", { writeEscape: escape, grant })).toThrow(
       /does not match/,
     );
   });
 
   it("there is structurally no session-wide / 'remember' prod-write escape", () => {
-    // WriteEscape has only { datasource, command, consumed } — no session,
+    // WriteEscape has only { id, datasource, command, consumed } — no session,
     // scope, or remember field. A permanent prod-write shape cannot be built.
+    // It is also FROZEN (S3), so a holder cannot widen it or reset `consumed`.
     const escape = makeWriteEscape("orders-prod", "UPDATE x");
-    expect(Object.keys(escape).sort()).toEqual(["command", "consumed", "datasource"]);
+    expect(Object.keys(escape).sort()).toEqual(["command", "consumed", "datasource", "id"]);
     expect("session" in escape).toBe(false);
     expect("remember" in escape).toBe(false);
     expect("permanent" in escape).toBe(false);
+    expect(Object.isFrozen(escape)).toBe(true);
   });
 
   it("a non-production datasource write needs no escape (only prod is the invariant)", () => {
@@ -364,7 +439,8 @@ describe("MUST-NOT 3 — prod read-only invariant; permanent prod-write unconstr
       command: "UPDATE orders SET x=1",
     };
     broker.resolve(agent, req, { axis: "session" });
-    expect(broker.execute(agent, req, () => "wrote")).toBe("wrote");
+    const grant = broker.authorize(agent, req).grant;
+    expect(broker.execute(agent, req, () => "wrote", { grant })).toBe("wrote");
   });
 });
 
@@ -387,12 +463,13 @@ describe("MUST-NOT 5 — append-only audit, written BEFORE execution", () => {
     const broker = new Broker({ config: DEFAULT_GRANT_CONFIG });
     const req: CapabilityRequest = { kind: "shell", target: "git status" };
     let auditLenAtRun = -1;
+    const grant = broker.authorize(agent, req).grant;
     broker.execute(agent, req, () => {
       // Inside the callback, the executed entry already exists.
       auditLenAtRun = broker.audit.list().length;
       return null;
-    });
-    // authorize(execute's internal decide does not audit) + executed entry.
+    }, { grant });
+    // authorize(allow audits) + executed entry.
     // The executed entry must be present when the callback fires.
     expect(auditLenAtRun).toBeGreaterThanOrEqual(1);
     const last = broker.audit.list().at(-1);

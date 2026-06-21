@@ -174,13 +174,18 @@ describe("Datasource.readonly is a derived, non-settable invariant (Phase 2, §3
     expect(local.readonly).toBe(false);
   });
 
-  it("the write escape is per-command single-shot — no session-wide form", () => {
+  it("the write escape is per-command single-shot, FROZEN — no session-wide form", () => {
     const escape = makeWriteEscape("prod", "UPDATE users SET ...");
     expect(escape.consumed).toBe(false);
-    // Spending it is the only mutation; there is no "remember" / scope field.
-    escape.consumed = true;
-    expect(escape.consumed).toBe(true);
-    expect(Object.keys(escape).sort()).toEqual(["command", "consumed", "datasource"]);
+    // S3 — the escape is frozen: a holder cannot reset `consumed` to replay a
+    // prod write. Consumption is tracked by the broker registry (keyed on `id`),
+    // not by this flag. There is no "remember" / scope field.
+    expect(Object.isFrozen(escape)).toBe(true);
+    expect(() => {
+      (escape as { consumed: boolean }).consumed = true;
+    }).toThrow();
+    expect(escape.consumed).toBe(false);
+    expect(Object.keys(escape).sort()).toEqual(["command", "consumed", "datasource", "id"]);
   });
 });
 
