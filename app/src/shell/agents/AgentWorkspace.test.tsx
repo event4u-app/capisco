@@ -111,6 +111,9 @@ describe("AgentWorkspace", () => {
     const user = userEvent.setup();
     renderWorkspace();
     await user.click(screen.getByTestId("session-gear"));
+    // Backend picker is CLI-tab ONLY — it must NOT appear in the API-client tab.
+    expect(screen.queryByTestId("agent-settings-backends")).toBeNull();
+    await user.click(screen.getByTestId("agent-settings-cli"));
     const list = screen.getByTestId("agent-settings-backends");
 
     // All four backends are present (Stub / native / ACP bridge / Codex).

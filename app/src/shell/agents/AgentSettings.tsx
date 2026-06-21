@@ -189,8 +189,11 @@ export function AgentSettings({
       )}
 
       {/* Backend catalog (B8 P3) — Stub / Claude Code native / Claude Code via
-          ACP / Codex, each with status + Use/Install/Guide. The stub stays the
-          default; selecting a backend persists. Install is broker-gated. */}
+          ACP / Codex, each with status + Use/Install/Guide. CLI-tab ONLY: these
+          are installed-CLI backends; the API tab is the provider+token path and
+          must not surface Install/Use. The stub stays the default; selecting a
+          backend persists. Install is broker-gated. */}
+      {backendKind === "cli" && (
       <div className="mt-2.5 border-t border-border pt-2.5" data-testid="agent-settings-backends">
         <span className="mb-1.5 block text-[10.5px] font-semibold uppercase tracking-wide text-muted-foreground">
           {t("agents.settings.backends")}
@@ -221,6 +224,7 @@ export function AgentSettings({
           </div>
         )}
       </div>
+      )}
     </div>
   );
 }

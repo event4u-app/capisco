@@ -113,6 +113,9 @@ test.describe("agents workspace — interactions", () => {
   }) => {
     await gotoAgents(page);
     await page.getByTestId("session-gear").click();
+    // Backend picker is CLI-tab ONLY — not in the API-client tab.
+    await expect(page.getByTestId("agent-settings-backends")).toHaveCount(0);
+    await page.getByTestId("agent-settings-cli").click();
     const list = page.getByTestId("agent-settings-backends");
     await expect(list).toBeVisible();
 
