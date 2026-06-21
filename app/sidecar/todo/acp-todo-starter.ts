@@ -26,6 +26,11 @@ export interface AcpTodoStarterOptions {
   /** Spawn override (tests). Defaults to the stub agent. */
   command?: string;
   args?: string[];
+  /**
+   * Run the ACP `initialize` handshake before session/new (B8 P2b). The real
+   * `claude-code-acp` bridge requires it; the stub does not. Defaults to `false`.
+   */
+  handshake?: boolean;
   /** Side-effect performer for an allowed action (defaults to no-op). */
   perform?: AcpSessionOptionsPerform;
 }
@@ -42,6 +47,7 @@ export function createAcpTodoStarter(opts: AcpTodoStarterOptions): TodoSessionSt
       resolvePermission: opts.resolvePermission,
       command: opts.command,
       args: opts.args,
+      handshake: opts.handshake,
       perform: opts.perform,
     });
     try {

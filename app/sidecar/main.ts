@@ -20,6 +20,7 @@ import { registerBroker } from "./register-broker.ts";
 import { registerSession } from "./register-session.ts";
 import { registerQuality } from "./register-quality.ts";
 import { registerTaskForge } from "./register-task-forge.ts";
+import { registerProvision } from "./register-provision.ts";
 import { createFileRecentProjects } from "./recent/recent-projects.ts";
 
 export function resolveSocketPath(argv: string[] = process.argv.slice(2)): string {
@@ -69,6 +70,13 @@ export function registerAllProviders(registry: ProviderRegistry): Broker {
   // (its external status write is broker-gated, not RPC-fired). Live tokens +
   // bidirectional sync deferred.
   registerTaskForge(registry);
+  // B8 — backend detection (read-only `which`/`--version` probe) + broker-gated
+  // install. `provision.detect` returns the structured agent-backend catalog so
+  // the AgentSettings UI can offer a low-friction install/use flow. The install
+  // action flows through the broker chokepoint; the default human gate is
+  // fail-closed (deny-all) — a real UI swaps in a confirm-the-exact-command
+  // prompt. Detection is real on the host; nothing auto-installs.
+  registerProvision(registry, { broker });
   // The broker is returned so the dev-workspace swap can wire the broker-gated
   // editor-save adapter (P2) behind the same `projectFs` id.
   return broker;

@@ -39,6 +39,23 @@ const EXECUTION_PRIMITIVES: Record<string, ReadonlyArray<SideEffect>> = {
   "quality/real-quality-provider.ts": ["process"],
   // The ACP agent transport (B3) spawns the agent child process.
   "acp/acp-transport.ts": ["process"],
+  // The NATIVE Claude-Code stream-json transport (B8 P2a) — the sealed `claude`
+  // child process (stream-json mode). Same posture as `acp-transport.ts`:
+  // SEALED spawn (credential-free env allowlist, piped stderr). The model's
+  // tool_use blocks are the only consequential actions, every one routed
+  // through the broker by `claude-code-provider.ts` — there is no direct
+  // fs/shell/net edge here.
+  "acp/claude-stream-exec.ts": ["process"],
+  // The READ-ONLY backend-detection primitive (B8 P0) — `which`/`--version`
+  // probes only. execFile, no shell. It mutates nothing; its mutating-arg guard
+  // refuses any install verb. The only spawn outside the broker that is
+  // read-only by construction.
+  "provision/detect-exec.ts": ["process"],
+  // The agent-tooling INSTALL primitive (B8 P1) — the mutating spawn (e.g.
+  // `npm i -g …`). execFile, no shell. Its SOLE caller is the broker-gated
+  // installer (`install-broker.ts`), which runs it only inside `broker.execute`.
+  // A denied capability never reaches this file → no install.
+  "provision/install-exec.ts": ["process"],
   // The machine-wide Recent-Projects registry (B0) — atomic fs writes.
   "recent/recent-projects.ts": ["fs-write"],
   // The project fs READ primitive (P1) — no writes, but it is the audited
