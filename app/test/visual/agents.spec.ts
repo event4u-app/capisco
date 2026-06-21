@@ -40,6 +40,9 @@ test.describe("agents workspace — structure (primary gate)", () => {
     const leftGap = box!.x - scroll!.x;
     const rightGap = scroll!.x + scroll!.width - (box!.x + box!.width);
     expect(Math.abs(leftGap - rightGap)).toBeLessThan(2);
+    // Settled computed cap: the reading column is bounded at exactly 740px.
+    const maxW = await inner.evaluate((el) => getComputedStyle(el).maxWidth);
+    expect(maxW).toBe("740px");
   });
 
   test("the broker permission block is present (teal-outline)", async ({ page }) => {
@@ -64,13 +67,54 @@ test.describe("agents workspace — structure (primary gate)", () => {
     await expect(note).toContainText("read-only");
   });
 
-  test("composer bar exposes model, effort and budget controls", async ({ page }) => {
+  test("session tabs are a fixed 36px tall; long titles trim with an ellipsis", async ({ page }) => {
+    await gotoAgents(page);
+    const tab = page.getByTestId("session-tab-s1");
+    const box = await tab.boundingBox();
+    expect(Math.round(box!.height)).toBe(36);
+    const title = page.getByTestId("session-title-s1");
+    const { overflow, ellipsis } = await title.evaluate((el) => {
+      const cs = getComputedStyle(el);
+      return { overflow: cs.overflow, ellipsis: cs.textOverflow };
+    });
+    expect(overflow).toContain("hidden");
+    expect(ellipsis).toBe("ellipsis");
+  });
+
+  test("composer bar exposes model, tune (effort+budget) and meter controls", async ({ page }) => {
     await gotoAgents(page);
     await expect(page.getByTestId("composer-input")).toBeVisible();
     await expect(page.getByTestId("composer-send")).toBeVisible();
     await expect(page.getByTestId("composer-model")).toContainText("Opus 4.8");
-    await expect(page.getByTestId("composer-effort")).toContainText("High");
-    await expect(page.getByTestId("composer-budget")).toBeVisible();
+    // Effort + budget were consolidated into one "tune" control; budget lives in the meter.
+    await expect(page.getByTestId("composer-tune")).toBeVisible();
+    await expect(page.getByTestId("context-meter")).toBeVisible();
+  });
+});
+
+test.describe("agents workspace — context-budget meter (Design-Sync P4)", () => {
+  test("the meter is the left composer control, green by default", async ({ page }) => {
+    await gotoAgents(page);
+    const meter = page.getByTestId("context-meter");
+    await expect(meter).toBeVisible();
+    // 7.7k / 200k default → green (ok). Assert the TONE, not the number.
+    await expect(meter).toHaveAttribute("data-tone", "ok");
+    await expect(page.getByTestId("context-meter-bar")).toBeVisible();
+    // No banner while green.
+    await expect(page.getByTestId("context-banner")).toHaveCount(0);
+  });
+
+  test("clicking the meter opens the threshold popover (slider + presets) and sets it live", async ({
+    page,
+  }) => {
+    await gotoAgents(page);
+    await page.getByTestId("context-meter").click();
+    await expect(page.getByTestId("context-meter-pop")).toBeVisible();
+    await expect(page.getByTestId("context-budget-slider")).toBeVisible();
+    // Picking the smallest preset (100k) crosses no band for 7.7k → still green,
+    // but the threshold update is live (popover reflects the new budget).
+    await page.getByTestId("context-budget-preset-100000").click();
+    await expect(page.getByTestId("context-meter-value")).toContainText("/100k");
   });
 });
 
@@ -86,13 +130,11 @@ test.describe("agents workspace — interactions", () => {
     await expect(page.getByTestId("transcript-empty")).toBeVisible();
   });
 
-  test("effort popover opens a 6-step slider; budget popover lists plan rows", async ({ page }) => {
+  test("tune popover opens the 6-step effort slider and lists plan rows", async ({ page }) => {
     await gotoAgents(page);
-    await page.getByTestId("composer-effort").click();
+    await page.getByTestId("composer-tune").click();
+    await expect(page.getByTestId("composer-tune-pop")).toBeVisible();
     await expect(page.getByTestId("composer-effort-slider")).toBeVisible();
-    await page.keyboard.press("Escape");
-    await page.getByTestId("composer-budget").click();
-    await expect(page.getByTestId("composer-budget-pop")).toBeVisible();
     await expect(page.getByTestId("plan-row-weekly")).toContainText("Weekly");
   });
 

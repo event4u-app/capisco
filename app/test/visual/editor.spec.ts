@@ -73,6 +73,48 @@ test.describe("editor — CM6 shell (Phase 0)", () => {
   });
 });
 
+test.describe("editor — tab rows / overflow / swipe (Design-Sync P1)", () => {
+  test("defaults to a single row (horizontal scroll)", async ({ page }) => {
+    await gotoEditor(page);
+    await expect(page.getByTestId("editor-tab-strip")).toHaveAttribute("data-rows", "1");
+  });
+
+  test("the rows setting (1/2/3) breaks the strip into multiple rows", async ({ page }) => {
+    await gotoEditor(page);
+    const strip = page.getByTestId("editor-tab-strip");
+    const before = (await strip.boundingBox())!.height;
+    await page.getByTestId("editor-tab-overflow").click();
+    await page.getByTestId("editor-tab-rows-3").click();
+    await expect(strip).toHaveAttribute("data-rows", "3");
+    // Wrapping makes the strip taller than the single-row baseline.
+    const after = (await strip.boundingBox())!.height;
+    expect(after).toBeGreaterThan(before);
+  });
+
+  test("the overflow dropdown lists every open tab; clicking jumps to it", async ({ page }) => {
+    await gotoEditor(page);
+    await page.getByTestId("editor-tab-overflow").click();
+    const menu = page.getByTestId("editor-tab-menu");
+    await expect(menu).toBeVisible();
+    await expect(menu.getByTestId("editor-tab-menu-item-broker.ts")).toBeVisible();
+    await expect(menu.getByTestId("editor-tab-menu-dirty-worktree.ts")).toBeVisible();
+    await menu.getByTestId("editor-tab-menu-item-package.json").click();
+    await expect(page.getByTestId("editor-tab-package.json")).toHaveAttribute(
+      "data-active",
+      "true",
+    );
+  });
+
+  test("file tabs are not trimmed (long name shown in full)", async ({ page }) => {
+    await gotoEditor(page);
+    const label = page
+      .getByTestId("editor-tab-select-ListProjectsControllerTest.ts")
+      .getByText("ListProjectsControllerTest.ts");
+    const overflow = await label.evaluate((el) => getComputedStyle(el).textOverflow);
+    expect(overflow).not.toBe("ellipsis");
+  });
+});
+
 test.describe("editor — provider outputs (Phase 1, mock providers)", () => {
   test("autocomplete popup lists CompletionItems, first entry teal-selected", async ({ page }) => {
     await gotoEditor(page);
