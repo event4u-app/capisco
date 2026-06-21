@@ -50,7 +50,14 @@ export type CapabilityKind =
   | "db-read"
   | "db-write"
   | "secret-read"
-  | "external-write";
+  | "external-write"
+  // Cross-project session-knowledge read (road-to-cross-project-knowledge P2,
+  // AK-C4). A NEW scope axis: reading another project's session store across the
+  // project boundary. It is NOT an implicit allow — it is fail-closed (no
+  // default allowlist rule → `ask`) and never in the default allowlist. The
+  // bridge carries conversation/knowledge context only, NEVER executable
+  // cross-project access (AK-C6 — that would be a separate, later capability).
+  | "cross-project-read";
 
 /**
  * A capability request presented to the broker. `target` is the concrete object
