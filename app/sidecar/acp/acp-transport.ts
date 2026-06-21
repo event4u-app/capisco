@@ -50,20 +50,67 @@ export interface AcpTransportOptions {
   onNotification: (note: AgentNotification) => void;
 }
 
+/**
+ * SEALED CHILD ENV (Fix 2 / lethal trifecta). The ACP agent subprocess gets an
+ * EXPLICIT, minimal env allowlist — never a spread of `process.env`. A real
+ * agent CLI inherits NO credentials, tokens, or unrelated host vars via env:
+ * the broker injects secrets ONLY at the execution layer (`SecretStore.inject`),
+ * never into the child's environment, argv, or stderr. We pass only the few vars
+ * the runtime genuinely needs to start (PATH so the binary resolves; HOME/TMPDIR
+ * for scratch). Any value present is sourced from the host but carries no
+ * credential by policy — the allowlist is deliberately credential-free.
+ */
+/** The credential-free allowlist of env vars the child may inherit (Fix 2). */
+export const SEALED_CHILD_ENV_ALLOWLIST = ["PATH", "HOME", "TMPDIR"] as const;
+
+export function sealedChildEnv(): NodeJS.ProcessEnv {
+  const env: NodeJS.ProcessEnv = {};
+  for (const key of SEALED_CHILD_ENV_ALLOWLIST) {
+    const value = process.env[key];
+    if (value !== undefined) env[key] = value;
+  }
+  return env;
+}
+
 export class AcpTransport {
-  readonly #child: ChildProcessByStdio<Writable, Readable, null>;
+  readonly #child: ChildProcessByStdio<Writable, Readable, Readable>;
   readonly #decoder = new NdjsonDecoder();
   readonly #pending = new Map<number, { resolve: (v: unknown) => void; reject: (e: Error) => void }>();
   #nextId = 1;
   #closed = false;
+  /** Captured child stderr (Fix 2) — piped, never inherited to the parent tty. */
+  #stderr = "";
+  /** The exact, sealed env passed to the child (Fix 2) — for assertions / audit. */
+  readonly #childEnv: NodeJS.ProcessEnv;
 
   constructor(opts: AcpTransportOptions) {
     const command = opts.command ?? process.execPath;
     const args = opts.args ?? [STUB_ACP_AGENT_PATH];
-    this.#child = spawn(command, args, { stdio: ["pipe", "pipe", "inherit"] });
+    // Fix 2 — SEALED SPAWN: stderr is `pipe` (captured, never `inherit`-ed to
+    // the host tty where a real agent could leak a key), and the env is an
+    // explicit minimal allowlist (no `process.env` spread, no credentials).
+    this.#childEnv = sealedChildEnv();
+    this.#child = spawn(command, args, {
+      stdio: ["pipe", "pipe", "pipe"],
+      env: this.#childEnv,
+    });
     this.#child.stdout.setEncoding("utf8");
     this.#child.stdout.on("data", (chunk: string) => this.#onData(chunk, opts));
+    this.#child.stderr.setEncoding("utf8");
+    this.#child.stderr.on("data", (chunk: string) => {
+      this.#stderr += chunk;
+    });
     this.#child.on("close", () => this.#onClose());
+  }
+
+  /** The captured child stderr (Fix 2) — for diagnostics; never the host tty. */
+  get stderr(): string {
+    return this.#stderr;
+  }
+
+  /** The exact sealed env handed to the child (Fix 2) — a copy, for assertions. */
+  get childEnv(): Readonly<NodeJS.ProcessEnv> {
+    return { ...this.#childEnv };
   }
 
   #onData(chunk: string, opts: AcpTransportOptions): void {

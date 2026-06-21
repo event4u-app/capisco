@@ -30,6 +30,7 @@ import type {
   CapabilityRequest,
   CapabilityScope,
   ExecutionContext,
+  ExecutionGrant,
   GrantConfig,
   PolicyEngine,
   Principal,
@@ -58,11 +59,47 @@ export interface BrokerOptions {
   productionDatasources?: ReadonlySet<string>;
 }
 
+/**
+ * A stable fingerprint of the exact (principal × request) an execution grant is
+ * bound to (C3). Two calls match iff every security-relevant field matches — so
+ * a grant for `(agent, file-write src/a.ts)` can never authorize
+ * `(agent, file-write src/b.ts)` or a request that flips `fromUntrusted`.
+ */
+function requestFingerprint(principal: Principal, request: CapabilityRequest): string {
+  return JSON.stringify([
+    principal.kind,
+    principal.id,
+    request.kind,
+    request.target,
+    request.command ?? "",
+    request.credentialRef ?? "",
+    Boolean(request.fromUntrusted),
+  ]);
+}
+
 export class Broker implements CapabilityBroker {
   readonly #policy: PolicyEngine;
   readonly secrets: SecretStore;
   readonly audit: AuditStore;
   readonly #prodDatasources: ReadonlySet<string>;
+  /**
+   * C3 — single-use execution grants issued by `authorize`. Maps the opaque
+   * grant id → the (principal × request) fingerprint it authorizes. `execute`
+   * looks up the supplied grant here, verifies the fingerprint matches its own
+   * request, and DELETES the entry (single-use). A grant id not in this map is
+   * forged or already consumed — `execute` refuses it. The map is private; there
+   * is no way to add an entry except through `authorize`.
+   */
+  readonly #grants = new Map<string, string>();
+  #grantSeq = 0;
+  /**
+   * S3 — used production-write escapes, by their opaque `id`. The first
+   * successful prod write registers the escape id here; any later write riding
+   * the SAME id (a reset clone or a freshly re-minted escape that the supplier
+   * tries to replay) is refused. Consumption lives here, not on the (frozen)
+   * escape's `consumed` flag.
+   */
+  readonly #usedEscapes = new Set<string>();
 
   constructor(opts: BrokerOptions = {}) {
     this.#policy = opts.policy ?? new GrantPolicyEngine(opts.config ?? DEFAULT_GRANT_CONFIG, opts.projectKey);
@@ -88,6 +125,14 @@ export class Broker implements CapabilityBroker {
       fromUntrusted: Boolean(request.fromUntrusted),
       reason: decision.reason,
     });
+    // C3 — only an `allow` decision mints a single-use execution grant bound to
+    // THIS exact (principal × request). `execute` requires it; nothing else can
+    // produce a valid grant id, so a forged "trusted" request cannot execute.
+    if (decision.outcome === "allow") {
+      const grant: ExecutionGrant = Object.freeze({ id: `grant-${++this.#grantSeq}` });
+      this.#grants.set(grant.id, requestFingerprint(principal, request));
+      return { ...decision, grant };
+    }
     return decision;
   }
 
@@ -104,22 +149,31 @@ export class Broker implements CapabilityBroker {
     principal: Principal,
     request: CapabilityRequest,
     run: (ctx: ExecutionContext) => T,
-    options: { scope?: CapabilityScope; writeEscape?: WriteEscape } = {},
+    options: { scope?: CapabilityScope; writeEscape?: WriteEscape; grant?: ExecutionGrant } = {},
   ): T {
-    // 1. Re-authorize at execution time — the chokepoint. No execution edge
-    //    exists that did not pass this. Anything other than `allow` throws.
-    const decision = this.#policy.decide(principal, request, options.scope);
-    if (decision.outcome !== "allow") {
+    // 1. C3 — the chokepoint is now BOUND to a prior `authorize`. `execute` is
+    //    NOT an independent re-decide: it requires the single-use execution
+    //    grant that `authorize` minted for THIS exact (principal × request), and
+    //    consumes it. A missing, forged, mismatched, or already-consumed grant
+    //    is rejected. This closes the "call execute() with a hand-rolled
+    //    `trusted` request" bypass — there is no grant for such a request.
+    const grant = options.grant;
+    const fingerprint = requestFingerprint(principal, request);
+    if (!grant || this.#grants.get(grant.id) !== fingerprint) {
       throw new Error(
-        `capability not authorized (${decision.outcome}): ${request.kind}(${request.target}) — ${decision.reason}`,
+        `capability not authorized: ${request.kind}(${request.target}) — execution requires a matching, unconsumed authorize() grant`,
       );
     }
+    // Consume the grant — single-use. A replay with the same handle now fails.
+    this.#grants.delete(grant.id);
 
-    // 2. Production datasource write invariant (§3.3). A write against a
-    //    production datasource requires a fresh, unconsumed, command-matched
-    //    single-shot escape — which we consume (auto-revert). There is no
-    //    session-wide / "remember" escape shape, so a permanent prod-write is
-    //    structurally unconstructable.
+    // 2. Production datasource write invariant (§3.3 / S3). A write against a
+    //    production datasource requires a command-matched single-shot escape —
+    //    and consumption is tracked by the broker's used-escape registry (keyed
+    //    on the escape's opaque, frozen `id`), NOT by a mutable `consumed` flag.
+    //    So resetting `consumed` or re-minting a clone for the same prod write
+    //    cannot replay it. There is no session-wide / "remember" escape shape,
+    //    so a permanent prod-write is structurally unconstructable.
     if (request.kind === "db-write" && this.#prodDatasources.has(request.target)) {
       const escape = options.writeEscape;
       if (!escape) {
@@ -135,11 +189,13 @@ export class Broker implements CapabilityBroker {
       if (!request.command || escape.command !== request.command) {
         throw new Error("write escape does not match this command");
       }
-      if (escape.consumed) {
+      if (this.#usedEscapes.has(escape.id)) {
         throw new Error("write escape already consumed — prod is read-only again");
       }
-      // Consume — auto-revert to read-only after this one write.
-      escape.consumed = true;
+      // Consume in the broker registry — auto-revert to read-only after this one
+      // write. The frozen escape's `consumed` flag is a back-compat mirror; the
+      // registry is the authority a caller cannot reset.
+      this.#usedEscapes.add(escape.id);
     }
 
     // 3. Append-only audit of the EXECUTION, written BEFORE the callback runs.

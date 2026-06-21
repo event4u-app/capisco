@@ -57,22 +57,49 @@ export function makeDatasource(input: DatasourceInput): Datasource {
 
 /**
  * A per-command, single-shot write escape (invariant §3.3). It authorises ONE
- * write against a read-only (production) datasource and auto-reverts: once
- * `consumed`, it can never authorise again. There is no session-wide or
- * "remember" form — that shape is intentionally not expressible here.
+ * write against a read-only (production) datasource and auto-reverts. There is
+ * no session-wide or "remember" form — that shape is intentionally not
+ * expressible here.
+ *
+ * S3 hardening: the escape is FROZEN at construction and carries an opaque,
+ * one-time `id`. Consumption is tracked by the broker in a used-escape registry
+ * keyed on `id` — NOT by a mutable `consumed` flag the supplier could reset or
+ * re-mint. So neither "reset `consumed` and replay" nor "mint a fresh escape per
+ * call for the same prod write" works: the broker records the id on first use
+ * and refuses any later write riding the same id, and the frozen object makes
+ * the legacy `consumed` field non-writable for back-compat readers.
  */
 export interface WriteEscape {
+  /** Opaque, one-time id — the broker tracks consumption by this, not by a flag. */
+  readonly id: string;
   /** The datasource the single write is authorised against. */
-  datasource: string;
+  readonly datasource: string;
   /** The exact command the escape authorises (audited before execution §3.4). */
-  command: string;
-  /** True once the single write has fired — the escape is now spent. */
-  consumed: boolean;
+  readonly command: string;
+  /**
+   * Legacy read-only view of spent-state. Frozen — a holder cannot reset it.
+   * The broker's used-escape registry (keyed on `id`) is the authority; this
+   * flag is a back-compat mirror set on the frozen object at mint time (`false`).
+   */
+  readonly consumed: boolean;
 }
 
-/** Issues a fresh, unconsumed single-shot write escape for one command. */
+let writeEscapeSeq = 0;
+
+/**
+ * Issues a fresh, unconsumed single-shot write escape for one command. The
+ * returned object is FROZEN (S3): its `consumed` flag cannot be reset and a
+ * caller cannot widen its shape. The unique `id` lets the broker register the
+ * escape as spent on first use so a re-minted clone for the same prod write is
+ * still refused.
+ */
 export function makeWriteEscape(datasource: string, command: string): WriteEscape {
-  return { datasource, command, consumed: false };
+  return Object.freeze({
+    id: `we-${++writeEscapeSeq}`,
+    datasource,
+    command,
+    consumed: false,
+  });
 }
 
 export type ContainerStatus = "running" | "exited" | "error";

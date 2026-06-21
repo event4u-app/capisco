@@ -95,12 +95,35 @@ export type CapabilityScope = string;
  */
 export type BrokerOutcome = "allow" | "deny" | "ask";
 
+/**
+ * A single-use execution grant (C3) — an opaque, broker-minted handle that binds
+ * an `allow` decision to the EXACT (principal × request) it was issued for.
+ *
+ * `authorize` mints one only when its decision is `allow`; `execute` REQUIRES a
+ * matching, unconsumed handle and consumes it. A caller cannot fabricate a
+ * "trusted" execution: there is no public constructor, the `id` is opaque, and
+ * `execute` verifies the handle against its own private registry of issued
+ * (unconsumed) grants — a forged or mismatched handle is rejected. This makes
+ * "call execute() with a hand-rolled allow request" structurally unconstructable;
+ * every execution edge traces back to a prior, audited `authorize`.
+ */
+export interface ExecutionGrant {
+  /** Opaque, broker-minted, single-use token. Never a secret; not caller-forgeable. */
+  readonly id: string;
+}
+
 export interface BrokerDecision {
   outcome: BrokerOutcome;
   /** When `outcome === "ask"`, the request a human must resolve. */
   request?: PermissionRequest;
   /** Human-readable reason (audited). Never contains a secret value. */
   reason: string;
+  /**
+   * When `outcome === "allow"`, the single-use {@link ExecutionGrant} that
+   * `execute` requires to run THIS exact (principal × request). Absent for
+   * `ask`/`deny` — there is nothing to execute. (C3 authorize↔execute binding.)
+   */
+  grant?: ExecutionGrant;
 }
 
 /**
@@ -240,7 +263,8 @@ export interface CapabilityBroker {
   /**
    * Run the policy engine, write the audit entry, and return the decision. This
    * is pure authorization — it does NOT execute. An `ask` outcome carries the
-   * `PermissionRequest` the UI must resolve.
+   * `PermissionRequest` the UI must resolve; an `allow` outcome carries a
+   * single-use {@link ExecutionGrant} that `execute` requires (C3 binding).
    */
   authorize(
     principal: Principal,
@@ -258,8 +282,12 @@ export interface CapabilityBroker {
     scope?: CapabilityScope,
   ): GrantAxis;
   /**
-   * Execute an authorized capability. Throws if the capability was not first
-   * authorized to `allow` (or resolved to an allowing axis). Secrets are
+   * Execute an authorized capability. REQUIRES the single-use
+   * {@link ExecutionGrant} that a prior `authorize` minted for THIS exact
+   * (principal × request) — `execute` is not an independent re-decide, so a
+   * caller cannot bypass the gate by handing `execute` a forged "trusted"
+   * request (C3). A missing, mismatched, or already-consumed grant throws
+   * `capability not authorized`; the grant is consumed on success. Secrets are
    * injected here at the execution layer via {@link SecretStore.inject} — the
    * `run` callback receives an injector, never a raw value. The audit
    * `executed` entry is written before the callback runs.
@@ -271,7 +299,7 @@ export interface CapabilityBroker {
     principal: Principal,
     request: CapabilityRequest,
     run: (ctx: ExecutionContext) => T,
-    options?: { scope?: CapabilityScope; writeEscape?: WriteEscape },
+    options?: { scope?: CapabilityScope; writeEscape?: WriteEscape; grant?: ExecutionGrant },
   ): T;
   /** Propose a bidirectional vault write-back (§3.2), human-gated. */
   proposeVaultWrite(ref: string, reason: string): VaultWriteProposal;

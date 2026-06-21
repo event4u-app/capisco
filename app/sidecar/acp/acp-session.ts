@@ -25,6 +25,7 @@
  */
 
 import type {
+  BrokerDecision,
   CapabilityBroker,
   CapabilityRequest,
   PermissionDecision,
@@ -61,6 +62,17 @@ export interface AcpSessionOptions {
   model: string;
   /** The agent principal (its output is untrusted DATA — lethal trifecta). */
   principal?: Principal;
+  /**
+   * Whether THIS session is untrusted by provenance (CLIENT-ASSIGNED TAINT). The
+   * client — not the agent — owns the taint, derived from session provenance: a
+   * ToDo / prompt / web / ticket-derived session is untrusted. Defaults to
+   * `true` (any agent output is untrusted data until proven otherwise). The
+   * agent's per-request `fromUntrusted` may only ESCALATE; it can never downgrade
+   * an untrusted session to trusted. Effective taint = sessionUntrusted ||
+   * request.fromUntrusted, so a hostile agent sending `fromUntrusted:false`
+   * cannot dodge the lethal-trifecta gate.
+   */
+  untrusted?: boolean;
   /** Human-in-the-loop gate. Defaults to deny-all (fail closed). */
   resolvePermission?: PermissionResolver;
   /** Optional single-shot prod-write escape supplier. */
@@ -82,6 +94,8 @@ export class AcpSession {
   readonly #broker: CapabilityBroker;
   readonly #store: SessionStore;
   readonly #principal: Principal;
+  /** CLIENT-ASSIGNED session-level taint (default true). The agent cannot lower it. */
+  readonly #untrusted: boolean;
   readonly #resolve: PermissionResolver;
   readonly #writeEscape: WriteEscapeSupplier;
   readonly #perform: (call: AcpToolCall) => void;
@@ -100,6 +114,9 @@ export class AcpSession {
     this.#cwd = opts.cwd;
     this.#model = opts.model;
     this.#principal = opts.principal ?? { id: "acp-agent", kind: "agent", label: opts.model };
+    // Default-untrusted: any agent output is untrusted data until the client
+    // explicitly marks the session trusted (opts.untrusted === false).
+    this.#untrusted = opts.untrusted ?? true;
     this.#resolve = opts.resolvePermission ?? DENY_ALL;
     this.#writeEscape = opts.writeEscape ?? (() => undefined);
     this.#perform = opts.perform ?? (() => {});
@@ -206,18 +223,25 @@ export class AcpSession {
       throw new Error(`unsupported agent request: ${req.method}`);
     }
     const { call, fromUntrusted } = req.params as AcpPermissionRequest;
+    // CLIENT-ASSIGNED TAINT: the client owns the taint, NOT the agent. The
+    // agent's `fromUntrusted` flag may only ESCALATE — it can never downgrade an
+    // untrusted session. Effective taint = sessionUntrusted || agentFlag, so a
+    // hostile agent sending `fromUntrusted:false` on an egress in an untrusted
+    // session is STILL forced through the lethal-trifecta gate.
+    const effectiveUntrusted = this.#untrusted || Boolean(fromUntrusted);
     const request: CapabilityRequest = {
       kind: call.kind,
       target: call.target,
       command: call.command,
       credentialRef: call.credentialRef,
-      fromUntrusted,
+      fromUntrusted: effectiveUntrusted,
     };
 
     // 1. Authorize through the broker AS THE AGENT (writes the append-only audit
     //    BEFORE any execution). The agent's request keeps `fromUntrusted` — so an
     //    untrusted egress is forced to `ask` here and can NEVER auto-fire. This
-    //    audited authorize is the lethal-trifecta gate (MUST-NOT 4).
+    //    audited authorize is the lethal-trifecta gate (MUST-NOT 4). On `allow`
+    //    it also mints the single-use execution grant `execute` requires (C3).
     const decision = this.#broker.authorize(this.#principal, request);
 
     if (decision.outcome === "deny") {
@@ -232,12 +256,16 @@ export class AcpSession {
     // only an explicit, per-call human decision does (§3.3 laundering).
     let execPrincipal = this.#principal;
     let execRequest = request;
+    // The execution grant bound to (execPrincipal × execRequest). On the direct
+    // `allow` path it is the agent's grant from above; the human path mints a
+    // fresh one (C3).
+    let execDecision: BrokerDecision = decision;
 
     // 2. On `ask`, the human-in-the-loop gate decides (the ONLY thing that can
     //    clear an `ask`, including a lethal-trifecta egress, and only per-call).
     if (decision.outcome === "ask") {
       const human = await this.#resolve(request, {
-        fromUntrusted: Boolean(fromUntrusted),
+        fromUntrusted: effectiveUntrusted,
         principal: this.#principal,
       });
       if (human.axis === "deny") {
@@ -266,17 +294,26 @@ export class AcpSession {
       // a standing grant that auto-clears future trusted egress. For a normal
       // (trusted) `ask`, a `session` grant persists for the run as before.
       this.#broker.resolve(humanPrincipal, request, human);
+      // C3 — obtain the single-use execution grant for the HUMAN-cleared
+      // (trusted) request. This is the human-laundering path: a fresh, audited
+      // authorize on the human's authority binds the grant `execute` requires.
+      execDecision = this.#broker.authorize(humanPrincipal, trusted);
+      if (execDecision.outcome !== "allow") {
+        return { outcome: "deny", reason: "human grant did not clear the gate" };
+      }
     }
 
-    // 3. EXECUTE through the broker chokepoint (re-authorizes, writes the
-    //    `executed` audit, injects secrets only at the execution layer). The
-    //    action's side effect runs inside this callback — never outside it.
+    // 3. EXECUTE through the broker chokepoint (consumes the execution grant,
+    //    writes the `executed` audit, injects secrets only at the execution
+    //    layer). The action's side effect runs inside this callback — never
+    //    outside it. `execute` requires the matching grant: a forged "trusted"
+    //    request has no grant and cannot run (C3).
     try {
       this.#broker.execute(
         execPrincipal,
         execRequest,
         () => this.#perform(call),
-        { writeEscape: this.#writeEscape(execRequest) },
+        { writeEscape: this.#writeEscape(execRequest), grant: execDecision.grant },
       );
     } catch (err) {
       return { outcome: "deny", reason: err instanceof Error ? err.message : String(err) };

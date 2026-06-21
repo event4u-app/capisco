@@ -198,10 +198,20 @@ export class TicketLifecycleImpl implements TicketLifecycle {
       target: request.target,
     };
     this.#broker.resolve(HUMAN, trusted, human);
+    // C3 — obtain the single-use execution grant for the human-cleared trusted
+    // request. `execute` requires this exact grant; a forged trusted request
+    // would have none. If the gate did not clear to `allow`, stay gated.
+    const grantDecision = this.#broker.authorize(HUMAN, trusted);
+    if (grantDecision.outcome !== "allow") return "gated";
     try {
-      this.#broker.execute(HUMAN, trusted, () => {
-        this.#perform({ ticketId, targetStatus });
-      });
+      this.#broker.execute(
+        HUMAN,
+        trusted,
+        () => {
+          this.#perform({ ticketId, targetStatus });
+        },
+        { grant: grantDecision.grant },
+      );
     } catch {
       // The broker refused at the execution edge (e.g. `once` cannot re-decide).
       // The local run already came up; the external write stays gated.

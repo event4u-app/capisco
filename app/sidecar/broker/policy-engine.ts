@@ -98,6 +98,20 @@ export class GrantPolicyEngine implements PolicyEngine {
     return `${this.#projectKey}:${kind}:${scope ?? ""}`;
   }
 
+  /**
+   * S2 — the single-use untrusted-egress consumable is keyed by kind + the
+   * concrete TARGET (and `command` when present), not by kind:scope alone.
+   * Clearing untrusted egress to target A must NOT pre-clear a DIFFERENT
+   * untrusted egress to target B: the human approved exactly one call, and the
+   * grant is bound to its exact target so it can only ever clear that one.
+   */
+  private consumableKey(
+    request: CapabilityRequest,
+    scope?: CapabilityScope,
+  ): string {
+    return `${this.#projectKey}:${request.kind}:${scope ?? ""}:${request.target}:${request.command ?? ""}`;
+  }
+
   decide(
     _principal: Principal,
     request: CapabilityRequest,
@@ -116,10 +130,11 @@ export class GrantPolicyEngine implements PolicyEngine {
       };
     }
 
-    // §3.3 — a single-use grant from a human-cleared untrusted egress. It
-    // authorises THIS one call only; consume it on read so it can never
-    // pre-clear a later trusted OR untrusted egress of the same kind/scope.
-    const consumableKey = this.grantKey(request.kind, scope);
+    // §3.3 / S2 — a single-use grant from a human-cleared untrusted egress. It
+    // authorises THIS one call only (bound to kind+target+command), consumed on
+    // read so it can never pre-clear a later trusted OR untrusted egress — and,
+    // because it is target-bound, it can never clear a DIFFERENT target either.
+    const consumableKey = this.consumableKey(request, scope);
     if (this.#consumableGrants.has(consumableKey)) {
       this.#consumableGrants.delete(consumableKey);
       return { outcome: "allow", reason: "single-use grant (untrusted egress, per-call only)" };
@@ -176,7 +191,9 @@ export class GrantPolicyEngine implements PolicyEngine {
         return "deny";
       }
       // Clamp every non-deny axis to a single-use grant — `once` semantics.
-      this.#consumableGrants.add(this.grantKey(request.kind, boundScope));
+      // S2: bind the consumable to kind+target+command so it clears ONLY the
+      // exact call the human approved, never a different target's egress.
+      this.#consumableGrants.add(this.consumableKey(request, boundScope));
       return "once";
     }
 
