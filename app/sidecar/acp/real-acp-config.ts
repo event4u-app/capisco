@@ -51,6 +51,13 @@ export interface RealAcpSpawn {
    * value). Present only when a key was configured + registered.
    */
   credentialRef?: string;
+  /**
+   * Whether the spawned agent requires the ACP `initialize` handshake before
+   * `session/new` (B8 P2b). The `claude-code-acp` bridge and any standard ACP
+   * CLI do; the in-repo stub does not. The session driver runs the handshake
+   * only when this is `true`.
+   */
+  handshake?: boolean;
 }
 
 /**
@@ -198,6 +205,63 @@ export function resolveRealAcpAdapter(
       args: config.cliArgs ?? [],
       model,
       credentialRef,
+      // A generic ACP CLI configured this way speaks the standard ACP protocol,
+      // so the handshake is required before session/new.
+      handshake: true,
     },
   };
+}
+
+/** The npm package the Zed Claude-Code ACP bridge ships as. */
+export const ACP_BRIDGE_PACKAGE = "@zed-industries/claude-code-acp";
+
+/** The bridge's bin name once globally installed (on PATH). */
+export const ACP_BRIDGE_BIN = "claude-code-acp";
+
+/**
+ * Resolve the `claude-code-acp` bridge spawn (B8 P2b) — the ACP-via-bridge
+ * backend. Unlike {@link resolveRealAcpAdapter}, the bridge drives the EXISTING
+ * `claude` login (the bridge translates ACP ↔ Claude Code), so it needs NO raw
+ * key and is NOT key-gated. It is live when either:
+ *
+ *   1. an explicit `CAPISCO_ACP_CLI` resolves to an installed binary (e.g. the
+ *      globally-installed `claude-code-acp` bin), OR
+ *   2. nothing explicit is set but `npx` is available — then the bridge runs via
+ *      `npx -y @zed-industries/claude-code-acp` (the on-demand fetch is the
+ *      user's broker-approved go; this resolution only PREPARES the spawn, it
+ *      does not fetch anything).
+ *
+ * Returns `{ dormantReason }` when neither path resolves. The spawned bridge
+ * speaks standard ACP, so `handshake` is always `true`.
+ */
+export function resolveBridgeSpawn(
+  config: RealAcpConfig,
+  env: NodeJS.ProcessEnv = process.env,
+): RealAcpResolution {
+  const model = config.model?.trim() || "Claude Code (via ACP)";
+
+  // 1. Explicit CLI command → must resolve to an installed binary.
+  const explicit = config.cliCommand?.trim();
+  if (explicit) {
+    const resolved = resolveCliPath(explicit, env);
+    if (!resolved) return { dormantReason: "cli-not-installed" };
+    return {
+      spawn: { command: resolved, args: config.cliArgs ?? [], model, handshake: true },
+    };
+  }
+
+  // 2. No explicit command — prefer a globally-installed bridge bin, else npx.
+  const bridgeBin = resolveCliPath(ACP_BRIDGE_BIN, env);
+  if (bridgeBin) {
+    return { spawn: { command: bridgeBin, args: [], model, handshake: true } };
+  }
+
+  const npx = resolveCliPath("npx", env);
+  if (npx) {
+    return {
+      spawn: { command: npx, args: ["-y", ACP_BRIDGE_PACKAGE], model, handshake: true },
+    };
+  }
+
+  return { dormantReason: "cli-not-installed" };
 }

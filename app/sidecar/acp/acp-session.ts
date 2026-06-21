@@ -36,8 +36,12 @@ import type {
   Unsubscribe,
   WriteEscape,
 } from "@/contracts";
-import type { AcpPermissionRequest, AcpToolCall } from "@/contracts";
-import { ACP_METHODS } from "@/contracts";
+import type {
+  AcpInitializeResult,
+  AcpPermissionRequest,
+  AcpToolCall,
+} from "@/contracts";
+import { ACP_METHODS, ACP_PROTOCOL_VERSION } from "@/contracts";
 import { AcpTransport, type AgentNotification, type AgentRequest } from "./acp-transport.ts";
 
 /**
@@ -81,6 +85,15 @@ export interface AcpSessionOptions {
   command?: string;
   args?: string[];
   /**
+   * Whether to run the ACP `initialize` handshake before `session/new` (B8 P2b).
+   * The real `@zed-industries/claude-code-acp` bridge — and any standard ACP
+   * agent CLI — REQUIRES this exchange first; the deterministic in-repo stub does
+   * not. Defaults to `false` so the stub path stays byte-identical; the bridge
+   * resolution path sets it to `true`. When set, `start` negotiates the protocol
+   * version up front and fails fast if the agent cannot agree on it.
+   */
+  handshake?: boolean;
+  /**
    * Perform an allowed action's side effect, inside the broker.execute context.
    * Defaults to a no-op (the deterministic test path only needs the gate + audit
    * proof). A real adapter would do the fs/shell/net work here.
@@ -107,6 +120,8 @@ export class AcpSession {
   #model: string;
   #command?: string;
   #args?: string[];
+  /** Run the ACP `initialize` handshake before session/new (bridge path). */
+  readonly #handshake: boolean;
 
   constructor(opts: AcpSessionOptions) {
     this.#broker = opts.broker;
@@ -122,6 +137,7 @@ export class AcpSession {
     this.#perform = opts.perform ?? (() => {});
     this.#command = opts.command;
     this.#args = opts.args;
+    this.#handshake = opts.handshake ?? false;
   }
 
   /** The store session id (after `start`). */
@@ -162,6 +178,23 @@ export class AcpSession {
         onAgentRequest: (req) => this.#onAgentRequest(req),
       });
     });
+
+    // P2b — ACP handshake. The real bridge (and any standard ACP CLI) requires
+    // an `initialize` exchange before `session/new`: we announce the protocol
+    // version + that the client mediates fs access (the broker seam), and the
+    // agent replies with the version it agreed on. Fail fast on a mismatch the
+    // agent cannot satisfy. The stub does not require this — gated by #handshake.
+    if (this.#handshake) {
+      const init = (await this.#transport!.request(ACP_METHODS.initialize, {
+        protocolVersion: ACP_PROTOCOL_VERSION,
+        clientCapabilities: { fs: { readTextFile: true, writeTextFile: true } },
+      })) as AcpInitializeResult;
+      if (init.protocolVersion !== ACP_PROTOCOL_VERSION) {
+        throw new Error(
+          `ACP protocol version mismatch: client speaks ${ACP_PROTOCOL_VERSION}, agent agreed ${init.protocolVersion}`,
+        );
+      }
+    }
 
     const newSession = (await this.#transport!.request(ACP_METHODS.newSession, {
       cwd: this.#cwd,
