@@ -15,7 +15,9 @@ export default defineConfig({
     globals: true,
     setupFiles: ["./src/test/setup.ts"],
     css: true,
-    // Vitest owns src/ unit + component tests; Playwright owns test/visual/*.spec.
-    include: ["src/**/*.{test,spec}.{ts,tsx}"],
+    // Vitest owns src/ unit + component tests AND the headless sidecar
+    // integration tests; Playwright owns test/visual/*.spec. Node builtins
+    // (net/fs/os) work under the jsdom environment since vitest runs in Node.
+    include: ["src/**/*.{test,spec}.{ts,tsx}", "sidecar/**/*.{test,spec}.ts"],
   },
 });
