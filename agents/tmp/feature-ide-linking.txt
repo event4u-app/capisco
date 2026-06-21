@@ -1,0 +1,4 @@
+Ich möchte, dass die einzelnen IDE Instanzen voneinander wissen. So soll man einfach von einem Projekt auf ein anderes vereisen können, mit Autovervollständigung, ohne dass man beide Projekte in die selbe IDE laden muss
+
+----
+
