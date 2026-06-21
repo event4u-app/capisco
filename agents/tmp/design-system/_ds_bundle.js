@@ -1,4 +1,4 @@
-/* @ds-bundle: {"format":3,"namespace":"CapiscoDesignSystem_026f1e","components":[{"name":"Button","sourcePath":"components/core/Button.jsx"},{"name":"IconButton","sourcePath":"components/core/IconButton.jsx"},{"name":"Input","sourcePath":"components/core/Input.jsx"},{"name":"EditorTab","sourcePath":"components/ide/EditorTab.jsx"},{"name":"PermissionPrompt","sourcePath":"components/ide/PermissionPrompt.jsx"},{"name":"ToolAction","sourcePath":"components/ide/ToolAction.jsx"},{"name":"TreeRow","sourcePath":"components/ide/TreeRow.jsx"},{"name":"GitMarker","sourcePath":"components/indicators/GitMarker.jsx"},{"name":"ModelBadge","sourcePath":"components/indicators/ModelBadge.jsx"},{"name":"StatusDot","sourcePath":"components/indicators/StatusDot.jsx"}],"sourceHashes":{"agent.jsx":"97f37454ad82","chrome.jsx":"68877ac341b1","components/core/Button.jsx":"28593341aa9b","components/core/IconButton.jsx":"cc5843997797","components/core/Input.jsx":"02f16f2ae171","components/ide/EditorTab.jsx":"c3a17507a10b","components/ide/PermissionPrompt.jsx":"20e5f37b2ede","components/ide/ToolAction.jsx":"ca027dc86470","components/ide/TreeRow.jsx":"3d7deefa7bd9","components/indicators/GitMarker.jsx":"55dfe12c741c","components/indicators/ModelBadge.jsx":"9aaac6f7737a","components/indicators/StatusDot.jsx":"1294e550df0a","panels.jsx":"e9a2dc91ff50","ui_kits/capisco-ide/agent.jsx":"8d549fd8b9d0","ui_kits/capisco-ide/charts.jsx":"bc423edd4e1a","ui_kits/capisco-ide/chrome.jsx":"5990609ae5c2","ui_kits/capisco-ide/editor.jsx":"4e5e7cb49433","ui_kits/capisco-ide/panels.jsx":"82ae7dcb0e24","ui_kits/capisco-ide/shared.jsx":"cd382631a14e","ui_kits/capisco-ide/views.jsx":"d823affbf5ed"},"inlinedExternals":[],"unexposedExports":[]} */
+/* @ds-bundle: {"format":3,"namespace":"CapiscoDesignSystem_026f1e","components":[{"name":"Button","sourcePath":"components/core/Button.jsx"},{"name":"IconButton","sourcePath":"components/core/IconButton.jsx"},{"name":"Input","sourcePath":"components/core/Input.jsx"},{"name":"EditorTab","sourcePath":"components/ide/EditorTab.jsx"},{"name":"PermissionPrompt","sourcePath":"components/ide/PermissionPrompt.jsx"},{"name":"ToolAction","sourcePath":"components/ide/ToolAction.jsx"},{"name":"TreeRow","sourcePath":"components/ide/TreeRow.jsx"},{"name":"GitMarker","sourcePath":"components/indicators/GitMarker.jsx"},{"name":"ModelBadge","sourcePath":"components/indicators/ModelBadge.jsx"},{"name":"StatusDot","sourcePath":"components/indicators/StatusDot.jsx"}],"sourceHashes":{"agent.jsx":"97f37454ad82","chrome.jsx":"68877ac341b1","components/core/Button.jsx":"28593341aa9b","components/core/IconButton.jsx":"cc5843997797","components/core/Input.jsx":"02f16f2ae171","components/ide/EditorTab.jsx":"c3a17507a10b","components/ide/PermissionPrompt.jsx":"20e5f37b2ede","components/ide/ToolAction.jsx":"ca027dc86470","components/ide/TreeRow.jsx":"3d7deefa7bd9","components/indicators/GitMarker.jsx":"55dfe12c741c","components/indicators/ModelBadge.jsx":"9aaac6f7737a","components/indicators/StatusDot.jsx":"1294e550df0a","panels.jsx":"e9a2dc91ff50","ui_kits/capisco-ide/agent.jsx":"7ef123ca9aff","ui_kits/capisco-ide/charts.jsx":"bc423edd4e1a","ui_kits/capisco-ide/chrome.jsx":"5990609ae5c2","ui_kits/capisco-ide/editor.jsx":"4e5e7cb49433","ui_kits/capisco-ide/panels.jsx":"82ae7dcb0e24","ui_kits/capisco-ide/shared.jsx":"cd382631a14e","ui_kits/capisco-ide/views.jsx":"d823affbf5ed"},"inlinedExternals":[],"unexposedExports":[]} */
 
 (() => {
 
@@ -1952,7 +1952,12 @@ function ComposerBar({
     max: "400000",
     step: "10000",
     value: budget,
-    onChange: e => setBudget(+e.target.value)
+    onChange: e => setBudget(+e.target.value),
+    style: {
+      background: `linear-gradient(90deg, var(--accent) 0 ${(budget - 50000) / 350000 * 100}%, var(--bg-raised) ${(budget - 50000) / 350000 * 100}% 100%)`,
+      height: '4px',
+      borderRadius: '999px'
+    }
   }), /*#__PURE__*/React.createElement("div", {
     className: "ctx-presets"
   }, presets.map(v => /*#__PURE__*/React.createElement("button", {
@@ -1992,22 +1997,24 @@ function ComposerBar({
   })))))), /*#__PURE__*/React.createElement("span", {
     className: "cb-ctl-wrap"
   }, /*#__PURE__*/React.createElement("button", {
-    className: 'cb-ctl cb-pill' + (panel === 'effort' ? ' active' : ''),
-    onClick: () => toggle('effort')
-  }, EFFORT_LEVELS[effort]), panel === 'effort' && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    className: 'cb-ctl cb-tune' + (panel === 'tune' ? ' active' : ''),
+    title: "Effort \xB7 plan \xB7 usage",
+    onClick: () => toggle('tune')
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "sliders-horizontal",
+    size: 14
+  })), panel === 'tune' && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     className: "menu-scrim",
     onClick: () => setPanel(null)
   }), /*#__PURE__*/React.createElement("div", {
-    className: "effort-pop cb-pop"
+    className: "tune-pop cb-pop"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "tune-sec"
   }, /*#__PURE__*/React.createElement("div", {
     className: "ep-head"
   }, /*#__PURE__*/React.createElement("span", {
     className: "ep-title"
-  }, "Effort ", /*#__PURE__*/React.createElement("b", null, EFFORT_LEVELS[effort])), /*#__PURE__*/React.createElement(Icon, {
-    name: "circle-help",
-    size: 14,
-    color: "var(--text-tertiary)"
-  })), /*#__PURE__*/React.createElement("div", {
+  }, "Effort ", /*#__PURE__*/React.createElement("b", null, EFFORT_LEVELS[effort]))), /*#__PURE__*/React.createElement("div", {
     className: "ep-ends"
   }, /*#__PURE__*/React.createElement("span", null, "Faster"), /*#__PURE__*/React.createElement("span", null, "Smarter")), /*#__PURE__*/React.createElement("div", {
     className: "ep-slider"
@@ -2020,28 +2027,13 @@ function ComposerBar({
       left: i / 5 * 100 + '%'
     },
     onClick: () => setEffort(i)
-  })))))), /*#__PURE__*/React.createElement("span", {
-    className: "cb-ctl-wrap"
-  }, /*#__PURE__*/React.createElement("button", {
-    className: 'cb-ring' + (panel === 'budget' ? ' active' : ''),
-    title: "Plan usage",
-    onClick: () => toggle('budget')
-  }, /*#__PURE__*/React.createElement(BudgetRing, {
-    pct: 87
-  })), panel === 'budget' && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
-    className: "menu-scrim",
-    onClick: () => setPanel(null)
-  }), /*#__PURE__*/React.createElement("div", {
-    className: "budget-pop cb-pop"
+  })))), /*#__PURE__*/React.createElement("div", {
+    className: "tune-sec tune-plan"
   }, /*#__PURE__*/React.createElement("div", {
     className: "bp-head"
   }, /*#__PURE__*/React.createElement("span", {
     className: "caps"
-  }, "Plan usage"), /*#__PURE__*/React.createElement(Icon, {
-    name: "arrow-right",
-    size: 14,
-    color: "var(--text-tertiary)"
-  })), PLAN.map((p, i) => /*#__PURE__*/React.createElement("div", {
+  }, "Plan usage")), PLAN.map((p, i) => /*#__PURE__*/React.createElement("div", {
     key: i,
     className: "bp-row"
   }, /*#__PURE__*/React.createElement("div", {
@@ -2058,7 +2050,7 @@ function ComposerBar({
       width: p.pct + '%',
       background: p.color
     }
-  })))))))));
+  }))))))))));
 }
 
 /* Composer model selector — choose the model, nothing else. */
@@ -2272,6 +2264,9 @@ function AgentWorkspace({
   const [settingsOpen, setSettingsOpen] = React.useState(false);
   const [backend, setBackend] = React.useState('api');
   const [token, setToken] = React.useState('');
+  const [autoRoute, setAutoRoute] = React.useState(false);
+  const [terse, setTerse] = React.useState(true);
+  const [terseLevel, setTerseLevel] = React.useState('Full');
   const [model, setModel] = React.useState(isChat ? 'Sonnet 4.8' : 'Opus 4.8');
   const [effort, setEffort] = React.useState(3);
   const [budget, setBudget] = React.useState(200000);
@@ -2398,6 +2393,12 @@ function AgentWorkspace({
     setBackend: setBackend,
     token: token,
     setToken: setToken,
+    autoRoute: autoRoute,
+    setAutoRoute: setAutoRoute,
+    terse: terse,
+    setTerse: setTerse,
+    terseLevel: terseLevel,
+    setTerseLevel: setTerseLevel,
     onClose: () => setSettingsOpen(false)
   }));
 }
@@ -2408,7 +2409,13 @@ function AgentSettings({
   setBackend,
   token,
   setToken,
-  onClose
+  onClose,
+  autoRoute,
+  setAutoRoute,
+  terse,
+  setTerse,
+  terseLevel,
+  setTerseLevel
 }) {
   const {
     Input,
@@ -2487,7 +2494,53 @@ function AgentSettings({
       width: '100%',
       marginTop: 2
     }
-  }, "Re-detect CLI")));
+  }, "Re-detect CLI")), /*#__PURE__*/React.createElement("div", {
+    className: "as-sec"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "caps"
+  }, "Token economy"), /*#__PURE__*/React.createElement("div", {
+    className: "as-toggle"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "as-toggle-main"
+  }, /*#__PURE__*/React.createElement("button", {
+    className: 'as-switch' + (autoRoute ? ' on' : ''),
+    role: "switch",
+    "aria-checked": autoRoute,
+    onClick: () => setAutoRoute(!autoRoute)
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "as-knob"
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "as-toggle-text"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "as-toggle-title"
+  }, "Auto model routing"), /*#__PURE__*/React.createElement("div", {
+    className: "as-toggle-sub"
+  }, "Mechanical sub-tasks run on a smaller model; escalates if quality checks fail. Off by default.")))), /*#__PURE__*/React.createElement("div", {
+    className: "as-toggle"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "as-toggle-main"
+  }, /*#__PURE__*/React.createElement("button", {
+    className: 'as-switch' + (terse ? ' on' : ''),
+    role: "switch",
+    "aria-checked": terse,
+    onClick: () => setTerse(!terse)
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "as-knob"
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "as-toggle-text"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "as-toggle-title"
+  }, "Terse mode ", /*#__PURE__*/React.createElement("span", {
+    className: "as-tag"
+  }, "Caveman")), /*#__PURE__*/React.createElement("div", {
+    className: "as-toggle-sub"
+  }, "Shorter replies, fewer output tokens. Never touches facts, diffs, or broker prompts. On by default."))), terse && /*#__PURE__*/React.createElement("div", {
+    className: "trow-seg as-level"
+  }, ['Lite', 'Full', 'Ultra'].map(l => /*#__PURE__*/React.createElement("button", {
+    key: l,
+    className: 'trow-opt' + (terseLevel === l ? ' active' : ''),
+    onClick: () => setTerseLevel(l)
+  }, l))))));
 }
 
 /* Alerts / Inspect tool panel — rendered as a side flyout (pin handled by host). */

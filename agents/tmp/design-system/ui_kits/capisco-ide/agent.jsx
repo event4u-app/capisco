@@ -45,7 +45,8 @@ function ComposerBar({ model, setModel, effort, setEffort, statusText, used, bud
               <div className="ctx-pop cb-pop">
                 <div className="bp-head"><span className="caps">Context budget</span><span className="ctx-pct" style={{ color: toneColor }}>{Math.round(ratio * 100)}%</span></div>
                 <div className="ctx-row">Warn at <b>{fmtK(budget)}</b> tokens · {fmtK(used)} used</div>
-                <input type="range" className="ctx-range" min="50000" max="400000" step="10000" value={budget} onChange={(e) => setBudget(+e.target.value)} />
+                <input type="range" className="ctx-range" min="50000" max="400000" step="10000" value={budget} onChange={(e) => setBudget(+e.target.value)}
+                  style={{ background: `linear-gradient(90deg, var(--accent) 0 ${((budget - 50000) / 350000) * 100}%, var(--bg-raised) ${((budget - 50000) / 350000) * 100}% 100%)`, height: '4px', borderRadius: '999px' }} />
                 <div className="ctx-presets">
                   {presets.map((v) => <button key={v} className={'ctx-preset' + (budget === v ? ' active' : '')} onClick={() => setBudget(v)}>{fmtK(v)}</button>)}
                 </div>
@@ -74,37 +75,32 @@ function ComposerBar({ model, setModel, effort, setEffort, statusText, used, bud
         </span>
 
         <span className="cb-ctl-wrap">
-          <button className={'cb-ctl cb-pill' + (panel === 'effort' ? ' active' : '')} onClick={() => toggle('effort')}>{EFFORT_LEVELS[effort]}</button>
-          {panel === 'effort' && (
+          <button className={'cb-ctl cb-tune' + (panel === 'tune' ? ' active' : '')} title="Effort · plan · usage" onClick={() => toggle('tune')}>
+            <Icon name="sliders-horizontal" size={14} />
+          </button>
+          {panel === 'tune' && (
             <>
               <div className="menu-scrim" onClick={() => setPanel(null)} />
-              <div className="effort-pop cb-pop">
-                <div className="ep-head"><span className="ep-title">Effort <b>{EFFORT_LEVELS[effort]}</b></span><Icon name="circle-help" size={14} color="var(--text-tertiary)" /></div>
-                <div className="ep-ends"><span>Faster</span><span>Smarter</span></div>
-                <div className="ep-slider">
-                  <div className="ep-track" />
-                  {[0, 1, 2, 3, 4, 5].map((i) => (
-                    <button key={i} className={'ep-dot' + (i === effort ? ' thumb' : '') + (i === 5 ? ' last' : '')} style={{ left: (i / 5 * 100) + '%' }} onClick={() => setEffort(i)} />
+              <div className="tune-pop cb-pop">
+                <div className="tune-sec">
+                  <div className="ep-head"><span className="ep-title">Effort <b>{EFFORT_LEVELS[effort]}</b></span></div>
+                  <div className="ep-ends"><span>Faster</span><span>Smarter</span></div>
+                  <div className="ep-slider">
+                    <div className="ep-track" />
+                    {[0, 1, 2, 3, 4, 5].map((i) => (
+                      <button key={i} className={'ep-dot' + (i === effort ? ' thumb' : '') + (i === 5 ? ' last' : '')} style={{ left: (i / 5 * 100) + '%' }} onClick={() => setEffort(i)} />
+                    ))}
+                  </div>
+                </div>
+                <div className="tune-sec tune-plan">
+                  <div className="bp-head"><span className="caps">Plan usage</span></div>
+                  {PLAN.map((p, i) => (
+                    <div key={i} className="bp-row">
+                      <div className="bp-line"><span className="bp-label">{p.label}</span><span className="bp-right">{p.right}</span></div>
+                      <div className="bp-bar"><div className="bp-fill" style={{ width: p.pct + '%', background: p.color }} /></div>
+                    </div>
                   ))}
                 </div>
-              </div>
-            </>
-          )}
-        </span>
-
-        <span className="cb-ctl-wrap">
-          <button className={'cb-ring' + (panel === 'budget' ? ' active' : '')} title="Plan usage" onClick={() => toggle('budget')}><BudgetRing pct={87} /></button>
-          {panel === 'budget' && (
-            <>
-              <div className="menu-scrim" onClick={() => setPanel(null)} />
-              <div className="budget-pop cb-pop">
-                <div className="bp-head"><span className="caps">Plan usage</span><Icon name="arrow-right" size={14} color="var(--text-tertiary)" /></div>
-                {PLAN.map((p, i) => (
-                  <div key={i} className="bp-row">
-                    <div className="bp-line"><span className="bp-label">{p.label}</span><span className="bp-right">{p.right}</span></div>
-                    <div className="bp-bar"><div className="bp-fill" style={{ width: p.pct + '%', background: p.color }} /></div>
-                  </div>
-                ))}
               </div>
             </>
           )}
@@ -247,6 +243,9 @@ function AgentWorkspace({ onOpenFile, kind = 'agents' }) {
   const [settingsOpen, setSettingsOpen] = React.useState(false);
   const [backend, setBackend] = React.useState('api');
   const [token, setToken] = React.useState('');
+  const [autoRoute, setAutoRoute] = React.useState(false);
+  const [terse, setTerse] = React.useState(true);
+  const [terseLevel, setTerseLevel] = React.useState('Full');
   const [model, setModel] = React.useState(isChat ? 'Sonnet 4.8' : 'Opus 4.8');
   const [effort, setEffort] = React.useState(3);
   const [budget, setBudget] = React.useState(200000);
@@ -339,6 +338,8 @@ function AgentWorkspace({ onOpenFile, kind = 'agents' }) {
         <AgentSettings
           backend={backend} setBackend={setBackend}
           token={token} setToken={setToken}
+          autoRoute={autoRoute} setAutoRoute={setAutoRoute}
+          terse={terse} setTerse={setTerse} terseLevel={terseLevel} setTerseLevel={setTerseLevel}
           onClose={() => setSettingsOpen(false)}
         />
       )}
@@ -347,7 +348,7 @@ function AgentWorkspace({ onOpenFile, kind = 'agents' }) {
 }
 
 /* Agent backend settings popover — API client (with token) or installed CLI. */
-function AgentSettings({ backend, setBackend, token, setToken, onClose }) {
+function AgentSettings({ backend, setBackend, token, setToken, onClose, autoRoute, setAutoRoute, terse, setTerse, terseLevel, setTerseLevel }) {
   const { Input, Button } = window.CapiscoDesignSystem_026f1e;
   return (
     <div className="agent-settings">
@@ -377,6 +378,37 @@ function AgentSettings({ backend, setBackend, token, setToken, onClose }) {
           <Button variant="default" size="md" style={{ width: '100%', marginTop: 2 }}>Re-detect CLI</Button>
         </div>
       )}
+
+      <div className="as-sec">
+        <span className="caps">Token economy</span>
+
+        <div className="as-toggle">
+          <div className="as-toggle-main">
+            <button className={'as-switch' + (autoRoute ? ' on' : '')} role="switch" aria-checked={autoRoute} onClick={() => setAutoRoute(!autoRoute)}><span className="as-knob" /></button>
+            <div className="as-toggle-text">
+              <div className="as-toggle-title">Auto model routing</div>
+              <div className="as-toggle-sub">Mechanical sub-tasks run on a smaller model; escalates if quality checks fail. Off by default.</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="as-toggle">
+          <div className="as-toggle-main">
+            <button className={'as-switch' + (terse ? ' on' : '')} role="switch" aria-checked={terse} onClick={() => setTerse(!terse)}><span className="as-knob" /></button>
+            <div className="as-toggle-text">
+              <div className="as-toggle-title">Terse mode <span className="as-tag">Caveman</span></div>
+              <div className="as-toggle-sub">Shorter replies, fewer output tokens. Never touches facts, diffs, or broker prompts. On by default.</div>
+            </div>
+          </div>
+          {terse && (
+            <div className="trow-seg as-level">
+              {['Lite', 'Full', 'Ultra'].map((l) => (
+                <button key={l} className={'trow-opt' + (terseLevel === l ? ' active' : '')} onClick={() => setTerseLevel(l)}>{l}</button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
