@@ -57,5 +57,14 @@ export const DEFAULT_GRANT_CONFIG: GrantConfig = {
     // --- secrets + external write-back always ask (human-gated) ---
     { kind: "secret-read", pattern: "*", verdict: "ask" },
     { kind: "external-write", pattern: "*", verdict: "ask" },
+
+    // --- cross-project session-knowledge read (P2, AK-C4) ---
+    // A NEW scope axis, fail-closed: reading another project's session store
+    // across the project boundary ALWAYS asks — it is NEVER `allow` in the
+    // default config (the build does not invent a cross-project allow). The
+    // human authorizes the read per source project (AK-C5 human-driven
+    // relevance). Even absent this rule the engine fails closed to `ask`; the
+    // explicit `ask` documents that an `allow` here is forbidden by design.
+    { kind: "cross-project-read", pattern: "*", verdict: "ask" },
   ],
 };

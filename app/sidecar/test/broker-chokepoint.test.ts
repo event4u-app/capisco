@@ -56,6 +56,13 @@ const EXECUTION_PRIMITIVES: Record<string, ReadonlyArray<SideEffect>> = {
   // installer (`install-broker.ts`), which runs it only inside `broker.execute`.
   // A denied capability never reaches this file → no install.
   "provision/install-exec.ts": ["process"],
+  // The RTK observation-compressor primitive (token-economy Phase 3) — spawns
+  // the external `rtk` Rust binary (execFile, no shell, argv array; raw output
+  // on stdin → compressed stdout). RTK is a READ-shaped transform (text→text,
+  // mutates nothing) and is the LLM-OBSERVATION path only; its output is branded
+  // LlmFacingOnly and the broker/audit refuse it (AK-T1/T2). Missing binary →
+  // clean degrade to `undefined`, never a hard-fail.
+  "rtk/rtk-exec.ts": ["process"],
   // The machine-wide Recent-Projects registry (B0) — atomic fs writes.
   "recent/recent-projects.ts": ["fs-write"],
   // The project fs READ primitive (P1) — no writes, but it is the audited
@@ -67,6 +74,14 @@ const EXECUTION_PRIMITIVES: Record<string, ReadonlyArray<SideEffect>> = {
   // (`fs-write-broker.ts`), which runs it inside `broker.execute`. A denied
   // capability never reaches this file → no disk change.
   "fs/fs-write-exec.ts": ["fs-write"],
+  // The `.git/info/exclude` primitive (local-artifact-hygiene P1/P2) — the
+  // audited `node:fs` home for the idempotent marked-block read + write that
+  // keeps Capisco's project-local files out of the consumer's Git. Its WRITE is
+  // reached ONLY through the broker-gated adapter (`git-exclude-broker.ts`)
+  // inside `broker.execute`; a denied capability never reaches the write. The
+  // read half (existsSync/readFileSync of `.git/info/exclude` + the no-repo
+  // probe) is read-only.
+  "git/git-exclude-exec.ts": ["fs-read", "fs-write"],
   // Server infrastructure: the unix-socket sidecar removes its OWN stale socket
   // file on bind/close. This is socket-lifecycle housekeeping of a path the
   // server itself owns — not an agent-reachable capability write.

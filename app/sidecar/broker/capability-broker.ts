@@ -39,6 +39,7 @@ import type {
 } from "@/contracts";
 import type { GrantAxis, PermissionDecision } from "@/contracts";
 import type { WriteEscape } from "@/contracts";
+import { isRtkFiltered } from "@/contracts";
 import { GrantPolicyEngine } from "./policy-engine.ts";
 import { InMemorySecretStore } from "./in-memory-secret-store.ts";
 import { InMemoryAuditStore } from "./audit-store.ts";
@@ -113,6 +114,21 @@ export class Broker implements CapabilityBroker {
     request: CapabilityRequest,
     scope?: CapabilityScope,
   ): BrokerDecision {
+    // RTK TRUST BOUNDARY (Phase 3, AK-T1/T2): RTK-filtered text is LLM-facing
+    // ONLY — it must never become a fact the broker acts on. The TS brand
+    // already bars it at compile time; this runtime guard is defense-in-depth.
+    // A request whose target/command/credentialRef carries the RTK marker is
+    // refused outright — the one-way data flow is structural, not conventional.
+    if (
+      isRtkFiltered(request.target) ||
+      (request.command !== undefined && isRtkFiltered(request.command)) ||
+      (request.credentialRef !== undefined && isRtkFiltered(request.credentialRef))
+    ) {
+      throw new Error(
+        "broker refuses RTK-filtered (LLM-facing-only) input — it is an observation, " +
+          "never an authoritative capability target (AK-T1/T2)",
+      );
+    }
     const decision = this.#policy.decide(principal, request, scope);
     // Append-only audit of the authorization decision (BEFORE any execution).
     this.audit.record({

@@ -16,6 +16,7 @@ import {
   ClaudeCodeProvider,
   type PermissionResolver,
 } from "../acp/claude-code-provider.ts";
+import type { TerseConfig } from "../acp/caveman-terse.ts";
 import type { TodoSessionStarter } from "./todo-provider.ts";
 
 type NativePerform = ConstructorParameters<typeof ClaudeCodeProvider>[0]["perform"];
@@ -31,6 +32,8 @@ export interface NativeTodoStarterOptions {
   args?: string[];
   /** Side-effect performer for an allowed tool (defaults to no-op). */
   perform?: NativePerform;
+  /** Caveman terse config (Phase 2; default ON, opt-out per session). */
+  terse?: TerseConfig;
 }
 
 export function createNativeTodoStarter(opts: NativeTodoStarterOptions): TodoSessionStarter {
@@ -44,6 +47,7 @@ export function createNativeTodoStarter(opts: NativeTodoStarterOptions): TodoSes
       command: opts.command,
       args: opts.args,
       perform: opts.perform,
+      terse: opts.terse,
     });
     try {
       return await provider.start(prompt);

@@ -51,6 +51,11 @@ import type {
 } from "@/contracts";
 import { ClaudeStreamTransport } from "./claude-stream-exec.ts";
 import { parseStreamJsonEnvelope, type StreamJsonEnvelope } from "./stream-json-parse.ts";
+import {
+  DEFAULT_TERSE_CONFIG,
+  injectTerseDirective,
+  type TerseConfig,
+} from "./caveman-terse.ts";
 
 /**
  * The human-in-the-loop resolver — identical shape to the ACP one. Lethal-trifecta
@@ -94,6 +99,13 @@ export interface ClaudeCodeProviderOptions {
    * exists for parity with AcpSession and for an explicit-perform deployment.
    */
   perform?: (call: AcpToolCall) => void;
+  /**
+   * Caveman terse mode (Phase 2). Default-ON (opt-out per session). Prepends the
+   * vendored terse directive as system context to the prompt — shaping the
+   * model's EXPLANATION only. Border surfaces never reach this injector, so they
+   * structurally never carry it (AK-T3 Caveman-Negativ-Assert).
+   */
+  terse?: TerseConfig;
 }
 
 const DENY_ALL: PermissionResolver = () => ({ axis: "deny" });
@@ -113,6 +125,8 @@ export class ClaudeCodeProvider {
   #model: string;
   #command?: string;
   #args?: string[];
+  readonly #terse: TerseConfig;
+  #sentSystemContext = "";
 
   constructor(opts: ClaudeCodeProviderOptions) {
     this.#broker = opts.broker;
@@ -127,11 +141,20 @@ export class ClaudeCodeProvider {
     this.#perform = opts.perform ?? (() => {});
     this.#command = opts.command;
     this.#args = opts.args;
+    this.#terse = opts.terse ?? DEFAULT_TERSE_CONFIG;
   }
 
   /** The store session id (after `start`). */
   get sessionId(): string {
     return this.#sessionId;
+  }
+
+  /**
+   * The exact system-context+prompt string sent to the model (Phase 2 assert
+   * helper). Carries the terse directive marker when terse is on, not when off.
+   */
+  get sentSystemContext(): string {
+    return this.#sentSystemContext;
   }
 
   /** Subscribe to this session's live event stream. */
@@ -208,7 +231,13 @@ export class ClaudeCodeProvider {
       });
     });
 
-    this.#transport!.sendUserPrompt(prompt);
+    // CAVEMAN TERSE (Phase 2): prepend the vendored terse directive as system
+    // context (default ON, opt-out per session). Shapes the model's EXPLANATION
+    // only; the user/ToDo prompt below the marker is unchanged (still untrusted).
+    // Border surfaces never pass through this injector → structurally bypass it.
+    const sentPrompt = injectTerseDirective(prompt, this.#terse);
+    this.#sentSystemContext = sentPrompt;
+    this.#transport!.sendUserPrompt(sentPrompt);
     this.#transport!.endInput();
 
     await done;

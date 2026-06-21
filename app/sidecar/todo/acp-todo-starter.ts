@@ -11,6 +11,7 @@
 
 import type { CapabilityBroker, SessionStore } from "@/contracts";
 import { AcpSession, type PermissionResolver } from "../acp/acp-session.ts";
+import type { TerseConfig } from "../acp/caveman-terse.ts";
 import type { TodoSessionStarter } from "./todo-provider.ts";
 
 export interface AcpTodoStarterOptions {
@@ -33,6 +34,8 @@ export interface AcpTodoStarterOptions {
   handshake?: boolean;
   /** Side-effect performer for an allowed action (defaults to no-op). */
   perform?: AcpSessionOptionsPerform;
+  /** Caveman terse config (Phase 2; default ON, opt-out per session). */
+  terse?: TerseConfig;
 }
 
 type AcpSessionOptionsPerform = ConstructorParameters<typeof AcpSession>[0]["perform"];
@@ -49,6 +52,7 @@ export function createAcpTodoStarter(opts: AcpTodoStarterOptions): TodoSessionSt
       args: opts.args,
       handshake: opts.handshake,
       perform: opts.perform,
+      terse: opts.terse,
     });
     try {
       return await session.start(prompt);

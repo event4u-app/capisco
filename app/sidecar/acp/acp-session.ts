@@ -43,6 +43,11 @@ import type {
 } from "@/contracts";
 import { ACP_METHODS, ACP_PROTOCOL_VERSION } from "@/contracts";
 import { AcpTransport, type AgentNotification, type AgentRequest } from "./acp-transport.ts";
+import {
+  DEFAULT_TERSE_CONFIG,
+  injectTerseDirective,
+  type TerseConfig,
+} from "./caveman-terse.ts";
 
 /**
  * The human-in-the-loop resolver. Given the broker's `ask` request, returns a
@@ -99,6 +104,14 @@ export interface AcpSessionOptions {
    * proof). A real adapter would do the fs/shell/net work here.
    */
   perform?: (call: AcpToolCall) => void;
+  /**
+   * Caveman terse mode (Phase 2). Default-ON (opt-out per session). When enabled,
+   * the vendored terse directive is PREPENDED to the agent prompt as system
+   * context — shaping the model's EXPLANATION only. Border surfaces (diagnostics,
+   * broker prompts, secret refs, audit, commit messages) never reach this and so
+   * structurally never carry it (AK-T3 Caveman-Negativ-Assert).
+   */
+  terse?: TerseConfig;
 }
 
 const DENY_ALL: PermissionResolver = () => ({ axis: "deny" });
@@ -122,6 +135,10 @@ export class AcpSession {
   #args?: string[];
   /** Run the ACP `initialize` handshake before session/new (bridge path). */
   readonly #handshake: boolean;
+  /** Caveman terse config (default ON, opt-out per session). */
+  readonly #terse: TerseConfig;
+  /** The exact system context sent to the agent (assert helper). */
+  #sentSystemContext = "";
 
   constructor(opts: AcpSessionOptions) {
     this.#broker = opts.broker;
@@ -138,11 +155,20 @@ export class AcpSession {
     this.#command = opts.command;
     this.#args = opts.args;
     this.#handshake = opts.handshake ?? false;
+    this.#terse = opts.terse ?? DEFAULT_TERSE_CONFIG;
   }
 
   /** The store session id (after `start`). */
   get sessionId(): string {
     return this.#sessionId;
+  }
+
+  /**
+   * The exact system-context+prompt string sent to the agent (Phase 2 assert
+   * helper). Carries the terse directive marker when terse is on, not when off.
+   */
+  get sentSystemContext(): string {
+    return this.#sentSystemContext;
   }
 
   /** Subscribe to this session's live event stream (ACP-shaped). */
@@ -201,10 +227,16 @@ export class AcpSession {
       model: this.#model,
       sessionId: this.#sessionId,
     })) as { sessionId: string };
+    // CAVEMAN TERSE (Phase 2): prepend the vendored terse directive as system
+    // context (default ON, opt-out per session). Shapes the model's EXPLANATION
+    // only; the user/ToDo prompt below the marker is unchanged (still untrusted).
+    // Border surfaces never pass through here → structurally cannot carry it.
+    const sentPrompt = injectTerseDirective(prompt, this.#terse);
+    this.#sentSystemContext = sentPrompt;
     // Prompt the agent. The prompt becomes UNTRUSTED data once it round-trips.
     void this.#transport!.request(ACP_METHODS.prompt, {
       sessionId: newSession.sessionId,
-      prompt,
+      prompt: sentPrompt,
     });
 
     await done;

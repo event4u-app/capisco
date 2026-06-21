@@ -15,6 +15,7 @@
  */
 
 import type { AuditEntry, AuditStore } from "@/contracts";
+import { isRtkFiltered } from "@/contracts";
 
 export class InMemoryAuditStore implements AuditStore {
   readonly #entries: AuditEntry[] = [];
@@ -27,6 +28,19 @@ export class InMemoryAuditStore implements AuditStore {
     if (entry.credentialRef && looksLikeSecretValue(entry.credentialRef)) {
       throw new Error(
         "audit credentialRef must be a reference name, never a secret value",
+      );
+    }
+    // RTK TRUST BOUNDARY (Phase 3, AK-T1/T2): RTK-filtered text is LLM-facing
+    // only; the audit log is an authoritative FACT surface. Refuse any field
+    // carrying the RTK marker — RTK output can never become an audit record.
+    if (
+      isRtkFiltered(entry.target) ||
+      isRtkFiltered(entry.capability) ||
+      (entry.credentialRef !== undefined && isRtkFiltered(entry.credentialRef))
+    ) {
+      throw new Error(
+        "audit refuses RTK-filtered (LLM-facing-only) input — RTK output is an " +
+          "observation, never an authoritative audit fact (AK-T1/T2)",
       );
     }
     const recorded: AuditEntry = { ...entry, seq: ++this.#seq };

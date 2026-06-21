@@ -23,6 +23,7 @@ import { TodoProviderImpl } from "./todo/todo-provider.ts";
 import { createAcpTodoStarter } from "./todo/acp-todo-starter.ts";
 import { createNativeTodoStarter } from "./todo/native-todo-starter.ts";
 import type { PermissionResolver } from "./acp/acp-session.ts";
+import type { TerseConfig } from "./acp/caveman-terse.ts";
 import type { PendingPermissionRegistry } from "./acp/pending-permission-registry.ts";
 import {
   readRealAcpEnv,
@@ -85,6 +86,13 @@ export interface RegisterSessionOptions {
    * Only consulted for the `acp` backend.
    */
   realAcp?: RealAcpConfig;
+  /**
+   * Caveman terse mode (Phase 2). Default ON (opt-out per session). Injected
+   * NATIVELY into BOTH backends' system context — the choice of backend never
+   * changes whether terse applies. Border surfaces (diagnostics/broker/secret/
+   * audit/commit) structurally bypass the injector (AK-T3).
+   */
+  terse?: TerseConfig;
 }
 
 export interface SessionWiring {
@@ -125,6 +133,7 @@ export function registerSession(
       resolvePermission,
       command,
       args,
+      terse: opts.terse,
     });
   } else {
     // P4 — key-gated real ACP adapter. An explicit test `command` override wins.
@@ -149,6 +158,7 @@ export function registerSession(
       command,
       args,
       handshake,
+      terse: opts.terse,
     });
   }
   const todo = new TodoProviderImpl(store, starter);
