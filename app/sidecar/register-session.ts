@@ -23,6 +23,7 @@ import { TodoProviderImpl } from "./todo/todo-provider.ts";
 import { createAcpTodoStarter } from "./todo/acp-todo-starter.ts";
 import { createNativeTodoStarter } from "./todo/native-todo-starter.ts";
 import type { PermissionResolver } from "./acp/acp-session.ts";
+import type { PendingPermissionRegistry } from "./acp/pending-permission-registry.ts";
 import {
   readRealAcpEnv,
   resolveRealAcpAdapter,
@@ -50,6 +51,14 @@ export interface RegisterSessionOptions {
   store?: SessionStore;
   /** Human-in-the-loop gate for ToDo-triggered runs (defaults to fail-closed). */
   resolvePermission?: PermissionResolver;
+  /**
+   * The LIVE pending-permission registry (the UI human-in-the-loop gate). When
+   * given, its `resolver` is used for ToDo-triggered runs — an `ask` parks for the
+   * UI and awaits a `resolvePermission` IPC decision (the registry fails closed on
+   * a bounded timeout / no client). An explicit `resolvePermission` still wins
+   * (test override). Without either, the gate defaults to fail-closed deny-all.
+   */
+  pending?: PendingPermissionRegistry;
   /** Spawn override (tests). Defaults to the stub agent. */
   command?: string;
   args?: string[];
@@ -94,6 +103,9 @@ export function registerSession(
 ): SessionWiring {
   const store = opts.store ?? new InMemorySessionStore();
   const backend: SessionBackend = opts.backend ?? "acp";
+  // An explicit resolver (test override) wins; otherwise the live pending registry
+  // (UI gate) supplies one; otherwise the starters fall back to fail-closed.
+  const resolvePermission = opts.resolvePermission ?? opts.pending?.resolver;
 
   let command = opts.command;
   let args = opts.args;
@@ -110,7 +122,7 @@ export function registerSession(
       broker,
       store,
       model,
-      resolvePermission: opts.resolvePermission,
+      resolvePermission,
       command,
       args,
     });
@@ -133,7 +145,7 @@ export function registerSession(
       broker,
       store,
       model,
-      resolvePermission: opts.resolvePermission,
+      resolvePermission,
       command,
       args,
       handshake,

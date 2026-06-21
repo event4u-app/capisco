@@ -61,8 +61,11 @@ export interface DevBridge {
  */
 export function buildDevRegistry(repo?: string): ProviderRegistry {
   const registry = new ProviderRegistry();
-  // The broker is the chokepoint the editor-save write (P2) runs inside.
-  const broker = registerAllProviders(registry);
+  // The broker is the chokepoint the editor-save write (P2) runs inside. The dev
+  // bridge is the runnable LIVE path — `liveAgent` swaps the mock `agent` IPC
+  // provider for the live one over the real session store + pending-permission
+  // registry, so a real agent run's `ask` can be approved/denied from the UI.
+  const broker = registerAllProviders(registry, { liveAgent: true });
   registerDevWorkspace(registry, { repo, broker });
   return registry;
 }

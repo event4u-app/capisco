@@ -18,6 +18,9 @@ import type { Broker } from "./broker/capability-broker.ts";
 import { registerMockProviders } from "./register-mocks.ts";
 import { registerBroker } from "./register-broker.ts";
 import { registerSession } from "./register-session.ts";
+import { PendingPermissionRegistry } from "./acp/pending-permission-registry.ts";
+import { createLiveAgentProvider } from "./acp/live-agent-provider.ts";
+import { PROVIDER_IDS } from "./register-mocks.ts";
 import { registerQuality } from "./register-quality.ts";
 import { registerTaskForge } from "./register-task-forge.ts";
 import { registerProvision } from "./register-provision.ts";
@@ -48,7 +51,23 @@ export function resolveRecentFilePath(): string {
  * registry; every other provider is its deterministic mock (real adapters are a
  * thin swap behind the same contract).
  */
-export function registerAllProviders(registry: ProviderRegistry): Broker {
+export interface RegisterAllProvidersOptions {
+  /**
+   * Swap the deterministic mock `agent` IPC provider for the LIVE one over the
+   * real session store + pending-permission registry. The dev WebSocket bridge
+   * sets this (it is the runnable live path where a real agent run is approved
+   * from the UI). The unix-socket sidecar leaves it `false` so its `agent`
+   * provider stays the deterministic mock — the ipc-integration parity proof and
+   * its mock subscribe→done stream are a load-bearing contract that must not
+   * regress (mirrors how the real git/fs swap is dev-bridge-only).
+   */
+  liveAgent?: boolean;
+}
+
+export function registerAllProviders(
+  registry: ProviderRegistry,
+  opts: RegisterAllProvidersOptions = {},
+): Broker {
   const recent = createFileRecentProjects({ filePath: resolveRecentFilePath() });
   registerMockProviders(registry, recent);
   // The capability broker — the un-bypassable execution chokepoint (B4). Booted
@@ -58,8 +77,20 @@ export function registerAllProviders(registry: ProviderRegistry): Broker {
   const broker = registerBroker(registry);
   // B3 — the persistent session store + ToDo→Agent micro-north-star, wired
   // BEHIND the broker so every agent capability still flows through the
-  // chokepoint. Default human gate is fail-closed (a real UI swaps in a prompt).
-  registerSession(registry, broker);
+  // chokepoint. The LIVE pending-permission registry is the UI human-in-the-loop
+  // gate: an agent `ask` parks for the UI and awaits its `resolvePermission` IPC
+  // decision (fail-closed on a bounded timeout / no client). The resolver is
+  // wired on every surface; the live `agent` IPC provider swap (so the UI's
+  // `getPendingPermission`/`resolvePermission` reach the awaiting resolver) is
+  // dev-bridge-only (`liveAgent`) so the unix sidecar's mock-data contract holds.
+  const pending = new PendingPermissionRegistry();
+  const { store } = registerSession(registry, broker, { pending });
+  if (opts.liveAgent) {
+    registry.replace(
+      PROVIDER_IDS.agent,
+      createLiveAgentProvider({ store, pending }) as never,
+    );
+  }
   // B5 — the quality-tool runner (eslint/tsc/vitest) + deferred AI-review fake.
   // Grounds the AI in real, parsed tool facts; folds diagnostics onto the
   // shared signal rail. No external dependency (binaries are first-party).

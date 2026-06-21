@@ -8,9 +8,10 @@ import { PermissionPrompt } from "@/components/capisco/permission-prompt";
 import { VirtualTranscript } from "@/components/ui/virtual-transcript";
 import { useReducedMotion } from "@/lib/use-reduced-motion";
 import { agentSnapshot } from "@/mocks";
-import type { Session, TranscriptBlock } from "@/contracts";
+import type { PermissionRequest, Session, TranscriptBlock } from "@/contracts";
 import { Message } from "./Message";
 import type { RunState } from "./store";
+import { useLivePermission } from "./use-live-permission";
 
 function EmptyState({ model }: { model: string }) {
   const { t } = useTranslation();
@@ -132,12 +133,32 @@ export function Transcript({
   onOpenFile: (file: string) => void;
 }) {
   const blocks = agentSnapshot.blocks(session.id);
+  // LIVE gate: the active session's parked `ask` over the sidecar bridge. Inert
+  // (null) with no bridge — the snapshot path below is then byte-identical.
+  const live = useLivePermission(session.id);
 
   if (runState === "loading") return <Wrap>{<LoadingState />}</Wrap>;
   if (runState === "error") return <Wrap>{<ErrorState onRetry={onRetry} />}</Wrap>;
-  if (blocks.length === 0) return <Wrap>{<EmptyState model={session.model} />}</Wrap>;
 
-  return (
+  // The live pending prompt is an overlay above the transcript content. It only
+  // renders when a real bridge has parked an `ask` for this session; otherwise
+  // `live.pending` is null and the rendered tree is exactly the snapshot path.
+  const liveBanner = live.pending ? (
+    <LivePermissionBanner request={live.pending} onGrant={live.resolve} />
+  ) : null;
+
+  if (blocks.length === 0) {
+    // No live banner → byte-identical to the original snapshot path.
+    if (!liveBanner) return <Wrap>{<EmptyState model={session.model} />}</Wrap>;
+    return (
+      <Wrap>
+        {liveBanner}
+        <EmptyState model={session.model} />
+      </Wrap>
+    );
+  }
+
+  const list = (
     <VirtualTranscript
       testid="transcript"
       items={blocks}
@@ -153,6 +174,46 @@ export function Transcript({
       )}
       style={{ height: "100%" }}
     />
+  );
+
+  // No live banner → return the ORIGINAL list unchanged (snapshot/golden path is
+  // byte-identical). Only a live, bridge-parked `ask` adds the wrapping column.
+  if (!liveBanner) return list;
+  return (
+    <div className="flex h-full min-h-0 flex-col">
+      {liveBanner}
+      <div className="min-h-0 flex-1">{list}</div>
+    </div>
+  );
+}
+
+/**
+ * The LIVE pending permission prompt — a thin wrapper over {@link PermissionPrompt}
+ * that wires `onGrant` to the live resolver. Rendered only when a bridge-connected
+ * session has parked an `ask`; the snapshot/golden path never reaches it.
+ */
+function LivePermissionBanner({
+  request,
+  onGrant,
+}: {
+  request: PermissionRequest;
+  onGrant: (scope: string) => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <div className="shrink-0 border-b border-border bg-editor" data-testid="live-permission">
+      <div className="mx-auto max-w-[740px] px-6 py-3">
+        <PermissionPrompt
+          command={request.command}
+          label={t("agents.permission.label")}
+          scopes={request.scopes}
+          credentialRef={request.credentialRef}
+          credentialNote={request.credentialRef ? t("agents.permission.credentialNote") : undefined}
+          prodNote={t("agents.permission.prodNote")}
+          onGrant={onGrant}
+        />
+      </div>
+    </div>
   );
 }
 

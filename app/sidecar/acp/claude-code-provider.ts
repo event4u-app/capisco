@@ -59,7 +59,7 @@ import { parseStreamJsonEnvelope, type StreamJsonEnvelope } from "./stream-json-
  */
 export type PermissionResolver = (
   request: CapabilityRequest,
-  context: { fromUntrusted: boolean; principal: Principal },
+  context: { fromUntrusted: boolean; principal: Principal; sessionId: string },
 ) => Promise<PermissionDecision> | PermissionDecision;
 
 /** A single-shot write-escape supplier for prod db-write (kept narrow; §3.3). */
@@ -284,6 +284,7 @@ export class ClaudeCodeProvider {
       const human = await this.#resolve(request, {
         fromUntrusted: effectiveUntrusted,
         principal: this.#principal,
+        sessionId: this.#sessionId,
       });
       if (human.axis === "deny") {
         this.#broker.resolve(this.#principal, request, human);
