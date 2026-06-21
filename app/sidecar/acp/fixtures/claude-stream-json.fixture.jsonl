@@ -1,0 +1,9 @@
+{"type":"system","subtype":"init","cwd":"/tmp/worktree","session_id":"cli-sess-fixture-1","model":"claude-opus-4-8","tools":["Read","Edit","Bash","Glob","Grep"],"permissionMode":"default"}
+{"type":"assistant","message":{"id":"msg_fixture_a1","role":"assistant","model":"claude-opus-4-8","content":[{"type":"text","text":"I'll read the README to understand the project, then update the TODO."}]},"session_id":"cli-sess-fixture-1"}
+{"type":"assistant","message":{"id":"msg_fixture_a2","role":"assistant","model":"claude-opus-4-8","content":[{"type":"tool_use","id":"toolu_fixture_read","name":"Read","input":{"file_path":"README.md"}}]},"session_id":"cli-sess-fixture-1"}
+{"type":"user","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"toolu_fixture_read","content":"# Project\nA sample project.","is_error":false}]},"session_id":"cli-sess-fixture-1"}
+{"type":"assistant","message":{"id":"msg_fixture_a3","role":"assistant","model":"claude-opus-4-8","content":[{"type":"text","text":"Now I'll mark the TODO as done."}]},"session_id":"cli-sess-fixture-1"}
+{"type":"assistant","message":{"id":"msg_fixture_a4","role":"assistant","model":"claude-opus-4-8","content":[{"type":"tool_use","id":"toolu_fixture_edit","name":"Edit","input":{"file_path":"TODO-done.md","old_string":"[ ]","new_string":"[x]"}}]},"session_id":"cli-sess-fixture-1"}
+{"type":"user","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"toolu_fixture_edit","content":"File updated.","is_error":false}]},"session_id":"cli-sess-fixture-1"}
+{"type":"assistant","message":{"id":"msg_fixture_a5","role":"assistant","model":"claude-opus-4-8","content":[{"type":"text","text":"Done — the TODO is marked complete."}]},"session_id":"cli-sess-fixture-1"}
+{"type":"result","subtype":"success","is_error":false,"duration_ms":1000,"num_turns":4,"result":"Done — the TODO is marked complete.","session_id":"cli-sess-fixture-1","usage":{"input_tokens":42,"output_tokens":128}}

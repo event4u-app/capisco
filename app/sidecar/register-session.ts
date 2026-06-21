@@ -21,6 +21,7 @@ import type { ProviderRegistry } from "./registry/registry.ts";
 import { InMemorySessionStore } from "./session/in-memory-session-store.ts";
 import { TodoProviderImpl } from "./todo/todo-provider.ts";
 import { createAcpTodoStarter } from "./todo/acp-todo-starter.ts";
+import { createNativeTodoStarter } from "./todo/native-todo-starter.ts";
 import type { PermissionResolver } from "./acp/acp-session.ts";
 import {
   readRealAcpEnv,
@@ -31,6 +32,19 @@ import {
 export const SESSION_PROVIDER_ID = "session";
 export const TODO_PROVIDER_ID = "todo";
 
+/**
+ * Which agent backend drives a ToDo-triggered run (B8). Both run behind the
+ * IDENTICAL session interface (a broker-gated `start` over the persistent store):
+ *  - `acp`    — the ACP stdio path (stub by default; the Zed `claude-code-acp`
+ *    bridge or another real ACP CLI is a thin transport swap, P2b/P4).
+ *  - `native` — the NATIVE `claude` stream-json adapter (P2a, {@link ClaudeCodeProvider}),
+ *    driving `claude -p --output-format=stream-json` directly with the existing
+ *    Claude login (no raw key).
+ * Default is `acp` — the deterministic stub stays the default so the mock/stub
+ * fallback and CI never need a real agent.
+ */
+export type SessionBackend = "acp" | "native";
+
 export interface RegisterSessionOptions {
   /** Reuse an existing store (defaults to a fresh in-memory store). */
   store?: SessionStore;
@@ -39,13 +53,27 @@ export interface RegisterSessionOptions {
   /** Spawn override (tests). Defaults to the stub agent. */
   command?: string;
   args?: string[];
+  /**
+   * Force the ACP `initialize` handshake (B8 P2b) for the `acp` backend, paired
+   * with a test `command`/`args` override pointing at the fake bridge stub. When
+   * omitted, the handshake flag comes from the real-adapter/bridge resolution
+   * (the stub stays handshake-free by default).
+   */
+  handshake?: boolean;
   /** Model/agent label override (tests). Defaults to the resolved label or stub. */
   model?: string;
+  /**
+   * Which backend drives the ToDo→agent run. Defaults to `acp` (deterministic
+   * stub). `native` selects the {@link ClaudeCodeProvider} stream-json adapter.
+   * Both enforce the same broker seam, so the choice is purely the transport.
+   */
+  backend?: SessionBackend;
   /**
    * Real ACP adapter config (P4, key-gated). Defaults to {@link readRealAcpEnv}.
    * When it resolves LIVE (CLI installed + key present) the session spawns the
    * real CLI; otherwise the deterministic stub stays the default. An explicit
    * `command` (test override) always wins over the real-adapter resolution.
+   * Only consulted for the `acp` backend.
    */
   realAcp?: RealAcpConfig;
 }
@@ -65,32 +93,52 @@ export function registerSession(
   opts: RegisterSessionOptions = {},
 ): SessionWiring {
   const store = opts.store ?? new InMemorySessionStore();
+  const backend: SessionBackend = opts.backend ?? "acp";
 
-  // P4 — key-gated real ACP adapter. An explicit test `command` override wins.
-  // Otherwise resolve the real adapter from config/env: LIVE only when the CLI
-  // is installed AND the key is in the vault; dormant (stub) otherwise. The key
-  // (if any) is moved into the broker vault inside `resolveRealAcpAdapter` — only
-  // the reference name leaves it.
   let command = opts.command;
   let args = opts.args;
   let model = opts.model;
-  if (command === undefined) {
-    const resolution = resolveRealAcpAdapter(opts.realAcp ?? readRealAcpEnv(), broker);
-    if (resolution.spawn) {
-      command = resolution.spawn.command;
-      args = resolution.spawn.args;
-      model = model ?? resolution.spawn.model;
-    }
-  }
+  let handshake = opts.handshake ?? false;
 
-  const starter = createAcpTodoStarter({
-    broker,
-    store,
-    model,
-    resolvePermission: opts.resolvePermission,
-    command,
-    args,
-  });
+  let starter;
+  if (backend === "native") {
+    // NATIVE Claude-Code backend (P2a): drive `claude` stream-json directly. The
+    // `claude` CLI is the default spawn (existing login, no raw key); a test
+    // passes a `command`/`args` override pointing at the recorded-fixture
+    // replayer. Same broker seam as the ACP path — selectable, not divergent.
+    starter = createNativeTodoStarter({
+      broker,
+      store,
+      model,
+      resolvePermission: opts.resolvePermission,
+      command,
+      args,
+    });
+  } else {
+    // P4 — key-gated real ACP adapter. An explicit test `command` override wins.
+    // Otherwise resolve the real adapter from config/env: LIVE only when the CLI
+    // is installed AND the key is in the vault; dormant (stub) otherwise. The key
+    // (if any) is moved into the broker vault inside `resolveRealAcpAdapter` —
+    // only the reference name leaves it.
+    if (command === undefined) {
+      const resolution = resolveRealAcpAdapter(opts.realAcp ?? readRealAcpEnv(), broker);
+      if (resolution.spawn) {
+        command = resolution.spawn.command;
+        args = resolution.spawn.args;
+        model = model ?? resolution.spawn.model;
+        handshake = resolution.spawn.handshake ?? false;
+      }
+    }
+    starter = createAcpTodoStarter({
+      broker,
+      store,
+      model,
+      resolvePermission: opts.resolvePermission,
+      command,
+      args,
+      handshake,
+    });
+  }
   const todo = new TodoProviderImpl(store, starter);
 
   registry.register(SESSION_PROVIDER_ID, store as never);
