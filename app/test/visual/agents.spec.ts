@@ -21,10 +21,15 @@ test.describe("agents workspace — structure (primary gate)", () => {
     await expect(page.getByTestId("session-gear")).toBeVisible();
   });
 
-  test("subagent row shows child agents as branch chips", async ({ page }) => {
+  test("subagent row shows child agents as branch chips with a per-node model badge", async ({
+    page,
+  }) => {
     await gotoAgents(page);
     await expect(page.getByTestId("subagent-row")).toBeVisible();
     await expect(page.getByTestId("subagent-chip-s1a")).toContainText("Subagent · write tests");
+    // Model-routing P3: every session-tree node names its model. The subtask
+    // runs the small tier (Haiku), distinct from the parent's badge.
+    await expect(page.getByTestId("subagent-model-s1a")).toContainText("Haiku 4.8");
   });
 
   test("chat reading column is centered at ~740px", async ({ page }) => {

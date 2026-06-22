@@ -57,6 +57,18 @@ describe("AgentWorkspace", () => {
     expect(screen.getByTestId("subagent-chip-s1a")).toHaveTextContent("Subagent · write tests");
   });
 
+  it("each subagent (session-tree node) carries a model badge naming its model (Phase 4 / P3)", () => {
+    renderWorkspace();
+    // The session-tree node badge shows WHICH model does WHICH task: the parent
+    // s1 runs Claude, its circumscribed "write tests" subtask runs the small
+    // tier (Haiku) — the transparency the routing feature exposes per node.
+    const subModel = screen.getByTestId("subagent-model-s1a");
+    expect(subModel).toHaveTextContent("Haiku 4.8");
+    // Distinct from the parent session's own badge — same badge component, per node.
+    const parentBadge = within(screen.getByTestId("session-tab-s1"));
+    expect(parentBadge.getByText("Claude")).toBeInTheDocument();
+  });
+
   it("renders the permission prompt with scope buttons", () => {
     renderWorkspace();
     const prompt = screen.getByTestId("permission-prompt");
