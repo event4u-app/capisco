@@ -96,8 +96,11 @@ const SESSIONS: Session[] = [
     telemetry: aggregateTelemetry(tel(0, 6500, 169_000), [{ telemetry: tel(0, 1200, 31_000) }]),
     subs: [
       {
+        // A circumscribed "write tests" subtask — origin-routed to the SMALL
+        // tier (Haiku) to showcase model-routing P3: the badge per session-tree
+        // node shows WHICH model does WHICH task (parent Opus, subtask Haiku).
         id: "s1a",
-        model: "Claude",
+        model: "Haiku 4.8",
         status: "running",
         title: "Subagent · write tests",
         telemetry: tel(0, 1200, 31_000),
