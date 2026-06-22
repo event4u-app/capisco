@@ -9,15 +9,27 @@
  * linked to a resumable, searchable, branchable run (§2.2).
  */
 
-import type { CapabilityBroker, SessionStore } from "@/contracts";
+import type { CapabilityBroker, SessionOrigin, SessionStore } from "@/contracts";
 import { AcpSession, type PermissionResolver } from "../acp/acp-session.ts";
 import type { TerseConfig } from "../acp/caveman-terse.ts";
+import type { LiveModelRouter } from "../model-routing/live-router.ts";
 import type { TodoSessionStarter } from "./todo-provider.ts";
 
 export interface AcpTodoStarterOptions {
   broker: CapabilityBroker;
   store: SessionStore;
   model?: string;
+  /**
+   * LIVE origin-routing (road-to-model-routing P0). When given, the spawned
+   * session's model is the router's decision for `origin` — deterministic, by
+   * origin, honouring the on/off toggle AND the blocklist invariant. A ToDo run
+   * is origin `{ kind: "todo" }` (mechanical → routes small when on). An explicit
+   * `model` (test override) still wins. Without a router the fixed model is used
+   * (the pre-routing default).
+   */
+  router?: LiveModelRouter;
+  /** The origin of the spawned session (defaults to `{ kind: "todo" }`). */
+  origin?: SessionOrigin;
   /**
    * The human-in-the-loop gate (the ONLY thing that clears an `ask`, including a
    * lethal-trifecta egress). Defaults to deny-all (fail closed) — a real UI
@@ -41,12 +53,18 @@ export interface AcpTodoStarterOptions {
 type AcpSessionOptionsPerform = ConstructorParameters<typeof AcpSession>[0]["perform"];
 
 export function createAcpTodoStarter(opts: AcpTodoStarterOptions): TodoSessionStarter {
+  // Origin-routed spawn model: an explicit `model` (test override) wins; else the
+  // router's deterministic decision for the origin (default `{ kind: "todo" }`);
+  // else the pre-routing fixed default. Resolved once at construction — the
+  // origin of this starter is fixed, so the model is too (deterministic).
+  const origin: SessionOrigin = opts.origin ?? { kind: "todo" };
+  const routedModel = opts.model ?? opts.router?.resolveSpawn(origin).model ?? "Stub Agent";
   return async (prompt: string, worktreePath: string): Promise<string> => {
     const session = new AcpSession({
       broker: opts.broker,
       store: opts.store,
       cwd: worktreePath,
-      model: opts.model ?? "Stub Agent",
+      model: routedModel,
       resolvePermission: opts.resolvePermission,
       command: opts.command,
       args: opts.args,

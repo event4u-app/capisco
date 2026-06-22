@@ -16,9 +16,10 @@
  * real UI swaps in a resolver that prompts the user.
  */
 
-import type { CapabilityBroker, SessionStore } from "@/contracts";
+import type { CapabilityBroker, SessionOrigin, SessionStore } from "@/contracts";
 import type { ProviderRegistry } from "./registry/registry.ts";
 import { InMemorySessionStore } from "./session/in-memory-session-store.ts";
+import { LiveModelRouter } from "./model-routing/live-router.ts";
 import { TodoProviderImpl } from "./todo/todo-provider.ts";
 import { createAcpTodoStarter } from "./todo/acp-todo-starter.ts";
 import { createNativeTodoStarter } from "./todo/native-todo-starter.ts";
@@ -72,6 +73,17 @@ export interface RegisterSessionOptions {
   handshake?: boolean;
   /** Model/agent label override (tests). Defaults to the resolved label or stub. */
   model?: string;
+  /**
+   * LIVE model-routing (road-to-model-routing P0). When given, a ToDo-triggered
+   * run's spawn model is the router's deterministic decision for its origin
+   * (`{ kind: "todo" }` — mechanical, routes small when on; never downgraded if
+   * blocklisted; default large when the toggle is off). An explicit `model`
+   * (test override) still wins. Without a router the pre-routing fixed default is
+   * used, so existing wiring is unchanged (routing is opt-in, default off).
+   */
+  router?: LiveModelRouter;
+  /** The origin of a ToDo-triggered run (defaults to `{ kind: "todo" }`). */
+  origin?: SessionOrigin;
   /**
    * Which backend drives the ToDo→agent run. Defaults to `acp` (deterministic
    * stub). `native` selects the {@link ClaudeCodeProvider} stream-json adapter.
@@ -130,6 +142,8 @@ export function registerSession(
       broker,
       store,
       model,
+      router: opts.router,
+      origin: opts.origin,
       resolvePermission,
       command,
       args,
@@ -154,6 +168,8 @@ export function registerSession(
       broker,
       store,
       model,
+      router: opts.router,
+      origin: opts.origin,
       resolvePermission,
       command,
       args,

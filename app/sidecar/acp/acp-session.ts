@@ -234,10 +234,15 @@ export class AcpSession {
     const sentPrompt = injectTerseDirective(prompt, this.#terse);
     this.#sentSystemContext = sentPrompt;
     // Prompt the agent. The prompt becomes UNTRUSTED data once it round-trips.
+    // Fire-and-forget: completion is driven by the `done` notification, not this
+    // request's response. A `.catch` absorbs the rejection that `#onClose` raises
+    // for any still-pending request when the agent process closes on teardown —
+    // otherwise that benign rejection surfaces as an unhandled rejection (vitest
+    // flags it as a possible false positive even though the run completed).
     void this.#transport!.request(ACP_METHODS.prompt, {
       sessionId: newSession.sessionId,
       prompt: sentPrompt,
-    });
+    }).catch(() => {});
 
     await done;
     return this.#sessionId;

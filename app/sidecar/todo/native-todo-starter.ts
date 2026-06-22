@@ -11,12 +11,13 @@
  * is selectable behind one interface. No raw key (existing `claude` login).
  */
 
-import type { CapabilityBroker, SessionStore } from "@/contracts";
+import type { CapabilityBroker, SessionOrigin, SessionStore } from "@/contracts";
 import {
   ClaudeCodeProvider,
   type PermissionResolver,
 } from "../acp/claude-code-provider.ts";
 import type { TerseConfig } from "../acp/caveman-terse.ts";
+import type { LiveModelRouter } from "../model-routing/live-router.ts";
 import type { TodoSessionStarter } from "./todo-provider.ts";
 
 type NativePerform = ConstructorParameters<typeof ClaudeCodeProvider>[0]["perform"];
@@ -25,6 +26,14 @@ export interface NativeTodoStarterOptions {
   broker: CapabilityBroker;
   store: SessionStore;
   model?: string;
+  /**
+   * LIVE origin-routing (road-to-model-routing P0) — identical seam to the ACP
+   * starter. When given, the spawned model is the router's deterministic
+   * decision for `origin` (toggle + blocklist honoured). Explicit `model` wins.
+   */
+  router?: LiveModelRouter;
+  /** The origin of the spawned session (defaults to `{ kind: "todo" }`). */
+  origin?: SessionOrigin;
   /** Human-in-the-loop gate (defaults to deny-all, fail closed). */
   resolvePermission?: PermissionResolver;
   /** Spawn override (tests). Defaults to the `claude` CLI. */
@@ -37,12 +46,15 @@ export interface NativeTodoStarterOptions {
 }
 
 export function createNativeTodoStarter(opts: NativeTodoStarterOptions): TodoSessionStarter {
+  const origin: SessionOrigin = opts.origin ?? { kind: "todo" };
+  const routedModel =
+    opts.model ?? opts.router?.resolveSpawn(origin).model ?? "Claude Code (native)";
   return async (prompt: string, worktreePath: string): Promise<string> => {
     const provider = new ClaudeCodeProvider({
       broker: opts.broker,
       store: opts.store,
       cwd: worktreePath,
-      model: opts.model ?? "Claude Code (native)",
+      model: routedModel,
       resolvePermission: opts.resolvePermission,
       command: opts.command,
       args: opts.args,

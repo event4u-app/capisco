@@ -100,6 +100,18 @@ export class AcpTransport {
     this.#child.stderr.on("data", (chunk: string) => {
       this.#stderr += chunk;
     });
+    // Swallow benign post-close stream errors. On `close()` we `stdin.end()` +
+    // `kill()` the child; a write in flight (or a pipe torn down by the kill)
+    // emits an ASYNC `error` event (EPIPE/ECONNRESET) that a sync try/catch
+    // cannot catch — without a listener Node treats it as an unhandled error
+    // (vitest then flags it as a possible false positive, even though every
+    // assertion passed). The transport is already tearing down, so the error
+    // carries no information; absorb it on every child stream + the child.
+    const swallow = (): void => {};
+    this.#child.stdin.on("error", swallow);
+    this.#child.stdout.on("error", swallow);
+    this.#child.stderr.on("error", swallow);
+    this.#child.on("error", swallow);
     this.#child.on("close", () => this.#onClose());
   }
 
