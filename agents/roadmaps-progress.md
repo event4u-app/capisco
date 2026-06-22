@@ -6,17 +6,17 @@
 
 ## Overall
 
-**18 / 33 steps done · 55%**
+**30 / 33 steps done · 91%**
 
 ```text
-██████████████████████░░░░░░░░░░░░░░░░░░   55%
+████████████████████████████████████░░░░   91%
 ```
 
 ## Open roadmaps
 
 | # | Roadmap | Phases | Steps | Open | Done | Deferred | Cancelled | Progress |
 |---|---|---:|---:|---:|---:|---:|---:|---|
-| 1 | [road-to-model-routing.md](roadmaps/road-to-model-routing.md) | 4 | 12 | 12 | 0 | 0 | 0 | ░░░░░░░░░░ 0% |
+| 1 | [road-to-model-routing.md](roadmaps/road-to-model-routing.md) | 4 | 12 | 0 | 12 | 0 | 0 | ██████████ 100% |
 | 2 | [road-to-token-economy.md](roadmaps/road-to-token-economy.md) | 5 | 21 | 3 | 18 | 0 | 0 | █████████░ 86% |
 
 ---
@@ -25,14 +25,14 @@
 
 ### [road-to-model-routing.md](roadmaps/road-to-model-routing.md)
 
-**Road to Modell-Routing — automatischer Modell-Wechsel (klein wo möglich)** — 0 / 12 done (0%)
+**Road to Modell-Routing — automatischer Modell-Wechsel (klein wo möglich)** — 12 / 12 done (100%)
 
 | # | Phase | State | Open | Done | Deferred | Cancelled | % |
 |---|---|---|---:|---:|---:|---:|---:|
-| 0 | on/off + Herkunfts-Routing (deterministisch) | ⬜ not started | 4 | 0 | 0 | 0 | 0% |
-| 1 | Klein-zuerst mit Quality-getriebener Eskalation | ⬜ not started | 3 | 0 | 0 | 0 | 0% |
-| 2 | Sperrliste als Invariante | ⬜ not started | 2 | 0 | 0 | 0 | 0% |
-| 3 | Transparenz + Per-Session-Override | ⬜ not started | 3 | 0 | 0 | 0 | 0% |
+| 0 | on/off + Herkunfts-Routing (deterministisch) | ✅ done | 0 | 4 | 0 | 0 | 100% |
+| 1 | Klein-zuerst mit Quality-getriebener Eskalation | ✅ done | 0 | 3 | 0 | 0 | 100% |
+| 2 | Sperrliste als Invariante | ✅ done | 0 | 2 | 0 | 0 | 100% |
+| 3 | Transparenz + Per-Session-Override | ✅ done | 0 | 3 | 0 | 0 | 100% |
 
 ### [road-to-token-economy.md](roadmaps/road-to-token-economy.md)
 

@@ -1,5 +1,5 @@
 ---
-status: ready
+status: complete
 block: Token-Ökonomie
 depends_on: [road-to-session-store-and-acp, road-to-quality-grounding, road-to-token-economy]
 autonomy: "A (Herkunfts-Routing + Quality-getriebene Eskalation — deterministisch testbar) / C (reale Ersparnis = Kalibrierung am echten Lauf)"
@@ -64,33 +64,33 @@ automatisch, wo die Aufgabe es zulässt. Schwester von `road-to-token-economy` (
 
 ## Phase 0 — on/off + Herkunfts-Routing (deterministisch)
 
-- [ ] **on/off-Schalter** (Setting), **default aus**.
-- [ ] **Routing nach Herkunft/Rolle**: Mapping `Session-Quelle → Modell-Stufe` (Subagent-Typ,
+- [x] **on/off-Schalter** (Setting), **default aus**.
+- [x] **Routing nach Herkunft/Rolle**: Mapping `Session-Quelle → Modell-Stufe` (Subagent-Typ,
       Roadmap-Schritt-Kategorie, ToDo vs. freie Konversation) — **kein** Inhalts-Classifier.
       Der Session-Tree kennt die Herkunft, weil *der Orchestrator* den Knoten so gespawnt hat.
-- [ ] Beschränkung auf **mechanische Klassen**; freie Konversation/Architektur wird nie geroutet.
-- [ ] Deterministischer Test: gleiche Herkunft → gleiches Modell.
+- [x] Beschränkung auf **mechanische Klassen**; freie Konversation/Architektur wird nie geroutet.
+- [x] Deterministischer Test: gleiche Herkunft → gleiches Modell.
 
 ## Phase 1 — Klein-zuerst mit Quality-getriebener Eskalation
 
-- [ ] Kleines Modell läuft zuerst; **deterministisches Signal** „hat nicht gereicht" =
+- [x] Kleines Modell läuft zuerst; **deterministisches Signal** „hat nicht gereicht" =
       **Quality-Runner rot** (B5: PHPStan/ESLint/Tests).
-- [ ] **Automatische Hochstufung** auf das größere Modell **mit den Fehlern als Kontext** (B5
+- [x] **Automatische Hochstufung** auf das größere Modell **mit den Fehlern als Kontext** (B5
       wird zum Router-Feedback — die Capisco-eigene Antwort auf Modell-Routing).
-- [ ] Eskalations-Test (s. Akzeptanz); Doppel-Lauf-Kosten der unterschätzten Fälle sichtbar/
+- [x] Eskalations-Test (s. Akzeptanz); Doppel-Lauf-Kosten der unterschätzten Fälle sichtbar/
       transparent.
 
 ## Phase 2 — Sperrliste als Invariante
 
-- [ ] **Nie heruntergestuft** (strukturell, nicht per Default): Broker-Pfad (Berechtigungs-
+- [x] **Nie heruntergestuft** (strukturell, nicht per Default): Broker-Pfad (Berechtigungs-
       entscheidung), KI-Review selbst (das *ist* das Urteil — eher das stärkere Modell), alles
       „untrusted egress".
-- [ ] Sperrlisten-Negativ-Assert (Pflicht): unabhängig vom on/off-Schalter kein Downgrade dieser
+- [x] Sperrlisten-Negativ-Assert (Pflicht): unabhängig vom on/off-Schalter kein Downgrade dieser
       Flächen. Erweiterung der Sperrliste = Security-Entscheidung, **nie autonom**.
 
 ## Phase 3 — Transparenz + Per-Session-Override
 
-- [ ] **Modell-Badge pro Knoten** im Session-Tree (welches Modell welche Aufgabe macht).
-- [ ] **Per-Session-Override** durch den Menschen („das hier mit Opus"); unsichtbares Auto-Routing
+- [x] **Modell-Badge pro Knoten** im Session-Tree (welches Modell welche Aufgabe macht).
+- [x] **Per-Session-Override** durch den Menschen („das hier mit Opus"); unsichtbares Auto-Routing
       vermeiden — Magie, die danebenliegt, zerstört Vertrauen.
-- [ ] DOM-Assert Badge + Override-Flow.
+- [x] DOM-Assert Badge + Override-Flow.
