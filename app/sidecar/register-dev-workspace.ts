@@ -25,6 +25,8 @@ import { RealWorktreeProvider } from "./git/real-worktree-provider.ts";
 import { RealFsProvider } from "./fs/real-fs-provider.ts";
 import { BrokerFsWriter } from "./fs/fs-write-broker.ts";
 import { BrokerExcludeWriter } from "./git/git-exclude-broker.ts";
+import { BrokerIngestor } from "./ingest/broker-ingestor.ts";
+import { BrokerReverter } from "./git/broker-reverter.ts";
 import { GITOPS_PROVIDER_ID, WORKTREE_PROVIDER_ID } from "./register-git.ts";
 import { PROVIDER_IDS } from "./register-mocks.ts";
 
@@ -74,6 +76,25 @@ export function registerDevWorkspace(
   // Always serve the REAL fs provider (path-keyed) so the UI can open any
   // project at runtime via the path input, whether or not a default repo is set.
   registry.replace(PROVIDER_IDS.projectFs, new RealFsProvider(git, writer) as never);
+
+  // P2 — the broker-gated context-ingestion chokepoint. `+`-Add / Drag&Drop
+  // funnel through it; a secret-form path is refused at the boundary and a
+  // prod-origin path is tagged read-only. A human attach clears the (fail-closed)
+  // file-read gate per session — like the editor save, never a config widening.
+  // Without a broker, the screening mock stays (no host gate available).
+  if (broker) {
+    registry.replace(
+      PROVIDER_IDS.ingest,
+      new BrokerIngestor({ broker, resolvePermission: () => ({ axis: "session" }) }) as never,
+    );
+    // P4 — the broker-gated, git-authoritative code-hunk revert. A human discard
+    // is trusted intent, so the resolver clears the file-write gate per session
+    // (never a config widening). execFile/argv → no shell-injection surface.
+    registry.replace(
+      PROVIDER_IDS.revert,
+      new BrokerReverter({ broker, resolvePermission: () => ({ axis: "session" }) }) as never,
+    );
+  }
 
   // Local-artifact hygiene: when a `repo` is configured, keep Capisco's personal
   // project-local files (`.capisco/local/`, `.capisco/cache/`) out of the

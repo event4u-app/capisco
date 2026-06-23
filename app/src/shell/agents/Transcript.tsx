@@ -89,9 +89,11 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
 function Block({
   block,
   onOpenFile,
+  onRevertPath,
 }: {
   block: TranscriptBlock;
   onOpenFile: (file: string) => void;
+  onRevertPath?: (path: string) => void;
 }) {
   const { t } = useTranslation();
   if (block.type === "message") return <Message msg={block.block} />;
@@ -104,18 +106,47 @@ function Block({
         added={tool.added}
         removed={tool.removed}
         onOpenInEditor={tool.openTarget ? () => onOpenFile(tool.openTarget!) : undefined}
+        // Revert glyph on code-changing actions (matches the prototype). The
+        // handler runs the broker-gated, git-authoritative worktree hunk-revert
+        // (road-to-composer-context-runtime P4) — `revert.revertPath`, which is
+        // honestly `skipped` without a worktree. The label stays "Discard code
+        // change", never "undo" (Overview §2.3).
+        onRevert={tool.added != null || tool.removed != null ? () => onRevertPath?.(tool.target) : undefined}
       >
         {tool.diff?.map((line, i) => (
+          // Rich diff row (design-sync-v2 §3): line-number gutter + +/− sign
+          // column + tinted background, replacing the flat coloured line.
           <div
             key={i}
+            data-testid="diff-line"
+            data-kind={line.kind}
             className={cn(
-              "text-code",
-              line.kind === "add" && "text-success",
-              line.kind === "del" && "text-destructive",
-              line.kind === "ctx" && "text-muted-foreground",
+              "-mx-2 flex whitespace-pre text-code",
+              line.kind === "add" && "bg-success/10",
+              line.kind === "del" && "bg-destructive/10",
             )}
           >
-            {line.text}
+            <span className="w-9 shrink-0 select-none pr-2.5 text-right text-muted-foreground">
+              {line.lineNo ?? ""}
+            </span>
+            <span
+              className={cn(
+                "w-3.5 shrink-0 select-none text-center",
+                line.kind === "add" && "text-success",
+                line.kind === "del" && "text-destructive",
+                line.kind === "ctx" && "text-muted-foreground",
+              )}
+            >
+              {line.kind === "add" ? "+" : line.kind === "del" ? "-" : " "}
+            </span>
+            <span
+              className={cn(
+                "flex-1",
+                line.kind === "ctx" ? "text-muted-foreground" : "text-foreground",
+              )}
+            >
+              {line.text}
+            </span>
           </div>
         ))}
       </ToolAction>
@@ -146,6 +177,7 @@ export function Transcript({
   runState,
   onRetry,
   onOpenFile,
+  onRevertPath,
   handoffSeed,
 }: {
   kind?: WorkspaceKind;
@@ -153,6 +185,8 @@ export function Transcript({
   runState: RunState;
   onRetry: () => void;
   onOpenFile: (file: string) => void;
+  /** Broker-gated worktree hunk-revert for a code-changing tool block (P4). */
+  onRevertPath?: (path: string) => void;
   /**
    * Compressed carry-over summary (Phase 1 handoff) for a freshly handed-off
    * session — rendered above the empty state so the new session is not a blank
@@ -205,7 +239,7 @@ export function Transcript({
       // scroll container is full-width so the scrollbar hugs the edge.
       renderRow={(b) => (
         <div className="mx-auto max-w-[740px] px-6 py-[9px]">
-          <Block block={b} onOpenFile={onOpenFile} />
+          <Block block={b} onOpenFile={onOpenFile} onRevertPath={onRevertPath} />
         </div>
       )}
       style={{ height: "100%" }}

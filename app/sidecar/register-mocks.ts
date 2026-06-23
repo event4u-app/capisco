@@ -14,7 +14,9 @@ import {
   mockAgentProvider,
   mockEditorProvider,
   mockGitProvider,
+  mockIngestProvider,
   mockProjectFsProvider,
+  mockRevertProvider,
   mockRecentProjects,
   mockShadowStore,
   mockSignalProvider,
@@ -36,6 +38,8 @@ export const PROVIDER_IDS = {
   recent: "recent",
   runtime: "runtime",
   projectFs: "projectFs",
+  ingest: "ingest",
+  revert: "revert",
 } as const;
 
 /**
@@ -64,4 +68,11 @@ export function registerMockProviders(
   // local allocator); the registry routes the flat method, the in-process
   // consumer reaches the full provider directly.
   registry.register(PROVIDER_IDS.runtime, fakeRuntimeProvider as never);
+  // P2 — context-file ingestion. Default boot is the screening mock (browser /
+  // test parity); the dev bridge swaps in the broker-gated BrokerIngestor for
+  // the real `+`-Add / Drag&Drop chokepoint behind the same id.
+  registry.register(PROVIDER_IDS.ingest, mockIngestProvider as never);
+  // P4 — code-hunk revert. Default boot is the deterministic mock; the dev
+  // bridge swaps in the broker-gated, git-authoritative BrokerReverter.
+  registry.register(PROVIDER_IDS.revert, mockRevertProvider as never);
 }

@@ -22,6 +22,7 @@ import type {
   SessionEvent,
   SessionListener,
   SessionTree,
+  SystemContextSize,
   ToolAction,
   TranscriptBlock,
   Unsubscribe,
@@ -67,5 +68,6 @@ export function createAgentProxy(client: SidecarClient): AgentProvider {
     listEffortLevels: () => call<EffortLevel[]>("listEffortLevels"),
     getPlanUsage: () => call<PlanUsageRow[]>("getPlanUsage"),
     getDetectedCli: () => call<BackendConfig>("getDetectedCli"),
+    getSystemContextSize: () => call<SystemContextSize>("getSystemContextSize"),
   };
 }

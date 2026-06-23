@@ -14,6 +14,7 @@ import type {
   SessionListener,
   SessionNode,
   SessionTree,
+  SystemContextSize,
   Telemetry,
   ToolAction,
   TranscriptBlock,
@@ -57,6 +58,11 @@ const PLAN_USAGE: PlanUsageRow[] = [
     tone: "warning",
   },
 ];
+
+// Deterministic system-context size (P5): the loaded rules/guidelines char
+// count + limit the composer's rules-warning reads. The real backend sums the
+// actually-assembled context; this is the browser/test twin.
+const SYSTEM_CONTEXT: SystemContextSize = { chars: 277988, limit: 99024 };
 
 // Deterministic long transcript for the virtualization gate (build-spec §4 /
 // Tischstakes): 500 alternating messages, no Date.now / Math.random.
@@ -157,11 +163,15 @@ const BLOCKS: Record<string, TranscriptBlock[]> = {
         added: 12,
         removed: 4,
         openTarget: "worktree.ts",
+        // Rich diff rows (design-sync-v2 §3): the +/− sign + line number render
+        // in the gutter, so the text carries only the code (no leading marker).
         diff: [
-          { kind: "add", text: "+  async teardown() {" },
-          { kind: "add", text: "+    await this.broker.release(this.port);" },
-          { kind: "add", text: "+    await rm(this.dir, { recursive: true });" },
-          { kind: "del", text: "-    // TODO: free port" },
+          { kind: "ctx", text: "  this.watcher.close();", lineNo: 15 },
+          { kind: "del", text: "  // TODO: free port", lineNo: 16 },
+          { kind: "add", text: "  async teardown() {", lineNo: 16 },
+          { kind: "add", text: "    await this.broker.release(this.port);", lineNo: 17 },
+          { kind: "add", text: "    await rm(this.dir, { recursive: true });", lineNo: 18 },
+          { kind: "ctx", text: "  }", lineNo: 19 },
         ],
       },
     },
@@ -176,6 +186,22 @@ const BLOCKS: Record<string, TranscriptBlock[]> = {
         command: "Bash(rm -rf .worktrees/tmp)",
         label: "Approval required",
         scopes: ["Allow once", "This session", "Deny"],
+      },
+    },
+    {
+      type: "message",
+      block: {
+        id: "s1-m4",
+        role: "agent",
+        body: "All checks pass after the change:",
+        table: {
+          head: ["Check", "Status"],
+          rows: [
+            [{ text: "task check-compression" }, { text: "✓ no errors", tone: "ok" }],
+            [{ text: "task sync-check-hashes" }, { text: "✓ clean", tone: "ok" }],
+            [{ text: "task lint-skills" }, { text: "✓ 440 pass · 0 fail", tone: "ok" }],
+          ],
+        },
       },
     },
   ],
@@ -203,6 +229,32 @@ const BLOCKS: Record<string, TranscriptBlock[]> = {
         id: "s2-m3",
         role: "user",
         body: "Yes, keep the API. Session is idle until you confirm.",
+      },
+    },
+    {
+      type: "message",
+      block: {
+        id: "s2-m4",
+        role: "agent",
+        who: "GPT-5",
+        body: "Readiness scorecard for the grant-model refactor:",
+        table: {
+          scorecard: true,
+          head: ["Area", "Before", "After", "Δ"],
+          rows: [
+            [{ text: "Immutable grants" }, { text: "2 / 10", tone: "bad" }, { text: "10 / 10", tone: "ok" }, { text: "+8", tone: "ok" }],
+            [{ text: "Revocation via tombstone" }, { text: "0 / 10", tone: "bad" }, { text: "10 / 10", tone: "ok" }, { text: "+10", tone: "ok" }],
+            [{ text: "API compatibility" }, { text: "5 / 10", tone: "bad" }, { text: "10 / 10", tone: "ok" }, { text: "+5", tone: "ok" }],
+            [{ text: "Test coverage" }, { text: "1 / 10", tone: "bad" }, { text: "10 / 10", tone: "ok" }, { text: "+9", tone: "ok" }],
+            [{ text: "Broker audit log" }, { text: "6 / 10", tone: "warn" }, { text: "9 / 10", tone: "ok" }, { text: "+3", tone: "ok" }],
+          ],
+          foot: [{ text: "Total" }, { text: "14 / 50", tone: "bad" }, { text: "49 / 50", tone: "ok" }, { text: "+35", tone: "ok" }],
+        },
+        cards: [
+          { k: "Before", v: "14/50", s: "mutable grants · no tombstone", tone: "bad" },
+          { k: "After", v: "49/50", s: "frozen records · API kept", tone: "ok" },
+          { k: "Tests added", v: "+312", s: "broker · grant · tombstone" },
+        ],
       },
     },
   ],
@@ -432,6 +484,7 @@ export const mockAgentProvider: AgentProvider = {
   listEffortLevels: () => Promise.resolve(EFFORT_LEVELS),
   getPlanUsage: () => Promise.resolve(PLAN_USAGE),
   getDetectedCli: () => Promise.resolve(DETECTED_CLI),
+  getSystemContextSize: () => Promise.resolve(SYSTEM_CONTEXT),
 };
 
 // Synchronous deterministic snapshots for render-only consumers (the async
@@ -446,5 +499,6 @@ export const agentSnapshot = {
   detectedCli: DETECTED_CLI,
   backends: BACKEND_CATALOG,
   defaultBackendId: DEFAULT_BACKEND_ID,
+  systemContext: SYSTEM_CONTEXT,
   blocks: (id: string): TranscriptBlock[] => BLOCKS[id] ?? [],
 };

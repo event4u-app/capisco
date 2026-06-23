@@ -1,19 +1,20 @@
 import * as React from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowUp } from "lucide-react";
 
 import { Bot, Settings as SettingsIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { agentSnapshot, chatSnapshot, mockWorktrees } from "@/mocks";
 import { useOpenProject } from "@/shell/open-project-store";
-import { MentionAutocomplete } from "./MentionAutocomplete";
+import { useWorktrees } from "@/shell/worktree-store";
+import { getProviders } from "@/lib/desktop-shell";
+import type { MentionFieldElement } from "./MentionAutocomplete";
 import { useLayout } from "@/shell/store";
 import { usePalette } from "@/shell/command-registry";
 import { SessionTabbar } from "./SessionTabbar";
 import { SubagentRow } from "./SubagentRow";
 import { Transcript } from "./Transcript";
-import { ComposerBar } from "./ComposerBar";
+import { Composer } from "./Composer";
 import { AgentSettings } from "./AgentSettings";
 import { TriangleAlert } from "lucide-react";
 import {
@@ -57,22 +58,22 @@ export function AgentWorkspace({ kind = "agents" }: { kind?: WorkspaceKind } = {
   const routingEnabled = useStore((s) => s.routingEnabled);
   const modelOverrides = useStore((s) => s.modelOverrides);
   const setRoutingEnabled = useStore((s) => s.setRoutingEnabled);
-  const setModelOverride = useStore((s) => s.setModelOverride);
   const backendKind = useStore((s) => s.backendKind);
   const setActive = useStore((s) => s.setActive);
   const createSession = useStore((s) => s.createSession);
   const closeSession = useStore((s) => s.closeSession);
-  const setModel = useStore((s) => s.setModel);
   const setEffort = useStore((s) => s.setEffort);
   const setBackendKind = useStore((s) => s.setBackendKind);
   const setRunState = useStore((s) => s.setRunState);
+  const cancelRun = useStore((s) => s.cancelRun);
   const settingsOpen = useStore((s) => s.settingsOpen);
   const toggleSettings = useStore((s) => s.toggleSettings);
   const setSettingsOpen = useStore((s) => s.setSettingsOpen);
 
   const register = usePalette((s) => s.register);
   const openProjectByPath = useOpenProject((s) => s.open);
-  const composerRef = React.useRef<HTMLInputElement>(null);
+  const worktreeCwd = useWorktrees((s) => s.activePath);
+  const composerRef = React.useRef<MentionFieldElement>(null);
 
   // Clickable @-reference: open the referenced project through the existing
   // open-project flow (mid lesart — "Klick öffnet das Projekt / springt
@@ -134,6 +135,10 @@ export function AgentWorkspace({ kind = "agents" }: { kind?: WorkspaceKind } = {
   const send = () => {
     const el = composerRef.current;
     if (el) el.value = "";
+    // Start the run (P3): the session goes `loading`, which drives the
+    // composer's Stop affordance. The real stream lands on the AgentProvider;
+    // here the run-state is the in-flight signal a Stop can cancel.
+    if (cur) setRunState(cur.id, "loading");
     if (terseEnabled && !terseHintSeen) {
       setTerseHintOpen(true);
       markTerseHintSeen();
@@ -194,6 +199,11 @@ export function AgentWorkspace({ kind = "agents" }: { kind?: WorkspaceKind } = {
           runState={runState}
           onRetry={() => setRunState(cur.id, "ready")}
           onOpenFile={openFile}
+          onRevertPath={(path) => {
+            // P4 — broker-gated, git-authoritative worktree hunk-revert. Honest
+            // `skipped` without a worktree (the provider decides; never a fake).
+            void getProviders().revert.revertPath(worktreeCwd, path);
+          }}
           handoffSeed={handoffSeed}
         />
       </div>
@@ -260,43 +270,22 @@ export function AgentWorkspace({ kind = "agents" }: { kind?: WorkspaceKind } = {
               </Button>
             </div>
           )}
-          <div className="relative">
-            <MentionAutocomplete
-              ref={composerRef}
-              data-testid="composer-input"
-              className="pr-9 font-mono"
-              currentProject={mockWorktrees[0]?.name}
-              onOpenReference={openReference}
-              placeholder={t("agents.composer.placeholder")}
-              aria-label={t("agents.composer.placeholder")}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-                  e.preventDefault();
-                  send();
-                }
-              }}
-            />
-            <Button
-              type="button"
-              size="icon"
-              variant="ghost"
-              data-testid="composer-send"
-              aria-label={t("agents.composer.send")}
-              className="absolute right-1 top-1/2 size-6 -translate-y-1/2 text-primary hover:text-primary"
-              onClick={send}
-            >
-              <ArrowUp className="size-4" strokeWidth={1.8} />
-            </Button>
-          </div>
-          <ComposerBar
-            model={model}
-            setModel={setModel}
+          <Composer
+            isChat={isChat}
             effort={effort}
             setEffort={setEffort}
             statusText={statusText}
             used={used}
             budget={budget}
             setBudget={setBudget}
+            routingEnabled={routingEnabled}
+            setRoutingEnabled={setRoutingEnabled}
+            composerRef={composerRef}
+            onSend={send}
+            running={runState === "loading"}
+            onStop={() => cancelRun(cur.id)}
+            currentProject={mockWorktrees[0]?.name}
+            onOpenReference={openReference}
           />
         </div>
       </div>
@@ -308,8 +297,6 @@ export function AgentWorkspace({ kind = "agents" }: { kind?: WorkspaceKind } = {
           onClose={() => setSettingsOpen(false)}
           routingEnabled={routingEnabled}
           setRoutingEnabled={setRoutingEnabled}
-          modelOverride={modelOverrides[cur.id] ?? ""}
-          setModelOverride={(m) => setModelOverride(cur.id, m)}
           terseEnabled={terseEnabled}
           setTerseEnabled={setTerseEnabled}
           terseLevel={terseLevel}

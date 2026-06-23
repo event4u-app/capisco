@@ -37,3 +37,5 @@ export {
 } from "./recent";
 export { mockWorktreeProvider } from "./worktree";
 export { mockSessionStore, mockTodoProvider } from "./session";
+export { mockIngestProvider } from "./ingest";
+export { mockRevertProvider } from "./revert";

@@ -66,12 +66,40 @@ export interface PermissionRequest {
 
 export type MessageRole = "user" | "agent";
 
+/** A table / scorecard cell with an optional semantic tone (design-sync-v2 §3). */
+export interface MessageCell {
+  text: string;
+  tone?: "ok" | "bad" | "warn";
+}
+
+/** A markdown-style table rendered in the transcript at full box width. */
+export interface MessageTable {
+  head: string[];
+  rows: MessageCell[][];
+  /** Optional footer row (scorecard totals). */
+  foot?: MessageCell[];
+  /** Scorecard styling: numeric columns right-aligned + mono. */
+  scorecard?: boolean;
+}
+
+/** A stat-card (k / value / sub) in a 3-up grid below a message. */
+export interface MessageCard {
+  k: string;
+  v: string;
+  s?: string;
+  tone?: "ok" | "bad";
+}
+
 export interface Message {
   id: string;
   role: MessageRole;
   /** Optional display name override (e.g. "GPT-5", "Local"). */
   who?: string;
   body: string;
+  /** Optional rendered table (design-sync-v2 §3) — full box width. */
+  table?: MessageTable;
+  /** Optional stat-cards grid (design-sync-v2 §3). */
+  cards?: MessageCard[];
 }
 
 /**
@@ -102,6 +130,8 @@ export interface SubAgent {
 export interface ToolActionDiffLine {
   kind: "add" | "del" | "ctx";
   text: string;
+  /** Optional gutter line number (design-sync-v2 §3 rich diff rows). */
+  lineNo?: number;
 }
 
 /** A ToolAction that carries optional inline diff lines + open-in-editor target. */
@@ -261,4 +291,18 @@ export interface AgentProvider {
   getPlanUsage(): Promise<PlanUsageRow[]>;
   /** Detected CLI backend (mock for the keychain/CLI-detect shell). */
   getDetectedCli(): Promise<BackendConfig>;
+  /**
+   * Live size of the assembled system context — the SAME loaded rules /
+   * guidelines sent with a turn (composer-context-runtime P5). The composer's
+   * rules-warning flips at the real `limit`, not a hardcoded value.
+   */
+  getSystemContextSize(): Promise<SystemContextSize>;
+}
+
+/** Live system-context size — the loaded rules/guidelines char count + limit. */
+export interface SystemContextSize {
+  /** Total characters of the assembled system context (== what is sent). */
+  chars: number;
+  /** The character budget; the rules-warning flips when `chars > limit`. */
+  limit: number;
 }

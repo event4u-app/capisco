@@ -1,9 +1,9 @@
-import { render, screen, within } from "@testing-library/react";
+import { act, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import "@/i18n";
 import { ThemeProvider } from "@/lib/theme";
-import { mockAgentProvider } from "@/mocks";
+import { mockAgentProvider, mockRevertProvider } from "@/mocks";
 import { AgentWorkspace } from "./AgentWorkspace";
 import { useAgents } from "./store";
 
@@ -106,14 +106,15 @@ describe("AgentWorkspace", () => {
     expect(screen.queryByTestId("session-tab-s1")).not.toBeInTheDocument();
   });
 
-  it("trims long session titles with an ellipsis (max-w 160px), keeps the 36px tab height", () => {
+  it("trims long session titles with an ellipsis (.st-title), keeps the 36px tab height", () => {
     renderWorkspace();
+    // Styling is the verbatim prototype CSS: `.st-title` (ellipsis + 160px max),
+    // `.session-tabbar` (height var(--tabbar-h) = 36px). The classes are the
+    // contract; the px live in capisco-composer.css.
     const title = screen.getByTestId("session-title-s1");
-    expect(title.className).toContain("max-w-40"); // 160px
-    expect(title.className).toContain("text-ellipsis");
-    expect(title.className).toContain("whitespace-nowrap");
-    // The tabbar is fixed at the 36px chrome tab height.
-    expect(screen.getByTestId("session-tabbar").className).toContain("h-[var(--tabbar-h)]");
+    expect(title.className).toContain("st-title");
+    expect(screen.getByTestId("session-tabbar").className).toContain("session-tabbar");
+    expect(screen.getByTestId("session-tab-s1").className).toContain("session-tab");
   });
 
   it("centers the chat reading column at the 740px max (R2 correction)", () => {
@@ -307,20 +308,17 @@ describe("AgentWorkspace", () => {
     expect(useAgents.getState().routingEnabled).toBe(true);
   });
 
-  it("a per-session model override wins and shows in the session badge (Phase 4)", async () => {
-    const user = userEvent.setup();
+  it("a per-session model override shows in the session badge (Phase 4, store-driven)", () => {
+    // The override PICKER UI was removed to match the prototype (Auto routing is
+    // just a toggle, no model dropdown). The store contract + effective-model
+    // badge still hold — exercised directly here.
     renderWorkspace();
-    // s1's badge starts at its own model.
     const badge = () => within(screen.getByTestId("session-tab-s1"));
-    await user.click(screen.getByTestId("session-gear"));
-    await user.click(screen.getByTestId("agent-settings-routing-override"));
-    await user.click(screen.getByTestId("agent-settings-routing-override-Haiku 4.8"));
+    act(() => useAgents.getState().setModelOverride("s1", "Haiku 4.8"));
     expect(useAgents.getState().modelOverrides.s1).toBe("Haiku 4.8");
-    // The badge reflects the override (effective model).
     expect(badge().getByText("Haiku 4.8")).toBeInTheDocument();
-    // "Auto" clears it.
-    await user.click(screen.getByTestId("agent-settings-routing-override"));
-    await user.click(screen.getByTestId("agent-settings-routing-override-auto"));
+    // "" clears it.
+    act(() => useAgents.getState().setModelOverride("s1", ""));
     expect(useAgents.getState().modelOverrides.s1).toBeUndefined();
   });
 
@@ -339,5 +337,47 @@ describe("AgentWorkspace", () => {
     expect(await screen.findByTestId("transcript-loading")).toBeInTheDocument();
     useAgents.setState({ runStates: { s1: "error" } });
     expect(await screen.findByTestId("transcript-error")).toBeInTheDocument();
+  });
+});
+
+describe("Send→Stop = real session cancel (P3 / B3 — Cancel-Assert, test 3)", () => {
+  it("a run in flight shows Stop; clicking it cancels ONLY this session (parent untouched, no auto-resume)", async () => {
+    const user = userEvent.setup();
+    renderWorkspace();
+    // A run is in flight for the active session, and a sibling/parent session
+    // is also loading — cancelling one must never touch the other.
+    useAgents.setState({ runStates: { s1: "loading", "s-parent": "loading" } });
+
+    const sendBtn = await screen.findByTestId("composer-send");
+    // The send affordance is now Stop (honesty-gate: only with a cancellable run).
+    expect(sendBtn).toHaveAttribute("data-running", "true");
+
+    await user.click(sendBtn);
+
+    // B3: this session is back to ready; the parent's run is NOT mutated.
+    expect(useAgents.getState().runStates.s1).toBe("ready");
+    expect(useAgents.getState().runStates["s-parent"]).toBe("loading");
+  });
+
+  it("cancelRun is idempotent and session-scoped (no auto-resume)", () => {
+    useAgents.setState({ runStates: { a: "loading", b: "loading" } });
+    useAgents.getState().cancelRun("a");
+    useAgents.getState().cancelRun("a");
+    expect(useAgents.getState().runStates).toMatchObject({ a: "ready", b: "loading" });
+  });
+});
+
+describe("Revert glyph wires the broker-gated worktree hunk-revert (P4)", () => {
+  it("clicking the revert glyph calls revert.revertPath with the tool's target", async () => {
+    const spy = vi.spyOn(mockRevertProvider, "revertPath");
+    const user = userEvent.setup();
+    renderWorkspace();
+    // The mock agents session has an `Edit` tool (added/removed) → revert glyph.
+    const revertBtns = await screen.findAllByTestId("tool-action-revert");
+    await user.click(revertBtns[0]);
+    expect(spy).toHaveBeenCalled();
+    // The second arg is the file path the hunk-revert targets (never a shell string).
+    expect(typeof spy.mock.calls[0][1]).toBe("string");
+    spy.mockRestore();
   });
 });
