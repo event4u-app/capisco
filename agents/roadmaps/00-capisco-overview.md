@@ -39,6 +39,18 @@ ausführbar; diese Datei ist der Klebstoff.
 **Abhängigkeitsgraph:** R0a + R0b (parallel möglich, Interfaces zuerst) → R1 (enthält Diff +
 Command-Palette) → R2 → R3 → R4 → R5 → R6. R0a/R0b sind harte Voraussetzung für alles.
 
+### Folge-Roadmaps (nach R6 — Sync + Token-Ökonomie)
+
+| Roadmap | Block | Status | Auto-verifizierbar? |
+|---|---|---|---|
+| `road-to-design-sync-v1` | UI-Sync | abgeschlossen (archiviert) | DOM + Goldens + Sicht-Abnahme |
+| `road-to-token-economy` | Token-Ökonomie | abgeschlossen | Unit/Invarianten + Sicht-Abnahme |
+| `road-to-design-sync-v2` | UI-Sync | abgeschlossen (archiviert) · Klasse-C-Sicht-Abnahme offen | DOM + Goldens + **Sicht-Abnahme** |
+| `road-to-composer-context-runtime` | Token-Ökonomie / Runtime | abgeschlossen (archiviert) · Klasse-C-Sicht-Abnahme offen | Unit/Invarianten + Sicht-Abnahme |
+
+`design-sync-v2` ist reine UI-Projektion der Morning-Deltas (2026-06-22); die dort als
+Stub angelegten Datenpfade füllt `composer-context-runtime`.
+
 **„Strukturiert"** = Goal + Phasen + Akzeptanz stehen; die feinen `- [ ]`-Schritte werden beim
 Erreichen der Roadmap gefüllt (Fern-Detail jetzt verschiebt sich nur).
 
