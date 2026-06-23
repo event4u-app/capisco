@@ -106,7 +106,10 @@ export function ContextBudgetMeter({
           step={10_000}
           value={[budget]}
           onValueChange={(v) => setBudget(v[0])}
-          className={meta.bar}
+          // DS slider (design-sync-v2 §1): teal-filled track (shared Slider
+          // default) + SQUARE thumb (3px corner, DS control radius) — per-instance
+          // override so the shared round-thumb Slider stays untouched elsewhere.
+          className={cn(meta.bar, "[&_[role=slider]]:rounded-sm")}
         />
         <div className="mt-3 flex gap-1.5">
           {PRESETS.map((v) => (

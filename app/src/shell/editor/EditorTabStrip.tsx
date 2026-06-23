@@ -67,14 +67,11 @@ function Tab({
         e.preventDefault();
         onDrop();
       }}
-      className={cn(
-        "group relative flex h-8 items-stretch border-r border-border text-ui",
-        active
-          ? "bg-editor text-foreground"
-          : "bg-card text-muted-foreground hover:text-foreground",
-      )}
+      className={cn("editor-tab group !max-w-none items-stretch", active && "active")}
     >
-      {/* Active tab adopts the editor bg + top teal strip (merge downward). */}
+      {/* Active tab adopts the editor bg + a continuous top teal strip (full
+          width via this absolute span — the prototype's inset box-shadow would
+          be covered by the inner button bg, so we keep the span). */}
       {active && (
         <span aria-hidden className="absolute left-0 top-0 h-0.5 w-full bg-primary" />
       )}
@@ -163,7 +160,7 @@ function Tab({
 
 /** Single editor-tab height (matches the `h-8` Tab host) — drives the multi-row
  * max-height so N rows show exactly N tab heights before scrolling. */
-const TAB_H = 32;
+const TAB_H = 36;
 const ROW_OPTIONS: TabRows[] = [1, 2, 3];
 
 /**
@@ -194,8 +191,8 @@ function OverflowMenu({
           data-testid="editor-tab-overflow"
           aria-pressed={open}
           className={cn(
-            "flex w-8 shrink-0 items-center justify-center self-stretch border-l border-border text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring",
-            open && "bg-accent text-foreground",
+            "tab-overflow-wrap-trigger tab-overflow self-stretch focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring",
+            open && "active",
           )}
         >
           <Icon icon={ChevronDown} size={15} />
@@ -292,15 +289,13 @@ export function EditorTabStrip() {
       aria-label={t("editor.tabStrip")}
       data-testid="editor-tab-strip"
       data-rows={rows}
-      className="flex shrink-0 items-stretch border-b border-border bg-card"
+      className="tab-strip"
     >
       <div
         data-testid="editor-tab-scroll"
         className={cn(
-          "flex flex-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
-          multi
-            ? "flex-wrap content-start overflow-y-auto"
-            : "items-stretch overflow-x-auto",
+          "tab-scroll [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+          multi ? "multi content-start" : "single items-stretch",
         )}
         // Multi-row caps the strip at N tab-heights (then scrolls); single-row
         // is one tab tall.

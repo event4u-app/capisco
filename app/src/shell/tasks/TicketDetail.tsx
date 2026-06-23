@@ -5,7 +5,6 @@ import { Icon } from "@/components/icon";
 import { Button } from "@/components/ui/button";
 import { tasksSnapshot } from "@/mocks/tasks";
 import type { Ticket } from "@/contracts";
-import { StatusDot } from "./TicketCards";
 
 interface Comment {
   who: string;
@@ -13,15 +12,24 @@ interface Comment {
   text: string;
 }
 
+const TYPE_COLOR: Record<string, string> = {
+  feature: "var(--ds-accent)",
+  bug: "var(--ds-error)",
+  chore: "var(--ds-text-tertiary)",
+};
+
 function avatar(who: string): string {
   return who === "you" ? "me" : who.slice(0, 2);
 }
 
 /**
- * Ticket detail (build-spec §6 / prototype TicketDetail) — rendered inside its
- * own closable workspace tab. Editable description (toggle Edit ↔ Save), an
- * activity thread with a ⌘↵ composer, and a sidebar with status / assignee /
- * type / points / epic / PR plus "Create branch" + "Start in a worktree".
+ * Ticket detail — 1:1 port of the prototype `TicketDetail` (views.jsx): a
+ * `.git-workspace` body with `.td-grid` (main `.td-main` + sidebar `.td-side`).
+ * Editable description (`.td-desc`/`.td-descedit`, toggle Edit ↔ Save), an
+ * activity thread (`.td-comments`/`.td-comment`) with a ⌘↵ composer
+ * (`.td-compose`), and `.td-field` rows for status / assignee / type / points /
+ * epic / PR plus "Create branch" + "Start in a worktree". Classes verbatim; app
+ * logic, i18n + testids preserved.
  */
 export function TicketDetail({ ticket: t }: { ticket: Ticket }) {
   const { t: tr } = useTranslation();
@@ -33,7 +41,7 @@ export function TicketDetail({ ticket: t }: { ticket: Ticket }) {
   const [comments, setComments] = React.useState<Comment[]>(detail.comments);
   const [draft, setDraft] = React.useState("");
 
-  const typeVar = tasks.typeChartVar(t.type);
+  const typeColor = TYPE_COLOR[t.type] ?? "var(--ds-text-tertiary)";
 
   const addComment = () => {
     const text = draft.trim();
@@ -43,30 +51,27 @@ export function TicketDetail({ ticket: t }: { ticket: Ticket }) {
   };
 
   return (
-    <div
-      data-testid={`ticket-detail-${t.id}`}
-      className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-background"
-    >
-      <div className="flex min-h-0 w-full flex-1 flex-col overflow-y-auto px-6 py-5">
-        <div className="text-micro text-muted-foreground">
-          {tr("tasks.detail.breadcrumb")} <span className="px-1">›</span> {t.id}
+    <div data-testid={`ticket-detail-${t.id}`} className="git-workspace min-w-0">
+      <div className="gitw-inner td-inner">
+        <div className="td-bc">
+          {tr("tasks.detail.breadcrumb")} <span className="sep">›</span> {t.id}
         </div>
-        <div className="mt-3 grid grid-cols-1 gap-6 lg:grid-cols-[1fr_240px]">
-          <div className="min-w-0">
-            <h2 className="text-lg font-semibold text-foreground">{t.title}</h2>
-            <div className="mt-1 text-micro text-muted-foreground">
-              <span className="text-foreground">{t.id}</span> ·{" "}
+        <div className="td-grid">
+          <div className="td-main">
+            <h2 className="td-title">{t.title}</h2>
+            <div className="td-sub">
+              <span className="td-id">{t.id}</span> ·{" "}
               {tr("tasks.detail.openedBy", { who: t.who, sprint: tasks.getSprint().name })}
             </div>
 
-            <section className="mt-5">
-              <div className="flex items-center justify-between">
-                <h3 className="text-ui font-medium text-foreground">{tr("tasks.detail.description")}</h3>
+            <div className="td-section">
+              <div className="td-sechead">
+                {tr("tasks.detail.description")}
                 <button
                   type="button"
                   data-testid={`ticket-edit-${t.id}`}
                   onClick={() => setEditing((v) => !v)}
-                  className="inline-flex items-center gap-1 text-micro text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  className="td-edit focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 >
                   <Icon icon={editing ? Check : Pencil} size={12} />
                   {editing ? tr("tasks.detail.save") : tr("tasks.detail.edit")}
@@ -77,35 +82,33 @@ export function TicketDetail({ ticket: t }: { ticket: Ticket }) {
                   data-testid={`ticket-desc-edit-${t.id}`}
                   value={desc}
                   onChange={(e) => setDesc(e.target.value)}
-                  className="mt-2 h-40 w-full resize-y rounded-md border border-border bg-muted p-2 text-ui text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  className="td-descedit focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 />
               ) : (
-                <div data-testid={`ticket-desc-${t.id}`} className="mt-2 whitespace-pre-wrap text-ui text-muted-foreground">
-                  {desc}
+                <div data-testid={`ticket-desc-${t.id}`} className="td-desc">
+                  {desc.split("\n").map((l, i) => (
+                    <p key={i}>{l || " "}</p>
+                  ))}
                 </div>
               )}
-            </section>
+            </div>
 
-            <section className="mt-6">
-              <h3 className="text-ui font-medium text-foreground">
-                {tr("tasks.detail.activity", { count: comments.length })}
-              </h3>
-              <div data-testid={`ticket-comments-${t.id}`} className="mt-2 flex flex-col gap-3">
+            <div className="td-section">
+              <div className="td-sechead">{tr("tasks.detail.activity", { count: comments.length })}</div>
+              <div data-testid={`ticket-comments-${t.id}`} className="td-comments">
                 {comments.map((c, i) => (
-                  <div key={i} className="flex gap-2">
-                    <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-accent text-micro">
-                      {avatar(c.who)}
-                    </span>
-                    <div className="min-w-0">
-                      <div className="text-micro text-muted-foreground">
-                        <b className="text-foreground">{c.who}</b> · {c.when}
+                  <div key={i} className="td-comment">
+                    <span className="td-cav">{avatar(c.who)}</span>
+                    <div className="td-cbody">
+                      <div className="td-cmeta">
+                        <b>{c.who}</b> · {c.when}
                       </div>
-                      <div className="text-ui text-foreground">{c.text}</div>
+                      <div className="td-ctext">{c.text}</div>
                     </div>
                   </div>
                 ))}
               </div>
-              <div className="mt-3">
+              <div className="td-compose">
                 <textarea
                   data-testid={`ticket-composer-${t.id}`}
                   placeholder={tr("tasks.detail.commentPlaceholder")}
@@ -117,10 +120,10 @@ export function TicketDetail({ ticket: t }: { ticket: Ticket }) {
                       addComment();
                     }
                   }}
-                  className="h-20 w-full resize-y rounded-md border border-border bg-muted p-2 text-ui text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  className="focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 />
-                <div className="mt-1.5 flex items-center justify-between">
-                  <span className="text-micro text-muted-foreground">{tr("tasks.detail.commentHint")}</span>
+                <div className="td-composeactions">
+                  <span className="td-hint">{tr("tasks.detail.commentHint")}</span>
                   <Button
                     data-testid={`ticket-comment-send-${t.id}`}
                     variant="default"
@@ -131,52 +134,65 @@ export function TicketDetail({ ticket: t }: { ticket: Ticket }) {
                   </Button>
                 </div>
               </div>
-            </section>
+            </div>
           </div>
 
-          <aside data-testid={`ticket-sidebar-${t.id}`} className="flex flex-col gap-3">
-            <Field label={tr("tasks.detail.fields.status")}>
-              <span className="inline-flex items-center gap-1.5">
-                <StatusDot status={t.status} />
+          <aside data-testid={`ticket-sidebar-${t.id}`} className="td-side">
+            <div className="td-field">
+              <label>{tr("tasks.detail.fields.status")}</label>
+              <div className="td-val">
+                <span className={`tk-actdot st-${t.status}`} />
                 {tr(`tasks.status.${t.status}`)}
-              </span>
-            </Field>
-            <Field label={tr("tasks.detail.fields.assignee")}>
-              <span className="inline-flex items-center gap-1.5">
-                <span className="flex size-4 items-center justify-center rounded-full bg-accent text-[9px]">
-                  {avatar(t.who)}
-                </span>
+              </div>
+            </div>
+            <div className="td-field">
+              <label>{tr("tasks.detail.fields.assignee")}</label>
+              <div className="td-val">
+                <span className="td-cav sm">{avatar(t.who)}</span>
                 {t.who}
-              </span>
-            </Field>
-            <Field label={tr("tasks.detail.fields.type")}>
-              <span
-                className="rounded-sm border px-1 text-[9px]"
-                style={{ color: `hsl(var(${typeVar}))`, borderColor: `hsl(var(${typeVar}))` }}
-              >
-                {t.type}
-              </span>
-            </Field>
-            <Field label={tr("tasks.detail.fields.points")}>
-              <span className="tabular-nums">{t.points}</span>
-            </Field>
-            <Field label={tr("tasks.detail.fields.epic")}>{tasks.epicLabel(t.epic)}</Field>
+              </div>
+            </div>
+            <div className="td-field">
+              <label>{tr("tasks.detail.fields.type")}</label>
+              <div className="td-val">
+                <span className="lc-label" style={{ color: typeColor, borderColor: typeColor }}>
+                  {t.type}
+                </span>
+              </div>
+            </div>
+            <div className="td-field">
+              <label>{tr("tasks.detail.fields.points")}</label>
+              <div className="td-val tabular-nums">{t.points}</div>
+            </div>
+            <div className="td-field">
+              <label>{tr("tasks.detail.fields.epic")}</label>
+              <div className="td-val">{tasks.epicLabel(t.epic)}</div>
+            </div>
             {t.branch && (
-              <Field label={tr("tasks.detail.fields.pullRequest")}>
-                <span className="inline-flex items-center gap-1 text-primary">
+              <div className="td-field">
+                <label>{tr("tasks.detail.fields.pullRequest")}</label>
+                <div className="td-val td-link">
                   <Icon icon={GitPullRequest} size={12} />
                   {t.branch}
-                </span>
-              </Field>
+                </div>
+              </div>
             )}
-            {t.sub && <Field label={tr("tasks.detail.fields.subtasks")}>{t.sub}</Field>}
-
-            <div className="mt-1 flex flex-col gap-2">
+            {t.sub && (
+              <div className="td-field">
+                <label>{tr("tasks.detail.fields.subtasks")}</label>
+                <div className="td-val">{t.sub}</div>
+              </div>
+            )}
+            <div className="td-actions">
               <Button data-testid={`ticket-create-branch-${t.id}`} variant="default" className="w-full">
                 <Icon icon={GitBranchPlus} size={13} />
                 {tr("tasks.detail.createBranch")}
               </Button>
-              <Button data-testid={`ticket-start-worktree-${t.id}`} variant="outline" className="w-full">
+              <Button
+                data-testid={`ticket-start-worktree-${t.id}`}
+                variant="outline"
+                className="mt-1.5 w-full"
+              >
                 <Icon icon={GitBranch} size={13} />
                 {tr("tasks.detail.startWorktree")}
               </Button>
@@ -184,15 +200,6 @@ export function TicketDetail({ ticket: t }: { ticket: Ticket }) {
           </aside>
         </div>
       </div>
-    </div>
-  );
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="flex flex-col gap-1">
-      <span className="text-micro uppercase tracking-wide text-muted-foreground">{label}</span>
-      <div className="text-ui text-foreground">{children}</div>
     </div>
   );
 }

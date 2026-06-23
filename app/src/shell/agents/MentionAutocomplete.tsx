@@ -24,6 +24,8 @@ import { activeMention, insertReference, matchProjects } from "@/lib/mention/men
  * (it appears strictly on an `@` keypress), so the pixel goldens stay intact.
  */
 
+export type MentionFieldElement = HTMLInputElement | HTMLTextAreaElement;
+
 export interface MentionAutocompleteProps
   extends Omit<React.ComponentProps<typeof Input>, "onSelect"> {
   /** Current project name, excluded from the suggestions (never @-mention self). */
@@ -34,13 +36,22 @@ export interface MentionAutocompleteProps
    * note). Defaults to the shared open-project flow.
    */
   onOpenReference?: (project: RecentProject) => Promise<boolean>;
+  /**
+   * Render a multi-line `<textarea>` instead of the single-line `<Input>`
+   * (design-sync-v2 composer graft). The @-mention logic is identical — it
+   * operates on `value` / `selectionStart` / `setSelectionRange`, which both
+   * element types share. Default false → byte-identical single-line behaviour.
+   */
+  multiline?: boolean;
+  /** Textarea row count when `multiline` (default 3). */
+  rows?: number;
 }
 
-export const MentionAutocomplete = React.forwardRef<HTMLInputElement, MentionAutocompleteProps>(
-  ({ currentProject, onOpenReference, onKeyDown, className, ...inputProps }, forwardedRef) => {
+export const MentionAutocomplete = React.forwardRef<MentionFieldElement, MentionAutocompleteProps>(
+  ({ currentProject, onOpenReference, onKeyDown, className, multiline, rows = 3, ...inputProps }, forwardedRef) => {
     const { t } = useTranslation();
-    const innerRef = React.useRef<HTMLInputElement>(null);
-    React.useImperativeHandle(forwardedRef, () => innerRef.current as HTMLInputElement);
+    const innerRef = React.useRef<MentionFieldElement>(null);
+    React.useImperativeHandle(forwardedRef, () => innerRef.current as MentionFieldElement);
 
     const [projects, setProjects] = React.useState<RecentProject[]>([]);
     const [query, setQuery] = React.useState<string | null>(null);
@@ -105,7 +116,7 @@ export const MentionAutocomplete = React.forwardRef<HTMLInputElement, MentionAut
       [onOpenReference],
     );
 
-    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    const handleKeyDown = (e: React.KeyboardEvent<MentionFieldElement>) => {
       if (open) {
         if (e.key === "ArrowDown") {
           e.preventDefault();
@@ -128,23 +139,42 @@ export const MentionAutocomplete = React.forwardRef<HTMLInputElement, MentionAut
           return;
         }
       }
-      onKeyDown?.(e);
+      // `onKeyDown` from the Input prop set is typed for HTMLInputElement; the
+      // event is element-agnostic here (both share the KeyboardEvent surface).
+      (onKeyDown as ((e: React.KeyboardEvent<MentionFieldElement>) => void) | undefined)?.(e);
+    };
+
+    const sharedProps = {
+      onKeyDown: handleKeyDown,
+      onInput: refresh,
+      onClick: refresh,
+      role: "combobox" as const,
+      "aria-autocomplete": "list" as const,
+      "aria-expanded": open,
+      "aria-controls": open ? "mention-listbox" : undefined,
     };
 
     return (
       <div className="relative">
-        <Input
-          ref={innerRef}
-          className={className}
-          onKeyDown={handleKeyDown}
-          onInput={refresh}
-          onClick={refresh}
-          role="combobox"
-          aria-autocomplete="list"
-          aria-expanded={open}
-          aria-controls={open ? "mention-listbox" : undefined}
-          {...inputProps}
-        />
+        {multiline ? (
+          // Bare textarea — the caller owns ALL styling via `className` (the
+          // composer passes the design-system `cmp-ta` class verbatim). No
+          // Tailwind base here, so the field is pixel-1:1 with the prototype.
+          <textarea
+            ref={innerRef as React.Ref<HTMLTextAreaElement>}
+            rows={rows}
+            className={className}
+            {...(sharedProps as React.ComponentProps<"textarea">)}
+            {...(inputProps as React.ComponentProps<"textarea">)}
+          />
+        ) : (
+          <Input
+            ref={innerRef as React.Ref<HTMLInputElement>}
+            className={className}
+            {...sharedProps}
+            {...inputProps}
+          />
+        )}
         {open && (
           <ul
             id="mention-listbox"

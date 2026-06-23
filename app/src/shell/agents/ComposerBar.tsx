@@ -7,7 +7,6 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Slider } from "@/components/ui/slider";
 import { Progress } from "@/components/ui/progress";
 import { agentSnapshot } from "@/mocks";
-import { ContextBudgetMeter } from "./ContextBudgetMeter";
 
 const TONE_CLASS: Record<string, string> = {
   accent: "[&>div]:bg-primary",
@@ -15,8 +14,15 @@ const TONE_CLASS: Record<string, string> = {
   tertiary: "[&>div]:bg-muted-foreground",
 };
 
+/**
+ * Composer controls (model picker · effort/plan-usage tune) — reused by the
+ * design-sync-v2 {@link Composer} layout. The standalone `ComposerBar` wrapper
+ * was retired in the composer graft; these two controls now mount inside the
+ * unified composer's control row.
+ */
+
 /** Model picker — choose the model behind the active session. */
-function ModelControl({ model, setModel }: { model: string; setModel: (m: string) => void }) {
+export function ModelControl({ model, setModel }: { model: string; setModel: (m: string) => void }) {
   const { t } = useTranslation();
   const [open, setOpen] = React.useState(false);
   const agents = agentSnapshot.agents;
@@ -67,7 +73,7 @@ function ModelControl({ model, setModel }: { model: string; setModel: (m: string
  * `design-update-v1`): the composer bar stays lean, the token-economy toggles
  * (Caveman terse mode, auto model routing) live in Agent settings.
  */
-function TuneControl({ effort, setEffort }: { effort: number; setEffort: (n: number) => void }) {
+export function TuneControl({ effort, setEffort }: { effort: number; setEffort: (n: number) => void }) {
   const { t } = useTranslation();
   const [open, setOpen] = React.useState(false);
   const levels = agentSnapshot.effortLevels;
@@ -119,6 +125,8 @@ function TuneControl({ effort, setEffort }: { effort: number; setEffort: (n: num
             step={1}
             value={[effort]}
             onValueChange={(v) => setEffort(v[0])}
+            // DS slider (design-sync-v2 §1): square thumb, per-instance.
+            className="[&_[role=slider]]:rounded-sm"
           />
         </div>
 
@@ -151,51 +159,3 @@ function TuneControl({ effort, setEffort }: { effort: number; setEffort: (n: num
   );
 }
 
-/**
- * Composer control bar (Claude-Desktop style) — context-budget meter + live
- * status on the left; model picker + a single "tune" control (effort · plan
- * usage) on the right. The token-economy toggles (Caveman terse mode, auto
- * model routing) moved into Agent settings → Token economy (prototype
- * `design-update-v1`), so the bar stays lean.
- */
-export function ComposerBar({
-  model,
-  setModel,
-  effort,
-  setEffort,
-  statusText,
-  used,
-  budget,
-  setBudget,
-}: {
-  model: string;
-  setModel: (m: string) => void;
-  effort: number;
-  setEffort: (n: number) => void;
-  statusText: string;
-  /** Context-budget meter inputs (Design-Sync P4) — left of the status line. */
-  used: number;
-  budget: number;
-  setBudget: (n: number) => void;
-}) {
-  return (
-    <div
-      data-testid="composer-bar"
-      className="mt-2 flex items-center justify-between gap-3"
-    >
-      <div className="flex min-w-0 items-center gap-2.5">
-        <ContextBudgetMeter used={used} budget={budget} setBudget={setBudget} />
-        <div
-          data-testid="composer-status"
-          className="overflow-hidden text-ellipsis whitespace-nowrap font-mono text-[10.5px] text-muted-foreground"
-        >
-          {statusText}
-        </div>
-      </div>
-      <div className="flex shrink-0 items-center gap-1.5">
-        <ModelControl model={model} setModel={setModel} />
-        <TuneControl effort={effort} setEffort={setEffort} />
-      </div>
-    </div>
-  );
-}

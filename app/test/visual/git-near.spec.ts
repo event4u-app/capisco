@@ -40,7 +40,7 @@ test.describe("Explorer (multi-project)", () => {
     // broker.ts is the active file in the mock (git marker A).
     const broker = page.getByTestId("explorer-file-broker.ts");
     await expect(broker).toBeVisible();
-    await expect(broker.getByTestId("explorer-active-strip")).toBeVisible();
+    await expect(broker).toHaveClass(/\bactive\b/); // prototype: active row = .tr-row.active (inset teal strip)
     await expect(broker).toContainText("A");
 
     // worktree.ts carries an M marker.
@@ -55,7 +55,7 @@ test.describe("Explorer (multi-project)", () => {
     await openTool(page, "explorer");
     const wt = page.getByTestId("explorer-file-worktree.ts");
     await wt.click();
-    await expect(wt.getByTestId("explorer-active-strip")).toBeVisible();
+    await expect(wt).toHaveClass(/\bactive\b/); // teal strip = .active box-shadow
   });
 });
 

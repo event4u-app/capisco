@@ -26,14 +26,18 @@ test.describe("chat workspace — routing + structure (Design-Sync P3)", () => {
     await expect(page.getByTestId("chat-workspace")).toHaveCount(0);
   });
 
-  test("chat reuses the shared UI (tabs, model picker, composer, settings)", async ({ page }) => {
+  test("chat reuses the shared UI (tabs, auto-routing, composer, settings)", async ({ page }) => {
     await gotoChat(page);
     await expect(page.getByTestId("session-tabbar")).toBeVisible();
+    // The effective model is the ModelBadge on the session tab, not a composer
+    // dropdown (token-economy definition: "Auto" is routing, not a model picker).
     await expect(page.getByTestId("session-tab-c1")).toContainText("Broker prompting rules");
+    await expect(page.getByTestId("session-tab-c1")).toContainText("Sonnet");
     await expect(page.getByTestId("session-new")).toBeVisible();
     await expect(page.getByTestId("session-gear")).toBeVisible();
     await expect(page.getByTestId("composer-input")).toBeVisible();
-    await expect(page.getByTestId("composer-model")).toContainText("Sonnet 4.8");
+    await expect(page.getByTestId("composer-auto")).toBeVisible();
+    await expect(page.getByTestId("composer-model")).toHaveCount(0);
   });
 
   test("chat has no subagents / tool actions / permission prompts", async ({ page }) => {

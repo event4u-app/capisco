@@ -47,15 +47,12 @@ export function TasksWorkspace() {
   const activeTicket = view !== "overview" ? tasksSnapshot.getTicket(view) : undefined;
 
   return (
-    <div
-      data-testid="tasks-workspace"
-      className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-background"
-    >
+    <div data-testid="tasks-workspace" className="tk-workspace min-w-0">
       <div
         data-testid="tasks-tabbar"
         role="tablist"
         aria-label={t("tasks.workspaceTabs")}
-        className="flex shrink-0 items-stretch gap-px overflow-x-auto border-b border-border bg-card"
+        className="tk-tabbar"
       >
         <button
           type="button"
@@ -63,12 +60,7 @@ export function TasksWorkspace() {
           aria-selected={view === "overview"}
           data-testid="tasks-tab-overview"
           onClick={() => setView("overview")}
-          className={cn(
-            "inline-flex items-center gap-1.5 px-3 py-2 text-ui transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring",
-            view === "overview"
-              ? "bg-background text-foreground"
-              : "text-muted-foreground hover:text-foreground",
-          )}
+          className={cn("tk-tab", view === "overview" && "active")}
         >
           <Icon icon={LayoutDashboard} size={13} />
           {t("tasks.overview")}
@@ -77,10 +69,7 @@ export function TasksWorkspace() {
           <div
             key={id}
             data-testid={`tasks-tab-${id}`}
-            className={cn(
-              "group inline-flex items-center gap-1.5 px-3 py-2 text-ui",
-              view === id ? "bg-background text-foreground" : "text-muted-foreground",
-            )}
+            className={cn("tk-tab group", view === id && "active")}
           >
             <button
               type="button"
@@ -88,7 +77,7 @@ export function TasksWorkspace() {
               aria-selected={view === id}
               data-testid={`tasks-tab-select-${id}`}
               onClick={() => setView(id)}
-              className="transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              className="tk-tabid bg-transparent text-inherit focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             >
               {id}
             </button>
@@ -97,7 +86,7 @@ export function TasksWorkspace() {
               aria-label={t("tasks.closeTab", { id })}
               data-testid={`tasks-tab-close-${id}`}
               onClick={() => closeTicket(id)}
-              className="text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              className="tk-tabx focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             >
               <Icon icon={X} size={12} />
             </button>
@@ -105,7 +94,7 @@ export function TasksWorkspace() {
         ))}
       </div>
 
-      <div className="min-h-0 flex-1" role="tabpanel">
+      <div className="tk-tabbody" role="tabpanel">
         {activeTicket ? (
           <TicketDetail ticket={activeTicket} />
         ) : (

@@ -53,16 +53,11 @@ export function TaskOverview({ onOpenTicket }: { onOpenTicket: (t: Ticket) => vo
   ];
 
   return (
-    <div
-      data-testid="tasks-overview"
-      className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-background"
-    >
-      <div className="flex min-h-0 w-full flex-1 flex-col overflow-y-auto px-6 py-5">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-lg font-semibold text-foreground">
-            {t("tasks.title", { sprint: sprint.name })}
-          </h2>
-          <div className="text-micro text-muted-foreground tabular-nums">
+    <div data-testid="tasks-overview" className="git-workspace min-w-0">
+      <div className="gitw-inner gitw-wide">
+        <div className="gitw-head">
+          <h2 className="gitw-title">{t("tasks.title", { sprint: sprint.name })}</h2>
+          <div className="tk-sprintmeta tabular-nums">
             {t("tasks.sprintMeta", {
               day: sprint.day,
               days: sprint.days,
@@ -77,7 +72,7 @@ export function TaskOverview({ onOpenTicket }: { onOpenTicket: (t: Ticket) => vo
           data-testid="tasks-tabs"
           role="tablist"
           aria-label={t("tasks.tabsLabel")}
-          className="mt-4 flex flex-wrap gap-1 border-b border-border"
+          className="gitw-tabs"
         >
           {tabs.map(({ id, count }) => (
             <button
@@ -87,24 +82,15 @@ export function TaskOverview({ onOpenTicket }: { onOpenTicket: (t: Ticket) => vo
               aria-selected={tab === id}
               data-testid={`tasks-tab-${id}`}
               onClick={() => setTab(id)}
-              className={cn(
-                "inline-flex items-center gap-1.5 border-b-2 px-3 py-2 text-ui transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-                tab === id
-                  ? "border-primary text-foreground"
-                  : "border-transparent text-muted-foreground hover:text-foreground",
-              )}
+              className={cn("gitw-tab", tab === id && "active")}
             >
               {t(`tasks.tabs.${id}`)}
-              {count != null && (
-                <span className="rounded-sm bg-accent px-1 text-[9px] text-muted-foreground tabular-nums">
-                  {count}
-                </span>
-              )}
+              {count != null && <span className="gitw-tcount tabular-nums">{count}</span>}
             </button>
           ))}
         </div>
 
-        <div className="mt-4 min-h-0 flex-1" role="tabpanel">
+        <div className="min-h-0 flex-1" role="tabpanel">
           {tab === "board" && (
             <Board cols={cols} all={all} epics={epics} onOpenTicket={onOpenTicket} />
           )}
@@ -123,8 +109,8 @@ export function TaskOverview({ onOpenTicket }: { onOpenTicket: (t: Ticket) => vo
           )}
 
           {tab === "insights" && (
-            <div data-testid="tasks-insights" className="flex flex-col gap-4">
-              <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <div data-testid="tasks-insights" className="tk-insights">
+              <div className="mc-row mc-row-4">
                 <MetricCard
                   metric={{
                     label: t("tasks.insights.myWip"),
@@ -288,53 +274,50 @@ function Board({
   onOpenTicket: (t: Ticket) => void;
 }) {
   return (
-    <div data-testid="tasks-board" className="overflow-x-auto">
-      <div className="min-w-[920px]">
-        <div className="grid" style={{ gridTemplateColumns: `repeat(${cols.length}, minmax(150px, 1fr))` }}>
-          {cols.map((c) => {
-            const cnt = all.filter((x) => x.status === c.id).length;
-            return (
-              <div
-                key={c.id}
-                data-testid={`board-col-head-${c.id}`}
-                className="flex items-center gap-1.5 px-2 py-1.5 text-micro text-muted-foreground"
-              >
-                <StatusDot status={c.id} />
-                {c.label}
-                <span className="ml-auto tabular-nums">{cnt}</span>
-              </div>
-            );
-          })}
-        </div>
-        {epics.map((ep) => {
-          const items = all.filter((x) => x.epic === ep.id);
-          if (!items.length) return null;
+    <div data-testid="tasks-board" className="lb">
+      <div
+        className="lb-head"
+        style={{ gridTemplateColumns: `repeat(${cols.length}, minmax(0, 1fr))` }}
+      >
+        {cols.map((c) => {
+          const cnt = all.filter((x) => x.status === c.id).length;
           return (
-            <div key={ep.id} data-testid={`board-lane-${ep.id}`} className="border-t border-border">
-              <div className="flex items-center gap-1.5 px-2 py-1.5 text-micro text-muted-foreground">
-                <Icon icon={ChevronDown} size={12} />
-                <Icon icon={Layers} size={12} />
-                {ep.label}
-                <span className="ml-auto tabular-nums">{items.length}</span>
-              </div>
-              <div
-                className="grid gap-2 px-1 pb-3"
-                style={{ gridTemplateColumns: `repeat(${cols.length}, minmax(150px, 1fr))` }}
-              >
-                {cols.map((c) => (
-                  <div key={c.id} className="flex flex-col gap-2">
-                    {items
-                      .filter((x) => x.status === c.id)
-                      .map((tk) => (
-                        <LinearCard key={tk.id} ticket={tk} onOpen={onOpenTicket} />
-                      ))}
-                  </div>
-                ))}
-              </div>
+            <div key={c.id} data-testid={`board-col-head-${c.id}`} className="lb-col-h">
+              <StatusDot status={c.id} />
+              {c.label}
+              <span className="lb-colcount tabular-nums">{cnt}</span>
             </div>
           );
         })}
       </div>
+      {epics.map((ep) => {
+        const items = all.filter((x) => x.epic === ep.id);
+        if (!items.length) return null;
+        return (
+          <div key={ep.id} data-testid={`board-lane-${ep.id}`} className="lb-lane">
+            <div className="lb-lanehead">
+              <Icon icon={ChevronDown} size={12} />
+              <Icon icon={Layers} size={12} />
+              {ep.label}
+              <span className="lb-colcount tabular-nums">{items.length}</span>
+            </div>
+            <div
+              className="lb-row"
+              style={{ gridTemplateColumns: `repeat(${cols.length}, minmax(0, 1fr))` }}
+            >
+              {cols.map((c) => (
+                <div key={c.id} className="lb-cell">
+                  {items
+                    .filter((x) => x.status === c.id)
+                    .map((tk) => (
+                      <LinearCard key={tk.id} ticket={tk} onOpen={onOpenTicket} />
+                    ))}
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -352,16 +335,16 @@ function StatusColumns({
 }) {
   const { t } = useTranslation();
   return (
-    <div data-testid={testid} className="grid grid-cols-1 gap-4 md:grid-cols-3">
+    <div data-testid={testid} className="tk-cols">
       {cols.map((c) => {
         const items = tickets.filter((x) => x.status === c.id);
         const pts = items.reduce((a, x) => a + x.points, 0);
         return (
-          <div key={c.id} className="flex flex-col gap-2">
-            <div className="flex items-center gap-1.5 text-micro text-muted-foreground">
+          <div key={c.id} className="tk-actgroup">
+            <div className="tk-acthead">
               <StatusDot status={c.id} />
               {c.label}
-              <span className="ml-auto tabular-nums">
+              <span className="tk-colcount tabular-nums">
                 {t("tasks.colMeta", { count: items.length, points: pts })}
               </span>
             </div>
@@ -385,22 +368,20 @@ function ActiveColumns({
   const { t } = useTranslation();
   const statuses: TicketStatus[] = ["progress", "review", "testing"];
   return (
-    <div data-testid="tasks-active" className="grid grid-cols-1 gap-4 md:grid-cols-3">
+    <div data-testid="tasks-active" className="tk-cols">
       {statuses.map((st) => {
         const items = active.filter((x) => x.status === st);
         return (
-          <div key={st} className="flex flex-col gap-2">
-            <div className="flex items-center gap-1.5 text-micro text-muted-foreground">
+          <div key={st} className="tk-actgroup">
+            <div className="tk-acthead">
               <StatusDot status={st} />
               {t(`tasks.status.${st}`)}
-              <span className="ml-auto tabular-nums">{items.length}</span>
+              <span className="tk-colcount tabular-nums">{items.length}</span>
             </div>
             {items.length ? (
               items.map((tk) => <TicketCard key={tk.id} ticket={tk} onOpen={onOpenTicket} />)
             ) : (
-              <div className="rounded-md border border-dashed border-border px-2 py-4 text-center text-micro text-muted-foreground">
-                {t("tasks.empty")}
-              </div>
+              <div className="tk-empty">{t("tasks.empty")}</div>
             )}
           </div>
         );

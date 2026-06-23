@@ -33,11 +33,14 @@ function initials(who: string): string {
 }
 
 /**
- * One detailed GitHub-style PR row (build-spec §5, prototype views.jsx PRItem):
- * state glyph, title + number + tags (draft / re-review / overdue), repo +
- * branch + age, label chips, and a side rail with checks, reviewer rings, and
- * comment / diff stats. `reReview` teal-highlights a "you reviewed before" PR;
- * `overdueTab` forces the "Nd ready" badge. All colours are tokens.
+ * One detailed GitHub-style PR row — 1:1 port of the prototype `PRItem`
+ * (views.jsx): `.ghpr` row with a state glyph (`.ghpr-state`), title + number +
+ * tags (`.ghpr-titleline` / draft / re-review / overdue), repo + branch + age
+ * (`.ghpr-meta`), label chips (`.ghpr-labels`), and a side rail (`.ghpr-side`)
+ * with checks, reviewer rings (`.ghpr-revs`/`.ghpr-av`) and comment / diff stats
+ * (`.ghpr-stats`). `reReview` teal-highlights a "you reviewed before" PR;
+ * `overdueTab` forces the "Nd ready" badge. Classes verbatim; data + testids
+ * preserved.
  */
 export function PrItem({
   pr,
@@ -58,56 +61,43 @@ export function PrItem({
     <div
       data-testid={`git-pr-${pr.num}`}
       data-re-review={reReview || undefined}
-      className={cn(
-        "flex gap-3 border-b border-border px-4 py-3",
-        reReview && "bg-accent/40",
-      )}
+      className={cn("ghpr", reReview && "ghpr-hl")}
     >
       <span
-        className={cn("mt-0.5 shrink-0", pr.draft ? "text-muted-foreground" : "text-primary")}
+        className={cn("ghpr-state", pr.draft && "text-muted-foreground")}
         title={pr.draft ? t("git.pr.draft") : t("git.pr.open")}
       >
         <Icon icon={GitPullRequest} size={16} />
       </span>
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span className="truncate text-ui font-medium text-foreground">{pr.title}</span>
-          <span className="text-micro text-muted-foreground">#{pr.num}</span>
-          {pr.draft && (
-            <span className="rounded-sm border border-border px-1 text-[9px] uppercase text-muted-foreground">
-              {t("git.pr.draft")}
-            </span>
-          )}
+      <div className="ghpr-main">
+        <div className="ghpr-titleline">
+          <span className="ghpr-title">{pr.title}</span>
+          <span className="ghpr-num">#{pr.num}</span>
+          {pr.draft && <span className="ghpr-tag ghpr-draft">{t("git.pr.draft")}</span>}
           {reReview && (
-            <span
-              data-testid={`git-pr-${pr.num}-rereview`}
-              className="rounded-sm border border-primary px-1 text-[9px] uppercase text-primary"
-            >
+            <span data-testid={`git-pr-${pr.num}-rereview`} className="ghpr-tag ghpr-re">
               {t("git.pr.reReview")}
             </span>
           )}
           {(overdueTab || isOverdue) && !pr.draft && (
-            <span
-              data-testid={`git-pr-${pr.num}-overdue`}
-              className="rounded-sm border border-warning px-1 text-[9px] uppercase text-warning"
-            >
+            <span data-testid={`git-pr-${pr.num}-overdue`} className="ghpr-tag ghpr-od">
               {t("git.pr.ready", { days: pr.days })}
             </span>
           )}
         </div>
-        <div className="mt-1 flex flex-wrap items-center gap-1.5 text-micro text-muted-foreground">
-          <span className="inline-flex items-center gap-1">
+        <div className="ghpr-meta">
+          <span className="ghpr-branch">
             <Icon icon={GitBranch} size={11} />
             {pr.branch}
           </span>
           <span>{t("git.pr.openedAgo", { repo: pr.repo, days: pr.days, author: pr.author })}</span>
         </div>
         {pr.labels.length > 0 && (
-          <div className="mt-1.5 flex flex-wrap gap-1">
+          <div className="ghpr-labels">
             {pr.labels.map((l) => (
               <span
                 key={l}
-                className="rounded-sm border px-1 text-[9px]"
+                className="ghpr-label"
                 style={{
                   color: `hsl(var(${gitSnapshot.labelChartVar(l)}))`,
                   borderColor: `hsl(var(${gitSnapshot.labelChartVar(l)}))`,
@@ -119,33 +109,30 @@ export function PrItem({
           </div>
         )}
       </div>
-      <div className="flex shrink-0 flex-col items-end gap-1.5">
+      <div className="ghpr-side">
         <span className={CHECK_CLASS[pr.checks]} title={t(`git.pr.checks.${pr.checks}`)}>
           <Icon icon={CheckIcon} size={13} />
         </span>
         {pr.reviews.length > 0 && (
-          <div className="flex -space-x-1">
+          <div className="ghpr-revs">
             {pr.reviews.map((r, i) => (
               <span
                 key={i}
                 title={`${r.who} · ${t(`git.pr.review.${r.state}`)}`}
-                className={cn(
-                  "flex size-5 items-center justify-center rounded-full border bg-card text-[9px] text-muted-foreground",
-                  REVIEW_CLASS[r.state],
-                )}
+                className={cn("ghpr-av", REVIEW_CLASS[r.state])}
               >
                 {initials(r.who)}
               </span>
             ))}
           </div>
         )}
-        <div className="flex items-center gap-2 text-micro text-muted-foreground tabular-nums">
-          <span className="inline-flex items-center gap-0.5">
+        <div className="ghpr-stats">
+          <span>
             <Icon icon={MessageSquare} size={12} />
             {pr.comments}
           </span>
-          <span className="text-success">+{pr.add}</span>
-          <span className="text-destructive">−{pr.del}</span>
+          <span className="gd-add">+{pr.add}</span>
+          <span className="gd-del">−{pr.del}</span>
         </div>
       </div>
     </div>
@@ -170,13 +157,13 @@ export function PrList({
   const { t } = useTranslation();
   if (!list.length) {
     return (
-      <div data-testid={`${testid}-empty`} className="px-4 py-8 text-center text-ui text-muted-foreground">
+      <div data-testid={`${testid}-empty`} className="ghpr-empty">
         {t(emptyKey)}
       </div>
     );
   }
   return (
-    <div data-testid={testid} className="flex flex-col">
+    <div data-testid={testid} className="ghpr-list">
       {list.map((p) => (
         <PrItem
           key={p.num}

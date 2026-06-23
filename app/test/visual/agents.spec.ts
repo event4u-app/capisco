@@ -86,11 +86,14 @@ test.describe("agents workspace — structure (primary gate)", () => {
     expect(ellipsis).toBe("ellipsis");
   });
 
-  test("composer bar exposes model, tune (effort+budget) and meter controls", async ({ page }) => {
+  test("composer bar exposes auto-routing, tune (effort+budget) and meter controls", async ({ page }) => {
     await gotoAgents(page);
     await expect(page.getByTestId("composer-input")).toBeVisible();
     await expect(page.getByTestId("composer-send")).toBeVisible();
-    await expect(page.getByTestId("composer-model")).toContainText("Opus 4.8");
+    // "Auto" is the model-routing control — NOT a model picker (token-economy
+    // definition). The effective model is the ModelBadge on the session tab.
+    await expect(page.getByTestId("composer-auto")).toBeVisible();
+    await expect(page.getByTestId("composer-model")).toHaveCount(0);
     // Effort + budget were consolidated into one "tune" control; budget lives in the meter.
     await expect(page.getByTestId("composer-tune")).toBeVisible();
     await expect(page.getByTestId("context-meter")).toBeVisible();

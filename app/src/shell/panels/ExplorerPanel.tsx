@@ -280,24 +280,24 @@ function ExplorerRowView({
         aria-expanded={row.expanded}
         data-testid={`explorer-project-${row.id}`}
         onClick={onActivate}
-        // Sticky, dark raised separator bar — pins to the top while its files scroll.
-        className={cn(
-          "sticky top-0 z-10 flex h-[26px] cursor-pointer items-center gap-1.5 border-y border-border bg-secondary px-2 shadow-[0_1px_0_rgba(0,0,0,0.25)]",
-          focused && "ring-1 ring-inset ring-ring",
-        )}
+        // Prototype `.proj-root`: sticky raised separator bar (name + path +
+        // branch); selected → accent-tint + inset teal strip.
+        className={cn("proj-root", row.selected && "selected", focused && "ring-1 ring-inset ring-ring")}
       >
-        <ChevronRight
-          className={cn("size-3 shrink-0 text-muted-foreground transition-transform", row.expanded && "rotate-90")}
-          strokeWidth={1.8}
-          aria-hidden
-        />
-        <Icon icon={Folder} size={14} className="shrink-0 text-muted-foreground" />
-        <span className="truncate font-medium text-foreground">{row.name}</span>
-        <span className="truncate text-micro text-muted-foreground">— {row.path}</span>
-        <span className="ml-auto flex shrink-0 items-center gap-1 text-micro text-muted-foreground">
-          <Icon icon={GitBranch} size={10} />
+        <span className="tw-chevron">
+          <ChevronRight
+            className={cn("size-3 transition-transform", row.expanded && "rotate-90")}
+            strokeWidth={2}
+            aria-hidden
+          />
+        </span>
+        <Icon icon={Folder} size={15} className="shrink-0 text-muted-foreground" />
+        <span className="proj-name">{row.name}</span>
+        <span className="proj-path">— {row.path}</span>
+        <span className="proj-branch">
+          <Icon icon={GitBranch} size={11} />
           {row.branch}
-          {row.tracking && <span className="text-primary">{row.tracking}</span>}
+          {row.tracking && <span className="proj-track">{row.tracking}</span>}
         </span>
       </div>
     );
@@ -389,28 +389,23 @@ function BaseRow({
       aria-expanded={expandable ? !!expanded : undefined}
       data-testid={testid}
       onClick={onActivate}
-      style={{ paddingLeft: 6 + depth * 12 }}
-      className={cn(
-        "relative flex h-[26px] cursor-pointer items-center gap-1.5 pr-2 hover:bg-accent",
-        active && "bg-accent",
-        focused && "ring-1 ring-inset ring-ring",
-      )}
+      // Prototype TreeRow: padding-left 4 + depth*14; active = accent-tint +
+      // inset teal strip (box-shadow, never covered).
+      style={{ paddingLeft: 4 + depth * 14 }}
+      className={cn("tr-row", active && "active", focused && "ring-1 ring-inset ring-ring")}
     >
-      {active && (
-        <span data-testid="explorer-active-strip" className="absolute left-0 top-0 h-full w-0.5 bg-primary" aria-hidden />
-      )}
-      {expandable ? (
-        <ChevronRight
-          className={cn("size-3.5 shrink-0 text-muted-foreground transition-transform", expanded && "rotate-90")}
-          strokeWidth={1.6}
-          aria-hidden
-        />
-      ) : (
-        <span className="size-3.5 shrink-0" />
-      )}
-      <span className="flex shrink-0 items-center">{icon}</span>
-      <span className="truncate text-foreground">{label}</span>
-      {trailing && <span className="ml-auto shrink-0 pl-2">{trailing}</span>}
+      <span className="tr-chevron">
+        {expandable && (
+          <ChevronRight
+            className={cn("size-3 transition-transform", expanded && "rotate-90")}
+            strokeWidth={2}
+            aria-hidden
+          />
+        )}
+      </span>
+      <span className="tr-icon">{icon}</span>
+      <span className="tr-label">{label}</span>
+      {trailing && <span className="tr-trailing">{trailing}</span>}
     </div>
   );
 }
