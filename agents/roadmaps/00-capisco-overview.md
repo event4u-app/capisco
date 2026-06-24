@@ -44,7 +44,8 @@ Command-Palette) → R2 → R3 → R4 → R5 → R6. R0a/R0b sind harte Vorausse
 | Roadmap | Block | Status | Auto-verifizierbar? |
 |---|---|---|---|
 | `road-to-design-sync-v1` | UI-Sync | abgeschlossen (archiviert) | DOM + Goldens + Sicht-Abnahme |
-| `road-to-token-economy` | Token-Ökonomie | abgeschlossen | Unit/Invarianten + Sicht-Abnahme |
+| `road-to-token-economy` | Token-Ökonomie | abgeschlossen (archiviert) | Unit/Invarianten + Sicht-Abnahme |
+| `road-to-agent-backend-enablement` | Agent / Runtime | abgeschlossen (archiviert) | Stub-verifiziert; echte `claude`-Antwort = 1-Zeilen-Demo |
 | `road-to-design-sync-v2` | UI-Sync | abgeschlossen (archiviert) · Klasse-C-Sicht-Abnahme offen | DOM + Goldens + **Sicht-Abnahme** |
 | `road-to-composer-context-runtime` | Token-Ökonomie / Runtime | abgeschlossen (archiviert) · Klasse-C-Sicht-Abnahme offen | Unit/Invarianten + Sicht-Abnahme |
 
