@@ -25,9 +25,10 @@ import { useLivePermission } from "./use-live-permission";
 function useLiveBlocks(sessionId: string | null): TranscriptBlock[] | null {
   // Keyed by sessionId so a session switch starts from `null` (snapshot
   // fallback) without a synchronous reset inside the effect.
-  const [state, setState] = React.useState<{ id: string | null; blocks: TranscriptBlock[] | null }>(
-    { id: sessionId, blocks: null },
-  );
+  const [state, setState] = React.useState<{
+    id: string | null;
+    blocks: TranscriptBlock[] | null;
+  }>({ id: sessionId, blocks: null });
   React.useEffect(() => {
     if (sessionId == null) return;
     const agent = getProviders().agent;
