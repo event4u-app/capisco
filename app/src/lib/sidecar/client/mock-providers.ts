@@ -11,8 +11,10 @@ import {
   mockAgentProvider,
   mockEditorProvider,
   mockGitProvider,
+  mockIngestProvider,
   mockProjectFsProvider,
   mockRecentProjects,
+  mockRevertProvider,
   mockSessionStore,
   mockShadowStore,
   mockSignalProvider,
@@ -37,5 +39,7 @@ export function createMockProviders(): ProviderBundle {
     worktree: mockWorktreeProvider,
     session: mockSessionStore,
     todo: mockTodoProvider,
+    ingest: mockIngestProvider,
+    revert: mockRevertProvider,
   };
 }

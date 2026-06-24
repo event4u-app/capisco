@@ -38,7 +38,9 @@ export function SubagentRow({ subs }: { subs: SubAgent[] }) {
             <ModelBadge>{sub.model}</ModelBadge>
           </span>
           {sub.title}
-          <span className="ml-0.5 font-mono text-[10.5px] text-muted-foreground">{formatTelemetry(sub.telemetry, sub.status)}</span>
+          <span className="ml-0.5 font-mono text-[10.5px] text-muted-foreground">
+            {formatTelemetry(sub.telemetry, sub.status)}
+          </span>
         </span>
       ))}
     </div>

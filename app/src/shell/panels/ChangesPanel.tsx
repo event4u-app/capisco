@@ -23,14 +23,18 @@ export function ChangesPanel() {
   const cs = mockChangeSet;
 
   const defaultRole = cs.hasPullRequest ? "target" : "parent";
-  const initialBase = (cs.branches.find((b) => b.role === defaultRole) ?? cs.branches[0])?.id ?? "";
+  const initialBase =
+    (cs.branches.find((b) => b.role === defaultRole) ?? cs.branches[0])?.id ?? "";
   const [base, setBase] = React.useState(initialBase);
 
   const current = cs.branches.find((b) => b.id === base) ?? cs.branches[0];
-  const total = cs.files.reduce((a, f) => ({ added: a.added + f.added, removed: a.removed + f.removed }), {
-    added: 0,
-    removed: 0,
-  });
+  const total = cs.files.reduce(
+    (a, f) => ({ added: a.added + f.added, removed: a.removed + f.removed }),
+    {
+      added: 0,
+      removed: 0,
+    },
+  );
 
   return (
     <div data-testid="changes-panel" className="flex h-full min-h-0 flex-col">
@@ -61,14 +65,18 @@ export function ChangesPanel() {
         <span className="text-destructive">−{total.removed}</span>
       </div>
 
-      <div role="tree" aria-label={t("changes.tree")} className="min-h-0 flex-1 overflow-auto py-1">
+      <div role="tree" aria-label={t("changes.tree")} className="tree">
         {cs.files.length === 0 ? (
           <p className="px-3 py-2 text-micro text-muted-foreground">
             {t("changes.empty", { base: current?.name })}
           </p>
         ) : (
           cs.files.map((f) => (
-            <ChangeFileRow key={`${f.path}/${f.name}`} file={f} onOpen={() => setMode("diff")} />
+            <ChangeFileRow
+              key={`${f.path}/${f.name}`}
+              file={f}
+              onOpen={() => setMode("diff")}
+            />
           ))
         )}
       </div>
@@ -85,15 +93,16 @@ function ChangeFileRow({ file, onOpen }: { file: ChangeFile; onOpen: () => void 
       data-testid={`changes-file-${file.name}`}
       onClick={onOpen}
       title={t("diff.open")}
-      className="flex h-[26px] w-full items-center gap-1.5 px-2 text-left text-ui hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring"
+      style={{ paddingLeft: 8 }}
+      className="tr-row w-full text-left"
     >
-      <span className="flex shrink-0 items-center">
+      <span className="tr-icon">
         <FileIcon ext={file.ext} />
       </span>
-      <span className="truncate text-foreground">{file.name}</span>
-      <span className="ml-auto flex shrink-0 items-center gap-1.5 font-mono text-micro">
-        <span className="text-success">+{file.added}</span>
-        <span className="text-destructive">−{file.removed}</span>
+      <span className="tr-label">{file.name}</span>
+      <span className="tr-trailing font-mono text-micro" style={{ gap: 6 }}>
+        <span style={{ color: "var(--ds-success)" }}>+{file.added}</span>
+        <span style={{ color: "var(--ds-error)" }}>−{file.removed}</span>
         <GitMarker status={file.git} />
       </span>
     </button>
@@ -174,7 +183,9 @@ function BaseBranchCombobox({
             </div>
             <div className="max-h-[240px] overflow-auto py-1">
               {filtered.length === 0 ? (
-                <p className="px-2 py-1.5 text-micro text-muted-foreground">{t("changes.noBranches")}</p>
+                <p className="px-2 py-1.5 text-micro text-muted-foreground">
+                  {t("changes.noBranches")}
+                </p>
               ) : (
                 filtered.map((b) => (
                   <button
@@ -192,14 +203,20 @@ function BaseBranchCombobox({
                       b.id === value && "bg-accent/60",
                     )}
                   >
-                    <Icon icon={GitBranch} size={11} className="shrink-0 text-muted-foreground" />
+                    <Icon
+                      icon={GitBranch}
+                      size={11}
+                      className="shrink-0 text-muted-foreground"
+                    />
                     <span className="truncate">{b.name}</span>
                     {b.role && (
                       <span className="shrink-0 rounded-sm bg-secondary px-1 text-[10px] text-muted-foreground">
                         {roleLabel(b.role)}
                       </span>
                     )}
-                    {b.id === value && <Icon icon={Check} size={12} className="ml-auto shrink-0 text-primary" />}
+                    {b.id === value && (
+                      <Icon icon={Check} size={12} className="ml-auto shrink-0 text-primary" />
+                    )}
                   </button>
                 ))
               )}

@@ -85,7 +85,11 @@ export const mockScratches: ScratchNode[] = [
 // virtualized diff list is exercised in tests (no Date.now / Math.random).
 const baseDiffRows: DiffRow[] = [
   { l: { n: 16, t: "  async dispose() {" }, r: { n: 16, t: "  async dispose() {" }, k: "ctx" },
-  { l: { n: 17, t: "    this.watcher.close();" }, r: { n: 17, t: "    this.watcher.close();" }, k: "ctx" },
+  {
+    l: { n: 17, t: "    this.watcher.close();" },
+    r: { n: 17, t: "    this.watcher.close();" },
+    k: "ctx",
+  },
   { l: null, r: { n: 18, t: "    await this.teardown();" }, k: "add" },
   { l: { n: 18, t: "  }" }, r: { n: 19, t: "  }" }, k: "ctx" },
   { l: null, r: { n: 20, t: "" }, k: "add" },
@@ -101,8 +105,14 @@ const baseDiffRows: DiffRow[] = [
 const longTail: DiffRow[] = Array.from({ length: 100 }, (_, i) => {
   const ln = 26 + i;
   return {
-    l: { n: ln, t: `  // context line ${i} — a fairly long line to exercise horizontal scrolling within the diff body` },
-    r: { n: ln, t: `  // context line ${i} — a fairly long line to exercise horizontal scrolling within the diff body` },
+    l: {
+      n: ln,
+      t: `  // context line ${i} — a fairly long line to exercise horizontal scrolling within the diff body`,
+    },
+    r: {
+      n: ln,
+      t: `  // context line ${i} — a fairly long line to exercise horizontal scrolling within the diff body`,
+    },
     k: "ctx" as const,
   };
 });
@@ -193,7 +203,12 @@ const baseSearchFiles = [
   {
     path: "src/core/broker.ts",
     hits: [
-      { line: 18, before: "const granted = await this.", match: "checkCapability", after: "(principal, cap);" },
+      {
+        line: 18,
+        before: "const granted = await this.",
+        match: "checkCapability",
+        after: "(principal, cap);",
+      },
       { line: 42, before: "  if (await this.", match: "checkCapability", after: "(p, c)) {" },
     ],
   },

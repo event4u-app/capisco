@@ -39,7 +39,9 @@ export async function connectDevBridge(): Promise<boolean> {
   try {
     const transport = await WsClientTransport.connect(bridgeUrl());
     installSidecarBridge(transport);
-    console.info(`[capisco] dev sidecar bridge connected (${bridgeUrl()}) — using REAL providers`);
+    console.info(
+      `[capisco] dev sidecar bridge connected (${bridgeUrl()}) — using REAL providers`,
+    );
     return true;
   } catch {
     console.warn(

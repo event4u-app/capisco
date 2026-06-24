@@ -91,6 +91,9 @@ interface AgentsState {
   setBackendKind: (kind: "api" | "cli") => void;
   setSelectedBackend: (id: string) => void;
   setRunState: (id: string, run: RunState) => void;
+  /** Cancel a session's run (P3 / B3): set it ready, never mutate the parent,
+   * never auto-resume. */
+  cancelRun: (id: string) => void;
   setSettingsOpen: (open: boolean) => void;
   toggleSettings: () => void;
 }
@@ -155,7 +158,12 @@ function createAgentsStore(opts: StoreOpts): UseBoundStore<StoreApi<AgentsState>
         handoffToNewSession: (parent, blocks) => {
           const s = get();
           const newId = `n${s.extra.length + 1}`;
-          const { session, summary } = buildSessionHandoff(parent, blocks, newId, newSessionTitle);
+          const { session, summary } = buildSessionHandoff(
+            parent,
+            blocks,
+            newId,
+            newSessionTitle,
+          );
           set({
             extra: [...s.extra, session],
             activeId: newId,
@@ -168,7 +176,8 @@ function createAgentsStore(opts: StoreOpts): UseBoundStore<StoreApi<AgentsState>
           set((s) => {
             const all = [...base, ...s.extra].filter((x) => !s.closed.includes(x.id));
             const remaining = all.filter((x) => x.id !== id);
-            const nextActive = s.activeId === id && remaining.length ? remaining[0].id : s.activeId;
+            const nextActive =
+              s.activeId === id && remaining.length ? remaining[0].id : s.activeId;
             return {
               extra: s.extra.filter((x) => x.id !== id),
               closed: s.closed.includes(id) ? s.closed : [...s.closed, id],
@@ -193,6 +202,12 @@ function createAgentsStore(opts: StoreOpts): UseBoundStore<StoreApi<AgentsState>
         setBackendKind: (backendKind) => set({ backendKind }),
         setSelectedBackend: (selectedBackendId) => set({ selectedBackendId }),
         setRunState: (id, run) => set((s) => ({ runStates: { ...s.runStates, [id]: run } })),
+        // Cancel THIS session's run (composer-context-runtime P3, B3): set it
+        // back to ready and touch NOTHING else — the parent session (a fork's
+        // origin) is never mutated, and nothing is rescheduled (no auto-resume).
+        // The live stream abort rides the AgentProvider unsubscribe when the
+        // real run-loop subscribes; at this layer the run-state IS the signal.
+        cancelRun: (id) => set((s) => ({ runStates: { ...s.runStates, [id]: "ready" } })),
         setSettingsOpen: (settingsOpen) => set({ settingsOpen }),
         toggleSettings: () => set((s) => ({ settingsOpen: !s.settingsOpen })),
       }),
@@ -262,9 +277,7 @@ export function formatTelemetry(
 ): string {
   if (telemetry.runtimeMs === 0) {
     if (status === "waiting") return "waiting";
-    return telemetry.tokensOut > 0
-      ? `idle · ${formatTokens(telemetry.tokensOut)} ↓`
-      : "idle";
+    return telemetry.tokensOut > 0 ? `idle · ${formatTokens(telemetry.tokensOut)} ↓` : "idle";
   }
   const totalSec = Math.round(telemetry.runtimeMs / 1000);
   const m = Math.floor(totalSec / 60);

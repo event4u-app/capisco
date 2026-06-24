@@ -1,21 +1,13 @@
 import * as React from "react";
 import { EditorState } from "@codemirror/state";
-import {
-  EditorView,
-  lineNumbers,
-  gutter,
-  GutterMarker,
-} from "@codemirror/view";
+import { EditorView, lineNumbers, gutter, GutterMarker } from "@codemirror/view";
 import { foldGutter, codeFolding, foldKeymap, foldService } from "@codemirror/language";
 import { keymap } from "@codemirror/view";
 import { javascript } from "@codemirror/lang-javascript";
 
 import type { ChangeBar, EditorDoc, FoldRange } from "@/contracts";
 import { editorSnapshot } from "@/mocks";
-import {
-  capiscoTheme,
-  capiscoSyntax,
-} from "./cm-theme";
+import { capiscoTheme, capiscoSyntax } from "./cm-theme";
 import {
   rainbowBrackets,
   rainbowBracketTheme,
@@ -78,7 +70,6 @@ function changeBarGutter(bars: ChangeBar[]) {
     }),
   ];
 }
-
 
 /**
  * CodeMirror 6 mount (roadmap Phase 0 read-only · Phase 2 editable). Renders the

@@ -9,6 +9,11 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: CI,
   retries: 0,
+  // Pixel goldens are darwin-baselined (see app/DECISIONS.md); skip every
+  // toHaveScreenshot assertion on other platforms so CI (linux) runs the
+  // DOM/testid + axe gates without a missing-baseline failure. A linux baseline
+  // is a deliberate follow-up, not silently passed.
+  ignoreSnapshots: process.platform !== "darwin",
   reporter: CI ? "github" : "list",
   use: {
     baseURL: "http://localhost:4173",

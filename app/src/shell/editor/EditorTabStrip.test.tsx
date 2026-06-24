@@ -45,8 +45,9 @@ describe("EditorTabStrip — rows + overflow (Design-Sync P1)", () => {
     await user.click(screen.getByTestId("editor-tab-rows-3"));
     expect(screen.getByTestId("editor-tab-strip")).toHaveAttribute("data-rows", "3");
     expect(useTabRows.getState().rows).toBe(3);
-    // The scroll container wraps when multi-row.
-    expect(screen.getByTestId("editor-tab-scroll").className).toContain("flex-wrap");
+    // The scroll container wraps when multi-row (prototype `.tab-scroll.multi`
+    // → flex-wrap: wrap in capisco-composer.css).
+    expect(screen.getByTestId("editor-tab-scroll").className).toContain("multi");
     // Persisted under the prototype key.
     expect(localStorage.getItem("capisco-tabrows")).toContain("3");
   });

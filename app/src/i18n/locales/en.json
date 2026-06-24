@@ -323,9 +323,20 @@
       "credentialNote": "Secret shown as a reference, never its value.",
       "prodNote": "Production datasources are read-only — per-command approval only, no “allow permanently”."
     },
+    "toolAction": {
+      "revert": "Discard code change"
+    },
     "composer": {
       "placeholder": "Message Capisco…",
       "send": "Send",
+      "stop": "Stop",
+      "auto": "Auto",
+      "autoRoute": "Auto model routing",
+      "planMode": "Plan mode — reply without modifying code",
+      "attach": "Attach files",
+      "contextAdd": "Add file or folder as context",
+      "contextRemove": "Remove from context",
+      "rulesWarn": "Loaded rules and workspace guidelines ({{chars}} chars) exceed the {{limit}} character limit. Remove some rules or shorten your guidelines.",
       "model": "Model",
       "effort": "Effort",
       "effortFaster": "Faster",

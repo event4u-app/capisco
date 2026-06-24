@@ -4,9 +4,29 @@ import { activeMention, insertReference, matchProjects } from "./mention-query";
 
 /** A deterministic seed registry (ordinal lastSeen, no wall-clock). */
 const SEED: RecentProject[] = [
-  { path: "/w/capisco", name: "capisco", branch: "main", lastSeen: 3, instanceId: "a", active: true },
-  { path: "/w/core-api", name: "core-api", branch: "feat/x", lastSeen: 2, instanceId: "b", active: true },
-  { path: "/w/design-system", name: "design-system", lastSeen: 1, instanceId: "c", active: false },
+  {
+    path: "/w/capisco",
+    name: "capisco",
+    branch: "main",
+    lastSeen: 3,
+    instanceId: "a",
+    active: true,
+  },
+  {
+    path: "/w/core-api",
+    name: "core-api",
+    branch: "feat/x",
+    lastSeen: 2,
+    instanceId: "b",
+    active: true,
+  },
+  {
+    path: "/w/design-system",
+    name: "design-system",
+    lastSeen: 1,
+    instanceId: "c",
+    active: false,
+  },
   { path: "/w/core-web", name: "core-web", lastSeen: 4, instanceId: "d", active: true },
 ];
 
@@ -44,7 +64,12 @@ describe("activeMention", () => {
 describe("matchProjects", () => {
   it("ranks most-recent-first by the deterministic lastSeen ordinal", () => {
     const hits = matchProjects(SEED, "");
-    expect(hits.map((p) => p.name)).toEqual(["core-web", "capisco", "core-api", "design-system"]);
+    expect(hits.map((p) => p.name)).toEqual([
+      "core-web",
+      "capisco",
+      "core-api",
+      "design-system",
+    ]);
   });
 
   it("substring-matches case-insensitively on the name", () => {

@@ -107,5 +107,8 @@ export function createLiveAgentProvider(opts: LiveAgentProviderOptions): AgentPr
     listEffortLevels: (): Promise<EffortLevel[]> => mockAgentProvider.listEffortLevels(),
     getPlanUsage: (): Promise<PlanUsageRow[]> => mockAgentProvider.getPlanUsage(),
     getDetectedCli: (): Promise<BackendConfig> => mockAgentProvider.getDetectedCli(),
+    // System-context size (P5) — the live ACP path reuses the deterministic
+    // mock size until the real assembled-context sum is wired (a thin swap).
+    getSystemContextSize: () => mockAgentProvider.getSystemContextSize(),
   };
 }

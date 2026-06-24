@@ -18,7 +18,9 @@ export function MetricCard({ metric: m, testid }: MetricCardProps) {
       className="flex flex-col gap-1 rounded-md border border-border bg-card p-3"
     >
       <div className="flex items-center justify-between gap-2">
-        <span className="text-micro uppercase tracking-wide text-muted-foreground">{m.label}</span>
+        <span className="text-micro uppercase tracking-wide text-muted-foreground">
+          {m.label}
+        </span>
         {m.tier && (
           <span className="rounded-sm bg-accent px-1.5 py-0.5 text-[9px] font-medium uppercase text-accent-foreground">
             {m.tier}
@@ -30,7 +32,10 @@ export function MetricCard({ metric: m, testid }: MetricCardProps) {
         {m.delta && (
           <span
             data-testid={`${testid ?? `metric-${m.label}`}-delta`}
-            className={cn("text-micro font-medium", m.good ? "text-success" : "text-destructive")}
+            className={cn(
+              "text-micro font-medium",
+              m.good ? "text-success" : "text-destructive",
+            )}
           >
             {m.delta}
           </span>

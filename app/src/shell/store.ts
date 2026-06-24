@@ -54,7 +54,17 @@ export interface RailGroups {
 }
 
 const DEFAULT_GROUPS: RailGroups = {
-  leftTop: ["explorer", "changes", "commit", "pr", "tasks", "search", "structure", "data", "services"],
+  leftTop: [
+    "explorer",
+    "changes",
+    "commit",
+    "pr",
+    "tasks",
+    "search",
+    "structure",
+    "data",
+    "services",
+  ],
   leftBottom: [TERMINAL_ID],
   rightTop: ["alerts", "inspect"],
   rightBottom: [],

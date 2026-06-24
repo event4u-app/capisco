@@ -1,10 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  makeDatasource,
-  makeWriteEscape,
-  type SessionEvent,
-} from "@/contracts";
+import { makeDatasource, makeWriteEscape, type SessionEvent } from "@/contracts";
 import {
   aggregateTelemetry,
   createInMemoryShadowStore,
@@ -54,7 +50,10 @@ describe("AgentProvider — async + subscribe (Phase 0)", () => {
         }
       });
     });
-    expect(deltas.join("")).toContain("freeze the `Grant` record");
+    // Streams the LAST agent message of s2 (design-sync-v2 added a scorecard
+    // message s2-m4 after the plan); the contract is delta-reconstruction, not
+    // the specific text.
+    expect(deltas.join("")).toContain("Readiness scorecard for the grant-model refactor");
   });
 
   it("unsubscribe stops further events", async () => {
@@ -214,7 +213,7 @@ describe("History-2 shadow store (Phase 2, §5.1)", () => {
 
 describe("WorkspaceProvider async surface (Phase 0)", () => {
   it("resolves the deterministic workspace data", async () => {
-    expect((await mockWorkspaceProvider.getCurrentBranch())).toBe("feat/worktree-teardown");
+    expect(await mockWorkspaceProvider.getCurrentBranch()).toBe("feat/worktree-teardown");
     expect((await mockWorkspaceProvider.getStructure("broker.ts")).length).toBe(8);
     expect((await mockWorkspaceProvider.getChangeSet()).hasPullRequest).toBe(true);
   });

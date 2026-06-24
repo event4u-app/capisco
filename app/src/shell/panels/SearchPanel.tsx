@@ -10,16 +10,14 @@ import { useLayout } from "../store";
 
 const ROW_HEIGHT = 22;
 
-/** A flattened, virtualizable search row: a file header or one match line. */
 type SearchRow =
   | { type: "file"; key: string; path: string; count: number }
   | { type: "hit"; key: string; path: string; hit: SearchHit };
 
 /**
- * Search panel (build-spec §3) — ripgrep-style results grouped by file with
- * line numbers, highlighted matches, and a Replace field. The result list is
- * virtualized (file headers + hit lines share one fixed-row windowed model) so
- * a workspace-wide search stays responsive.
+ * Search panel — 1:1 port of the prototype `SearchPanel` (views.jsx): ripgrep
+ * results grouped by file (`.sp-*`), highlighted matches, a Replace field. The
+ * result list stays virtualized; classes verbatim, data/logic/testids preserved.
  */
 export function SearchPanel() {
   const { t } = useTranslation();
@@ -27,22 +25,23 @@ export function SearchPanel() {
   const s = mockSearch;
   const [query, setQuery] = React.useState(s.query);
   const [replace, setReplace] = React.useState("");
-
   const totalHits = s.files.reduce((n, f) => n + f.hits.length, 0);
 
   const rows = React.useMemo<SearchRow[]>(() => {
     const out: SearchRow[] = [];
     for (const f of s.files) {
       out.push({ type: "file", key: `f:${f.path}`, path: f.path, count: f.hits.length });
-      f.hits.forEach((h, i) => out.push({ type: "hit", key: `h:${f.path}:${i}`, path: f.path, hit: h }));
+      f.hits.forEach((h, i) =>
+        out.push({ type: "hit", key: `h:${f.path}:${i}`, path: f.path, hit: h }),
+      );
     }
     return out;
   }, [s.files]);
 
   return (
-    <div data-testid="search-panel" className="flex h-full min-h-0 flex-col">
-      <div className="shrink-0 border-b border-border p-2">
-        <label className="flex h-6 items-center gap-1.5 rounded-sm border border-border bg-input px-1.5">
+    <div data-testid="search-panel" className="explorer">
+      <div className="sp-head">
+        <label className="as-input flex items-center gap-1.5">
           <Icon icon={Search} size={13} className="shrink-0 text-muted-foreground" />
           <input
             data-testid="search-query"
@@ -53,7 +52,7 @@ export function SearchPanel() {
             className="min-w-0 flex-1 bg-transparent font-mono text-code text-foreground outline-none placeholder:text-muted-foreground"
           />
         </label>
-        <label className="mt-1.5 flex h-6 items-center gap-1.5 rounded-sm border border-border bg-input px-1.5">
+        <label className="as-input mt-1.5 flex items-center gap-1.5">
           <Icon icon={Replace} size={13} className="shrink-0 text-muted-foreground" />
           <input
             data-testid="search-replace"
@@ -64,7 +63,7 @@ export function SearchPanel() {
             className="min-w-0 flex-1 bg-transparent font-mono text-code text-foreground outline-none placeholder:text-muted-foreground"
           />
         </label>
-        <p data-testid="search-summary" className="mt-1.5 text-micro text-muted-foreground">
+        <p data-testid="search-summary" className="sp-summary">
           {t("search.summary", { results: totalHits, files: s.files.length })}
         </p>
       </div>
@@ -76,7 +75,7 @@ export function SearchPanel() {
           testid="search-results"
           items={rows}
           rowHeight={ROW_HEIGHT}
-          className="min-h-0 flex-1"
+          className="sp-scroll"
           renderRow={(row) =>
             row.type === "file" ? (
               <SearchFileHeader path={row.path} count={row.count} />
@@ -92,17 +91,10 @@ export function SearchPanel() {
 
 function SearchFileHeader({ path, count }: { path: string; count: number }) {
   return (
-    <div
-      data-testid={`search-file-${path}`}
-      className="flex h-[22px] items-center gap-1.5 bg-card px-2 text-ui"
-    >
-      <span className="flex shrink-0 items-center">
-        <FileIcon ext={path.split(".").pop() ?? "ts"} />
-      </span>
-      <span className="truncate font-mono text-code text-foreground">{path}</span>
-      <span className="ml-auto shrink-0 rounded-full bg-secondary px-1.5 text-[10px] text-muted-foreground">
-        {count}
-      </span>
+    <div data-testid={`search-file-${path}`} className="sp-fpath">
+      <FileIcon ext={path.split(".").pop() ?? "ts"} />
+      <span className="sp-fname">{path}</span>
+      <span className="sec-count">{count}</span>
     </div>
   );
 }
@@ -112,16 +104,14 @@ function SearchHitRow({ hit, onOpen }: { hit: SearchHit; onOpen: () => void }) {
   return (
     <button
       type="button"
+      className="sp-hit w-full text-left"
       onClick={onOpen}
       title={t("diff.open")}
-      className="flex h-[22px] w-full items-center gap-2 px-2 pl-5 text-left hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring"
     >
-      <span className="w-8 shrink-0 select-none text-right font-mono text-micro text-muted-foreground">
-        {hit.line}
-      </span>
-      <span className="truncate font-mono text-code text-foreground">
+      <span className="sp-ln">{hit.line}</span>
+      <span className="sp-code">
         {hit.before}
-        <mark className="rounded-[2px] bg-warning/30 text-foreground">{hit.match}</mark>
+        <mark className="sp-mark">{hit.match}</mark>
         {hit.after}
       </span>
     </button>

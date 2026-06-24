@@ -1,29 +1,20 @@
 import * as React from "react";
 import { useTranslation } from "react-i18next";
-import {
-  Check,
-  ChevronDown,
-  CircleCheck,
-  Download,
-  ExternalLink,
-  Lock,
-  X,
-} from "lucide-react";
+import { ChevronDown, CircleCheck, Download, ExternalLink, Lock, X } from "lucide-react";
 
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { agentSnapshot } from "@/mocks";
 import type { AgentBackend } from "@/contracts";
 import { useAgents, type TerseLevel } from "./store";
 
 /**
- * Agent backend settings — API client (provider + token, "stored in your OS
- * keychain") OR installed CLI (detected binary + path). The keychain / CLI
- * detection are mock providers behind the BackendConfig interface (UI shell).
+ * Agent backend settings — 1:1 port of the prototype `AgentSettings`
+ * (`ui_kits/capisco-ide/agent.jsx`). Markup + class names (`.agent-settings`,
+ * `.as-*`, `.bk-*`, `.trow-*`) are transcribed verbatim; styling lives in
+ * styles/capisco-composer.css. The React logic (focus trap, dynamic backends,
+ * broker-gated install, token-economy toggles) and all testids are preserved.
  *
- * Rendered as a focus-trapping panel anchored under the gear (prototype
- * `.agent-settings`). Esc / outside-click / close button dismiss it.
+ * Rendered as a focus-trapping panel anchored under the gear. Esc /
+ * outside-click / close button dismiss it.
  */
 export function AgentSettings({
   backendKind,
@@ -31,8 +22,6 @@ export function AgentSettings({
   onClose,
   routingEnabled,
   setRoutingEnabled,
-  modelOverride,
-  setModelOverride,
   terseEnabled,
   setTerseEnabled,
   terseLevel,
@@ -41,12 +30,11 @@ export function AgentSettings({
   backendKind: "api" | "cli";
   setBackendKind: (k: "api" | "cli") => void;
   onClose: () => void;
-  /** Token-economy: auto model routing (default off) + the per-session human
-   * model override ("" = none, routed/own model wins). */
+  /** Token-economy: auto model routing (default off). Just a toggle — the
+   * prototype has no model dropdown here; the effective model is the session
+   * tab badge. */
   routingEnabled: boolean;
   setRoutingEnabled: (on: boolean) => void;
-  modelOverride: string;
-  setModelOverride: (model: string) => void;
   /** Token-economy: Caveman terse mode (default on) + level. */
   terseEnabled: boolean;
   setTerseEnabled: (on: boolean) => void;
@@ -105,7 +93,11 @@ export function AgentSettings({
     const onDown = (e: MouseEvent) => {
       const el = ref.current;
       const target = e.target as Node;
-      if (el && !el.contains(target) && !(target as HTMLElement).closest?.('[data-testid="session-gear"]')) {
+      if (
+        el &&
+        !el.contains(target) &&
+        !(target as HTMLElement).closest?.('[data-testid="session-gear"]')
+      ) {
         onClose();
       }
     };
@@ -119,41 +111,30 @@ export function AgentSettings({
       role="dialog"
       aria-label={t("agents.settings.title")}
       data-testid="agent-settings"
-      className="absolute right-2 top-[calc(var(--tabbar-h)+6px)] z-30 w-[300px] rounded-md border border-border-strong bg-card p-2.5 shadow-md"
+      className="agent-settings"
     >
-      <div className="mb-2 flex items-center justify-between">
-        <span className="text-[10.5px] font-semibold uppercase tracking-wide text-muted-foreground">
-          {t("agents.settings.title")}
-        </span>
+      <div className="as-head">
+        <span className="caps">{t("agents.settings.title")}</span>
         <button
           type="button"
+          className="as-close"
           aria-label={t("agents.settings.close")}
           data-testid="agent-settings-close"
           onClick={onClose}
-          className="rounded-sm p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
         >
-          <X className="size-3.5" strokeWidth={1.6} />
+          <X size={14} color="var(--ds-text-secondary)" strokeWidth={2} />
         </button>
       </div>
 
-      <div
-        role="group"
-        aria-label={t("agents.settings.title")}
-        className="mb-2.5 flex gap-0.5 rounded-sm border border-border bg-muted p-0.5"
-      >
+      <div className="as-seg" role="group" aria-label={t("agents.settings.title")}>
         {(["api", "cli"] as const).map((k) => (
           <button
             key={k}
             type="button"
+            className={"as-opt" + (backendKind === k ? " active" : "")}
             aria-pressed={backendKind === k}
             data-testid={`agent-settings-${k}`}
             onClick={() => setBackendKind(k)}
-            className={cn(
-              "h-6 flex-1 rounded-sm text-ui focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-              backendKind === k
-                ? "bg-primary/20 font-medium text-primary"
-                : "text-muted-foreground hover:text-foreground",
-            )}
           >
             {k === "api" ? t("agents.settings.apiClient") : t("agents.settings.installedCli")}
           </button>
@@ -161,162 +142,116 @@ export function AgentSettings({
       </div>
 
       {backendKind === "api" ? (
-        <div className="flex flex-col gap-1.5" data-testid="agent-settings-api-body">
-          <label className="text-[10.5px] font-semibold uppercase tracking-wide text-muted-foreground">
-            {t("agents.settings.provider")}
-          </label>
-          <button
-            type="button"
-            className="flex h-7 items-center justify-between rounded-sm border border-border bg-muted px-2 text-ui text-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-          >
+        <div className="as-body" data-testid="agent-settings-api-body">
+          <label className="as-label">{t("agents.settings.provider")}</label>
+          <button type="button" className="as-select">
             Anthropic · Claude
-            <ChevronDown className="size-3.5 text-muted-foreground" strokeWidth={1.6} />
+            <ChevronDown size={13} color="var(--ds-text-secondary)" strokeWidth={1.6} />
           </button>
-          <label
-            htmlFor="agent-api-token"
-            className="text-[10.5px] font-semibold uppercase tracking-wide text-muted-foreground"
-          >
+          <label className="as-label" htmlFor="agent-api-token">
             {t("agents.settings.apiToken")}
           </label>
-          <Input
+          <input
             id="agent-api-token"
             type="password"
-            className="font-mono"
+            className="as-input"
             placeholder="sk-ant-…"
             value={token}
             onChange={(e) => setToken(e.target.value)}
           />
-          <div className="flex items-center gap-1.5 text-micro text-muted-foreground">
-            <Lock className="size-3 text-muted-foreground" strokeWidth={1.6} />
+          <div className="as-note">
+            <Lock size={11} color="var(--ds-text-tertiary)" strokeWidth={1.6} />
             {t("agents.settings.keychainNote")}
           </div>
-          <Button variant="default" size="md" className="mt-0.5 w-full" onClick={onClose}>
+          <button type="button" className="as-btn as-btn-primary" onClick={onClose}>
             {t("agents.settings.save")}
-          </Button>
+          </button>
         </div>
       ) : (
-        <div className="flex flex-col gap-1.5" data-testid="agent-settings-cli-body">
-          <div className="flex items-center gap-1.5 text-ui text-foreground">
-            <CircleCheck className="size-3.5 text-success" strokeWidth={1.6} />
+        <div className="as-body" data-testid="agent-settings-cli-body">
+          <div className="as-detected">
+            <CircleCheck size={14} color="var(--ds-success)" strokeWidth={1.6} />
             {t("agents.settings.detected", { name: cli.provider })}
           </div>
-          <div className="font-mono text-micro text-muted-foreground">{cli.detail}</div>
-          <div className="text-micro text-muted-foreground">{t("agents.settings.cliNote")}</div>
-          <Button variant="outline" size="md" className="mt-0.5 w-full">
+          <div className="as-path">{cli.detail}</div>
+          <div className="as-note">{t("agents.settings.cliNote")}</div>
+          <button type="button" className="as-btn as-btn-default">
             {t("agents.settings.redetect")}
-          </Button>
+          </button>
+
+          {/* Backend catalog (B8 P3) — dynamic backends with Use/Install/Guide.
+              CLI-tab only. The stub stays the default; selecting persists.
+              Install is broker-gated (surfaces the audited command only). */}
+          <div className="as-backends" data-testid="agent-settings-backends">
+            <span className="caps">{t("agents.settings.backends")}</span>
+            {backends.map((b) => (
+              <BackendRow
+                key={b.id}
+                backend={b}
+                selected={b.id === selectedBackendId}
+                onUse={() => setSelectedBackend(b.id)}
+                onInstall={() => setInstallAttempt((b.installCommand ?? []).join(" "))}
+              />
+            ))}
+            {installAttempt !== null && (
+              <div className="as-gate" data-testid="agent-settings-install-gate">
+                <Lock size={12} color="var(--ds-text-tertiary)" strokeWidth={1.6} />
+                <span>
+                  {t("agents.settings.installGated")}
+                  <code>{installAttempt}</code>
+                </span>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
-      {/* Backend catalog (B8 P3) — Stub / Claude Code native / Claude Code via
-          ACP / Codex, each with status + Use/Install/Guide. CLI-tab ONLY: these
-          are installed-CLI backends; the API tab is the provider+token path and
-          must not surface Install/Use. The stub stays the default; selecting a
-          backend persists. Install is broker-gated. */}
-      {backendKind === "cli" && (
-      <div className="mt-2.5 border-t border-border pt-2.5" data-testid="agent-settings-backends">
-        <span className="mb-1.5 block text-[10.5px] font-semibold uppercase tracking-wide text-muted-foreground">
-          {t("agents.settings.backends")}
-        </span>
-        <ul className="flex flex-col gap-1">
-          {backends.map((b) => (
-            <BackendRow
-              key={b.id}
-              backend={b}
-              selected={b.id === selectedBackendId}
-              onUse={() => setSelectedBackend(b.id)}
-              onInstall={() =>
-                setInstallAttempt((b.installCommand ?? []).join(" "))
-              }
-            />
-          ))}
-        </ul>
-        {installAttempt !== null && (
-          <div
-            className="mt-1.5 flex items-start gap-1.5 text-micro text-muted-foreground"
-            data-testid="agent-settings-install-gate"
-          >
-            <Lock className="mt-0.5 size-3 shrink-0 text-muted-foreground" strokeWidth={1.6} />
-            <span>
-              {t("agents.settings.installGated")}
-              <code className="ml-1 font-mono text-foreground">{installAttempt}</code>
-            </span>
-          </div>
-        )}
-      </div>
-      )}
+      {/* Token economy — Auto model routing (toggle only, no dropdown) + Caveman
+          terse mode with level row. Prototype `.as-sec` / `.as-toggle`. */}
+      <div className="as-sec" data-testid="agent-settings-token-economy">
+        <span className="caps">{t("agents.settings.tokenEconomy")}</span>
 
-      {/* Token economy (token-economy / F5) — the Caveman terse mode + auto
-          model routing toggles, moved here from the composer bar (prototype
-          `design-update-v1`) so each carries its explanatory text + level. The
-          state lives in the workspace store; this is the richer surface. */}
-      <div
-        className="mt-2.5 flex flex-col gap-2.5 border-t border-border pt-2.5"
-        data-testid="agent-settings-token-economy"
-      >
-        <span className="block text-[10.5px] font-semibold uppercase tracking-wide text-muted-foreground">
-          {t("agents.settings.tokenEconomy")}
-        </span>
-
-        {/* Auto model routing — default OFF; with the per-session override. */}
-        <div className="flex flex-col gap-2">
-          <div className="flex items-start gap-2.5">
-            <SettingSwitch
+        <div className="as-toggle">
+          <div className="as-toggle-main">
+            <Switch
               checked={routingEnabled}
               onChange={() => setRoutingEnabled(!routingEnabled)}
               label={t("agents.settings.autoRoute")}
               testId="agent-settings-routing-toggle"
             />
-            <div className="min-w-0 flex-1">
-              <div className="text-[12.5px] font-medium text-foreground">
-                {t("agents.settings.autoRoute")}
-              </div>
-              <div className="mt-0.5 text-micro leading-snug text-muted-foreground">
-                {t("agents.settings.autoRouteSub")}
-              </div>
+            <div className="as-toggle-text">
+              <div className="as-toggle-title">{t("agents.settings.autoRoute")}</div>
+              <div className="as-toggle-sub">{t("agents.settings.autoRouteSub")}</div>
             </div>
-          </div>
-          <div className="ml-[42px]">
-            <OverridePicker override={modelOverride} setOverride={setModelOverride} />
           </div>
         </div>
 
-        {/* Terse mode (Caveman) — default ON; level shown when enabled. */}
-        <div className="flex flex-col gap-2">
-          <div className="flex items-start gap-2.5">
-            <SettingSwitch
+        <div className="as-toggle">
+          <div className="as-toggle-main">
+            <Switch
               checked={terseEnabled}
               onChange={() => setTerseEnabled(!terseEnabled)}
               label={t("agents.settings.terseTitle")}
               testId="agent-settings-terse-toggle"
             />
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-1.5 text-[12.5px] font-medium text-foreground">
+            <div className="as-toggle-text">
+              <div className="as-toggle-title">
                 {t("agents.settings.terseTitle")}
-                <span className="rounded-sm bg-primary/15 px-1 text-[9px] font-bold uppercase leading-[14px] tracking-wide text-primary">
-                  Caveman
-                </span>
+                <span className="as-tag">Caveman</span>
               </div>
-              <div className="mt-0.5 text-micro leading-snug text-muted-foreground">
-                {t("agents.settings.terseSub")}
-              </div>
+              <div className="as-toggle-sub">{t("agents.settings.terseSub")}</div>
             </div>
           </div>
           {terseEnabled && (
-            <div className="ml-[42px] flex gap-0.5">
+            <div className="trow-seg as-level">
               {(["lite", "full", "ultra"] as const).map((l) => (
                 <button
                   key={l}
                   type="button"
+                  className={"trow-opt" + (terseLevel === l ? " active" : "")}
                   aria-pressed={terseLevel === l}
                   data-testid={`agent-settings-terse-level-${l}`}
                   onClick={() => setTerseLevel(l)}
-                  className={cn(
-                    "h-6 flex-1 rounded-sm border text-ui focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-                    terseLevel === l
-                      ? "border-primary/60 bg-primary/10 font-medium text-primary"
-                      : "border-border bg-muted text-muted-foreground hover:text-foreground",
-                  )}
                 >
                   {t(
                     l === "lite"
@@ -335,11 +270,8 @@ export function AgentSettings({
   );
 }
 
-/**
- * A compact pill switch (prototype `.as-switch`) — the on/off control for the
- * token-economy toggles. Rendered inside the focus-trapped panel.
- */
-function SettingSwitch({
+/** The on/off switch (prototype `.as-switch` / `.as-knob`). */
+function Switch({
   checked,
   onChange,
   label,
@@ -358,111 +290,25 @@ function SettingSwitch({
       aria-label={label}
       data-testid={testId}
       onClick={onChange}
-      className={cn(
-        "inline-flex h-[18px] w-8 shrink-0 items-center rounded-full p-0.5 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-        checked ? "bg-primary" : "bg-border-strong",
-      )}
+      className={"as-switch" + (checked ? " on" : "")}
     >
-      <span
-        className={cn(
-          "size-3.5 rounded-full bg-background transition-transform",
-          checked && "translate-x-3.5",
-        )}
-      />
+      <span className="as-knob" />
     </button>
   );
 }
 
-/**
- * Per-session model override (the human always wins over routing). Inline
- * expander — NOT a portalled popover — so it stays inside the panel and never
- * trips the settings outside-click dismiss. "Auto" clears the override.
- */
-function OverridePicker({
-  override,
-  setOverride,
-}: {
-  override: string;
-  setOverride: (model: string) => void;
-}) {
-  const { t } = useTranslation();
-  const [open, setOpen] = React.useState(false);
-  const agents = agentSnapshot.agents;
-  return (
-    <div>
-      <button
-        type="button"
-        aria-expanded={open}
-        data-testid="agent-settings-routing-override"
-        onClick={() => setOpen((o) => !o)}
-        className="flex h-6 w-full items-center justify-between gap-2 rounded-sm border border-border bg-muted px-2 text-ui text-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-      >
-        <span className="truncate">
-          <span className="text-muted-foreground">{t("agents.settings.routingOverride")}: </span>
-          {override || t("agents.settings.routingAuto")}
-        </span>
-        <ChevronDown
-          className={cn("size-3.5 shrink-0 text-muted-foreground transition-transform", open && "rotate-180")}
-          strokeWidth={1.6}
-        />
-      </button>
-      {open && (
-        <div className="mt-1 flex flex-col gap-0.5 rounded-sm border border-border bg-muted p-1">
-          <button
-            type="button"
-            aria-pressed={override === ""}
-            data-testid="agent-settings-routing-override-auto"
-            onClick={() => {
-              setOverride("");
-              setOpen(false);
-            }}
-            className={cn(
-              "flex h-6 w-full items-center rounded-sm px-2 text-left text-ui focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-              override === "" ? "bg-primary/10 font-medium text-primary" : "text-foreground hover:bg-accent",
-            )}
-          >
-            {t("agents.settings.routingAuto")}
-          </button>
-          {agents.map((a) => (
-            <button
-              key={a.id}
-              type="button"
-              aria-pressed={override === a.label}
-              data-testid={`agent-settings-routing-override-${a.id}`}
-              onClick={() => {
-                setOverride(a.label);
-                setOpen(false);
-              }}
-              className={cn(
-                "flex h-6 w-full items-center justify-between rounded-sm px-2 text-left text-ui focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-                override === a.label ? "bg-primary/10 font-medium text-primary" : "text-foreground hover:bg-accent",
-              )}
-            >
-              {a.label}
-              {override === a.label && <Check className="size-3 text-primary" strokeWidth={2} />}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-/** Status → translation-key + tone for the backend badge. */
-const STATUS_META: Record<
-  AgentBackend["status"],
-  { key: string; tone: string }
-> = {
-  ready: { key: "agents.settings.statusReady", tone: "text-success" },
-  installable: { key: "agents.settings.statusInstallable", tone: "text-primary" },
-  guide: { key: "agents.settings.statusGuide", tone: "text-muted-foreground" },
+/** Status → translation-key + state class for the backend row. */
+const STATUS_META: Record<AgentBackend["status"], { key: string; cls: string }> = {
+  ready: { key: "agents.settings.statusReady", cls: "bk-ready" },
+  installable: { key: "agents.settings.statusInstallable", cls: "bk-installable" },
+  guide: { key: "agents.settings.statusGuide", cls: "bk-guide-state" },
 };
 
 /**
- * One backend row: label + status badge + the right action. `ready` backends
- * are selectable (Use / In use); `installable` backends offer a broker-gated
- * Install; `guide` backends link to the setup doc. No action mutates the host —
- * Install only surfaces the audited command the broker would authorize.
+ * One backend row (prototype `.bk-row`): label + status + the right action.
+ * `ready` = selectable (Use / In use, active row tinted); `installable` =
+ * broker-gated Install; `guide` = setup-doc link. Install only surfaces the
+ * audited command the broker would authorize — no host mutation.
  */
 function BackendRow({
   backend,
@@ -478,58 +324,56 @@ function BackendRow({
   const { t } = useTranslation();
   const meta = STATUS_META[backend.status];
   return (
-    <li
+    <div
       data-testid={`agent-backend-${backend.id}`}
       data-selected={selected ? "true" : undefined}
-      className={cn(
-        "flex items-center justify-between gap-2 rounded-sm border px-2 py-1.5",
-        selected ? "border-primary/60 bg-primary/10" : "border-border bg-muted",
-      )}
+      className={"bk-row" + (selected ? " bk-active" : "")}
     >
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-1.5">
-          {selected && (
-            <CircleCheck className="size-3 shrink-0 text-primary" strokeWidth={1.8} />
-          )}
-          <span className="truncate text-ui text-foreground">{backend.label}</span>
+      <div className="bk-main">
+        <div className="bk-name">
+          {selected && <CircleCheck size={13} color="var(--ds-accent)" strokeWidth={1.8} />}
+          {backend.label}
         </div>
-        <span className={cn("text-micro", meta.tone)} data-testid={`agent-backend-${backend.id}-status`}>
+        <div
+          className={"bk-state " + meta.cls}
+          data-testid={`agent-backend-${backend.id}-status`}
+        >
           {t(meta.key)}
-        </span>
+        </div>
       </div>
 
       {backend.status === "ready" ? (
-        <Button
-          variant={selected ? "ghost" : "outline"}
-          size="sm"
+        <button
+          type="button"
+          className="bk-use"
           disabled={selected}
           data-testid={`agent-backend-${backend.id}-use`}
           onClick={onUse}
         >
           {selected ? t("agents.settings.inUse") : t("agents.settings.use")}
-        </Button>
+        </button>
       ) : backend.status === "installable" ? (
-        <Button
-          variant="outline"
-          size="sm"
+        <button
+          type="button"
+          className="bk-install"
           data-testid={`agent-backend-${backend.id}-install`}
           onClick={onInstall}
         >
-          <Download className="mr-1 size-3" strokeWidth={1.8} />
+          <Download size={13} strokeWidth={1.8} />
           {t("agents.settings.install")}
-        </Button>
+        </button>
       ) : (
         <a
           href={backend.guideUrl}
           target="_blank"
           rel="noreferrer"
+          className="bk-guide"
           data-testid={`agent-backend-${backend.id}-guide`}
-          className="inline-flex items-center gap-1 text-micro text-primary hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
         >
           {t("agents.settings.guide")}
-          <ExternalLink className="size-3" strokeWidth={1.8} />
+          <ExternalLink size={12} strokeWidth={1.8} />
         </a>
       )}
-    </li>
+    </div>
   );
 }

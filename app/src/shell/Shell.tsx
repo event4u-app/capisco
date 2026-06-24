@@ -90,7 +90,10 @@ export function Shell() {
           )}
         </div>
 
-        <div data-testid="center" className="relative flex min-h-0 min-w-0 flex-col overflow-hidden">
+        <div
+          data-testid="center"
+          className="relative flex min-h-0 min-w-0 flex-col overflow-hidden"
+        >
           <section
             data-testid="workspace"
             data-mode={mode}

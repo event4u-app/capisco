@@ -65,7 +65,10 @@ export const useWorktrees = create<WorktreeStore>((set, get) => ({
         activePath: s.activePath || project.path,
       }));
     } catch (err) {
-      set({ busy: false, error: err instanceof Error ? err.message : "failed to list worktrees" });
+      set({
+        busy: false,
+        error: err instanceof Error ? err.message : "failed to list worktrees",
+      });
     }
   },
   createWorktree: async (branch: string) => {
@@ -82,7 +85,10 @@ export const useWorktrees = create<WorktreeStore>((set, get) => ({
       set({ worktrees, busy: false, activePath: entry.path });
       return entry;
     } catch (err) {
-      set({ busy: false, error: err instanceof Error ? err.message : "failed to create worktree" });
+      set({
+        busy: false,
+        error: err instanceof Error ? err.message : "failed to create worktree",
+      });
       return null;
     }
   },
@@ -109,7 +115,10 @@ export const useWorktrees = create<WorktreeStore>((set, get) => ({
       set({ busy: false, startedSessionId: session.id });
       return session.id;
     } catch (err) {
-      set({ busy: false, error: err instanceof Error ? err.message : "failed to start session" });
+      set({
+        busy: false,
+        error: err instanceof Error ? err.message : "failed to start session",
+      });
       return null;
     }
   },

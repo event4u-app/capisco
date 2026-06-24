@@ -27,9 +27,10 @@ export function EditorWorkspace() {
   const register = usePalette((s) => s.register);
 
   // Transient save status surfaced inline (written / gated). Cleared on re-edit.
-  const [saveState, setSaveState] = React.useState<null | { written: boolean; reason?: string }>(
-    null,
-  );
+  const [saveState, setSaveState] = React.useState<null | {
+    written: boolean;
+    reason?: string;
+  }>(null);
 
   // Self-register editor actions in the command palette (escalation ladder).
   React.useEffect(() => {
@@ -102,7 +103,9 @@ export function EditorWorkspace() {
           {saveState && (
             <span
               data-testid={saveState.written ? "editor-saved" : "editor-save-gated"}
-              className={saveState.written ? "text-muted-foreground" : "text-[hsl(var(--chart-bad))]"}
+              className={
+                saveState.written ? "text-muted-foreground" : "text-[hsl(var(--chart-bad))]"
+              }
             >
               {saveState.written ? t("editor.saved") : t("editor.saveGated")}
             </span>
@@ -112,7 +115,10 @@ export function EditorWorkspace() {
       {doc ? (
         <div className="flex min-h-0 flex-1 overflow-hidden">
           <SocialPresenceLane markers={presence} />
-          <div data-testid="code-pane" className="relative flex min-h-0 min-w-0 flex-1 flex-col">
+          <div
+            data-testid="code-pane"
+            className="relative flex min-h-0 min-w-0 flex-1 flex-col"
+          >
             <CodeMirrorView
               doc={doc}
               onChange={

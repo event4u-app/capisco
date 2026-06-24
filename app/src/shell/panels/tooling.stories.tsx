@@ -4,7 +4,15 @@ import { DataPanel } from "./DataPanel";
 import { SignalFlyout } from "../signals/SignalFlyout";
 
 /** R6 Tooling-Breadth provider views, each in a panel-sized frame. */
-function PanelFrame({ children, width = 300, height = 560 }: { children: React.ReactNode; width?: number; height?: number }) {
+function PanelFrame({
+  children,
+  width = 300,
+  height = 560,
+}: {
+  children: React.ReactNode;
+  width?: number;
+  height?: number;
+}) {
   return (
     <div
       style={{ width, height }}

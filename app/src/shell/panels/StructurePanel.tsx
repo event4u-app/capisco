@@ -1,19 +1,9 @@
 import { useTranslation } from "react-i18next";
 import { ArrowDownUp, ListCollapse } from "lucide-react";
-import { cn } from "@/lib/utils";
-import type { SymbolKind, SymbolNode } from "@/contracts";
+import type { SymbolNode } from "@/contracts";
 import { mockStructure } from "@/mocks";
 import { useEditor } from "@/shell/editor/store";
 import { PanelHead, PanelHeadAction } from "./PanelHead";
-
-// Kind → token-driven badge tint. No hardcoded hex (CSS vars / Tailwind tokens).
-const KIND_CLASS: Record<SymbolKind, string> = {
-  C: "bg-primary/20 text-primary",
-  m: "bg-warning/20 text-warning",
-  p: "bg-muted text-muted-foreground",
-  I: "bg-success/20 text-success",
-  E: "bg-destructive/20 text-destructive",
-};
 
 /**
  * Structure panel (build-spec §3) — symbol outline of the ACTIVE editor file
@@ -32,7 +22,7 @@ export function StructurePanel() {
         <PanelHeadAction icon={ArrowDownUp} label={t("structure.sort")} />
         <PanelHeadAction icon={ListCollapse} label={t("structure.collapseAll")} />
       </PanelHead>
-      <div role="tree" aria-label={t("structure.label")} className="min-h-0 flex-1 overflow-auto py-1">
+      <div role="tree" aria-label={t("structure.label")} className="tree">
         {symbols.length === 0 ? (
           <p className="px-3 py-2 text-micro text-muted-foreground">{t("structure.empty")}</p>
         ) : (
@@ -51,18 +41,12 @@ function SymbolRow({ sym }: { sym: SymbolNode }) {
       aria-level={sym.depth + 1}
       data-testid={`structure-symbol-${sym.name}`}
       style={{ paddingLeft: 8 + sym.depth * 14 }}
-      className="flex h-[24px] items-center gap-2 pr-2 text-ui hover:bg-accent"
+      className="struct-row"
     >
-      <span
-        title={t(`structure.kind.${sym.kind}`)}
-        className={cn(
-          "flex size-4 shrink-0 items-center justify-center rounded-sm font-mono text-[10px] font-semibold",
-          KIND_CLASS[sym.kind],
-        )}
-      >
+      <span title={t(`structure.kind.${sym.kind}`)} className={`sym sym-${sym.kind}`}>
         {sym.kind}
       </span>
-      <span className="truncate font-mono text-code text-foreground">{sym.name}</span>
+      <span className="struct-name">{sym.name}</span>
     </div>
   );
 }

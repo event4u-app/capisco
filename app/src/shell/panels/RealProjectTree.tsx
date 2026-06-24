@@ -110,41 +110,28 @@ function RealTreeRow({
       aria-expanded={node.isDir ? !collapsed : undefined}
       data-testid={`real-file-${node.relPath}`}
       onClick={onActivate}
-      style={{ paddingLeft: 6 + node.depth * 12 }}
-      className={cn(
-        "relative flex h-[26px] cursor-pointer items-center gap-1.5 pr-2 hover:bg-accent",
-        active && "bg-accent",
-      )}
+      style={{ paddingLeft: 4 + node.depth * 14 }}
+      className={cn("tr-row", active && "active")}
     >
-      {active && (
-        <span
-          data-testid="real-active-strip"
-          className="absolute left-0 top-0 h-full w-0.5 bg-primary"
-          aria-hidden
-        />
-      )}
-      {node.isDir ? (
-        <ChevronRight
-          className={cn(
-            "size-3.5 shrink-0 text-muted-foreground transition-transform",
-            !collapsed && "rotate-90",
-          )}
-          strokeWidth={1.6}
-          aria-hidden
-        />
-      ) : (
-        <span className="size-3.5 shrink-0" />
-      )}
-      <span className="flex shrink-0 items-center">
+      <span className="tr-chevron">
+        {node.isDir && (
+          <ChevronRight
+            className={cn("size-3 transition-transform", !collapsed && "rotate-90")}
+            strokeWidth={2}
+            aria-hidden
+          />
+        )}
+      </span>
+      <span className="tr-icon">
         {node.isDir ? (
           <Icon icon={Folder} size={13} className="text-muted-foreground" />
         ) : (
           <FileIcon ext={node.ext} />
         )}
       </span>
-      <span className="truncate text-foreground">{node.name}</span>
+      <span className="tr-label">{node.name}</span>
       {node.git && (
-        <span className="ml-auto shrink-0 pl-2">
+        <span className="tr-trailing">
           <GitMarker status={node.git} />
         </span>
       )}

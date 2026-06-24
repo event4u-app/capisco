@@ -1,7 +1,6 @@
 import * as React from "react";
 import { useTranslation } from "react-i18next";
-import { Plus, SplitSquareHorizontal, Trash2, X } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Plus, SplitSquareHorizontal, SquareTerminal, Trash2, X } from "lucide-react";
 import { Icon } from "@/components/icon";
 import { useReducedMotion } from "@/lib/use-reduced-motion";
 import { useLayout } from "./store";
@@ -29,10 +28,10 @@ const INITIAL_TABS: TermTab[] = [
 ];
 
 /**
- * Bottom terminal panel (build-spec §7 / roadmap Phase 2). Renameable tabs
- * (double-click), close ×, `+`, split/kill icons, a deterministic mock run with
- * green checks, and a blinking caret prompt that honours prefers-reduced-motion.
- * Static styled output — xterm.js is optional for this UI shell.
+ * Bottom terminal panel — 1:1 port of the prototype `Terminal` (panels.jsx):
+ * `.term-tabbar` (tools + tabs), `.term-body` with `.t-line`/`.t-prompt`/
+ * `.t-dim`/`.t-ok` + a blinking `.t-caret` (honours prefers-reduced-motion).
+ * Renameable tabs, close ×, +, split/kill — app logic + testids preserved.
  */
 export function Terminal() {
   const { t } = useTranslation();
@@ -75,16 +74,33 @@ export function Terminal() {
   };
 
   return (
-    <div
-      data-testid="terminal"
-      className="flex min-h-0 flex-col border-t border-border bg-muted"
-    >
-      <div className="flex h-[30px] shrink-0 items-center border-b border-border bg-card">
-        <div
-          role="toolbar"
-          aria-label={t("terminal.tabsLabel")}
-          className="flex items-stretch overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-        >
+    <div data-testid="terminal" className="terminal border-t border-border">
+      <div className="term-tabbar">
+        <div className="term-tools">
+          <span className="term-label">
+            <Icon icon={SquareTerminal} size={14} className="text-muted-foreground" />
+          </span>
+          <button
+            type="button"
+            aria-label={t("terminal.split")}
+            title={t("terminal.split")}
+            data-testid="term-split"
+            className="ph-act focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          >
+            <Icon icon={SplitSquareHorizontal} size={13} />
+          </button>
+          <button
+            type="button"
+            aria-label={t("terminal.kill")}
+            title={t("terminal.kill")}
+            data-testid="term-kill"
+            onClick={() => active && close(active)}
+            className="ph-act focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          >
+            <Icon icon={Trash2} size={13} />
+          </button>
+        </div>
+        <div role="toolbar" aria-label={t("terminal.tabsLabel")} className="term-tabs">
           {tabs.map((tab) => {
             const isActive = tab.id === active;
             return (
@@ -93,12 +109,7 @@ export function Terminal() {
                 data-testid={`term-tab-${tab.id}`}
                 data-active={isActive || undefined}
                 onDoubleClick={() => startRename(tab)}
-                className={cn(
-                  "group flex items-center gap-1 border-r border-border pr-1.5 text-ui",
-                  isActive
-                    ? "bg-muted text-foreground shadow-[inset_0_2px_0_0_hsl(var(--primary))]"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
+                className={"term-tab group" + (isActive ? " active" : "")}
               >
                 {editing === tab.id ? (
                   <input
@@ -113,7 +124,7 @@ export function Terminal() {
                       if (e.key === "Enter") commitRename(tab.id);
                       else if (e.key === "Escape") setEditing(null);
                     }}
-                    className="ml-2.5 w-24 rounded-sm border border-border bg-muted px-1 text-ui text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    className="w-24 rounded-sm border border-border bg-muted px-1 text-ui text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                   />
                 ) : (
                   <button
@@ -121,7 +132,7 @@ export function Terminal() {
                     aria-pressed={isActive}
                     data-testid={`term-select-${tab.id}`}
                     onClick={() => setActive(tab.id)}
-                    className="cursor-pointer pl-2.5 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring"
+                    className="bg-transparent text-inherit focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring"
                   >
                     {tab.label}
                   </button>
@@ -135,7 +146,7 @@ export function Terminal() {
                     e.stopPropagation();
                     close(tab.id);
                   }}
-                  className="flex size-3.5 items-center justify-center rounded-sm text-muted-foreground opacity-0 hover:bg-accent hover:text-foreground focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring group-hover:opacity-100"
+                  className="term-x focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 >
                   <Icon icon={X} size={12} />
                 </button>
@@ -148,55 +159,25 @@ export function Terminal() {
             title={t("terminal.newTab")}
             data-testid="term-new"
             onClick={addTab}
-            className="flex items-center px-2 text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            className="term-tab term-add focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           >
             <Icon icon={Plus} size={14} />
           </button>
         </div>
-        <div className="flex flex-1 items-center justify-end gap-0.5 px-2 text-muted-foreground">
-          <button
-            type="button"
-            aria-label={t("terminal.split")}
-            title={t("terminal.split")}
-            data-testid="term-split"
-            className="flex size-5 items-center justify-center rounded-sm hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-          >
-            <Icon icon={SplitSquareHorizontal} size={14} />
-          </button>
-          <button
-            type="button"
-            aria-label={t("terminal.kill")}
-            title={t("terminal.kill")}
-            data-testid="term-kill"
-            onClick={() => active && close(active)}
-            className="flex size-5 items-center justify-center rounded-sm hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-          >
-            <Icon icon={Trash2} size={14} />
-          </button>
-        </div>
       </div>
-      <div
-        data-testid="terminal-output"
-        className="min-h-0 flex-1 overflow-auto p-2 font-mono text-code leading-relaxed"
-      >
+      <div data-testid="terminal-output" className="term-body">
         {LINES.map((l, i) => (
-          <div
-            key={i}
-            className={cn(l.kind === "dim" && "text-muted-foreground", l.kind === "ok" && "text-foreground")}
-          >
-            {l.kind === "ok" && <span className="text-success">✓ </span>}
+          <div key={i} className={"t-line" + (l.kind === "dim" ? " t-dim" : "")}>
+            {l.kind === "ok" && <span className="t-ok">✓ </span>}
             {l.text}
           </div>
         ))}
-        <div className="flex items-center text-foreground">
-          <span className="text-primary">❯</span>
+        <div className="t-line">
+          <span className="t-prompt">❯</span>{" "}
           <span
             data-testid="terminal-caret"
             data-reduced={reduced || undefined}
-            className={cn(
-              "ml-1 inline-block h-[1.1em] w-[7px] bg-foreground align-middle",
-              reduced ? "opacity-100" : "animate-capisco-blink",
-            )}
+            className="t-caret"
             aria-hidden
           />
         </div>

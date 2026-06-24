@@ -64,7 +64,9 @@ export function WorktreePanel() {
               <span className="truncate font-mono text-micro text-foreground">
                 {w.branch ?? "(detached)"}
               </span>
-              {w.isMain && <span className="text-micro text-muted-foreground">{t("worktree.main")}</span>}
+              {w.isMain && (
+                <span className="text-micro text-muted-foreground">{t("worktree.main")}</span>
+              )}
               {w.sessionId && <Icon icon={Play} size={10} className="ml-auto text-primary" />}
             </button>
           </li>
@@ -112,7 +114,10 @@ export function WorktreePanel() {
       </button>
 
       {startedSessionId && (
-        <span data-testid="worktree-session-started" className="flex items-center gap-1 text-micro text-muted-foreground">
+        <span
+          data-testid="worktree-session-started"
+          className="flex items-center gap-1 text-micro text-muted-foreground"
+        >
           <Icon icon={Check} size={11} className="text-primary" />
           {t("worktree.sessionStarted", { id: startedSessionId })}
         </span>

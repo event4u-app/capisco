@@ -104,7 +104,9 @@ async function openAndClickFile() {
   const file = await within(tree).findByTestId("real-file-src/app.ts");
   await user.click(file);
   await waitFor(() => {
-    expect(useEditor.getState().realDocs["src/app.ts"]?.text).toBe("export const answer = 42;\n");
+    expect(useEditor.getState().realDocs["src/app.ts"]?.text).toBe(
+      "export const answer = 42;\n",
+    );
   });
   return user;
 }

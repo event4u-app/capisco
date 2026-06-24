@@ -58,19 +58,29 @@ export function useLivePermission(sessionId: string): LivePermission {
     };
 
     // Initial read so a gate already parked before mount shows immediately.
-    void agent.getPendingPermission(sessionId).then(apply).catch(() => {});
+    void agent
+      .getPendingPermission(sessionId)
+      .then(apply)
+      .catch(() => {});
 
     // Push channel: a `permission` event means a gate just parked; any other
     // event may mean the prior gate cleared — re-read the pending state.
     const off = agent.subscribe(sessionId, (event: SessionEvent) => {
       if (event.type === "permission") apply(event.request);
-      else void agent.getPendingPermission(sessionId).then(apply).catch(() => {});
+      else
+        void agent
+          .getPendingPermission(sessionId)
+          .then(apply)
+          .catch(() => {});
     });
 
     // Poll fallback (the subscribe stream may not carry a permission event on
     // every transport); cheap, only while this session is the active one.
     const timer = setInterval(() => {
-      void agent.getPendingPermission(sessionId).then(apply).catch(() => {});
+      void agent
+        .getPendingPermission(sessionId)
+        .then(apply)
+        .catch(() => {});
     }, POLL_INTERVAL_MS);
 
     return () => {

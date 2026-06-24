@@ -118,7 +118,9 @@ describe("Worktree panel — live worktree create + session start (P3)", () => {
   it("creates a NEW real worktree on disk via the panel", async () => {
     const user = await openProject();
     const panel = await screen.findByTestId("worktree-panel");
-    await waitFor(() => expect(within(panel).getByTestId("worktree-item-main")).toBeInTheDocument());
+    await waitFor(() =>
+      expect(within(panel).getByTestId("worktree-item-main")).toBeInTheDocument(),
+    );
 
     await user.type(within(panel).getByTestId("worktree-branch-input"), "feature-y");
     await user.click(within(panel).getByTestId("worktree-create"));
@@ -133,7 +135,9 @@ describe("Worktree panel — live worktree create + session start (P3)", () => {
   it("starts a session coupled to the active worktree", async () => {
     const user = await openProject();
     const panel = await screen.findByTestId("worktree-panel");
-    await waitFor(() => expect(within(panel).getByTestId("worktree-item-main")).toBeInTheDocument());
+    await waitFor(() =>
+      expect(within(panel).getByTestId("worktree-item-main")).toBeInTheDocument(),
+    );
 
     await user.click(within(panel).getByTestId("worktree-start-session"));
 

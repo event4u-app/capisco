@@ -25,8 +25,10 @@ import type {
   AgentProvider,
   EditorProvider,
   GitProvider,
+  IngestProvider,
   ProjectFsProvider,
   RecentProjectsProvider,
+  RevertProvider,
   SessionStore,
   ShadowStore,
   SignalProvider,
@@ -56,6 +58,12 @@ export interface ProviderBundle {
   session: SessionStore;
   /** ToDo→agent micro-north-star (P3) — broker-gated stub session over the bridge. */
   todo: TodoProvider;
+  /** Context-file ingestion (composer-context-runtime P2) — the broker-gated
+   * `+`-Add / Drag&Drop chokepoint; real over the bridge, screening mock in browser. */
+  ingest: IngestProvider;
+  /** Code-hunk revert (composer-context-runtime P4) — broker-gated, git-authoritative
+   * `checkout -- <path>`; real over the bridge, deterministic mock in browser. */
+  revert: RevertProvider;
 }
 
 /**
@@ -106,5 +114,7 @@ export function createIpcProviders(client: SidecarClient): ProviderBundle {
     worktree: rpcProxy<WorktreeOpsProvider>(client, "worktree-ops"),
     session: rpcProxy<SessionStore>(client, "session"),
     todo: rpcProxy<TodoProvider>(client, "todo"),
+    ingest: rpcProxy<IngestProvider>(client, "ingest"),
+    revert: rpcProxy<RevertProvider>(client, "revert"),
   };
 }

@@ -109,7 +109,8 @@ export const useEditor = create<EditorStore>((set, get) => ({
       const drag = s.tabs.find((t) => t.file === dragFile);
       if (!drag) return {};
       const rest = s.tabs.filter((t) => t.file !== dragFile);
-      const idx = beforeFile == null ? rest.length : rest.findIndex((t) => t.file === beforeFile);
+      const idx =
+        beforeFile == null ? rest.length : rest.findIndex((t) => t.file === beforeFile);
       const at = idx < 0 ? rest.length : idx;
       return { tabs: [...rest.slice(0, at), drag, ...rest.slice(at)] };
     }),

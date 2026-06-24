@@ -31,7 +31,13 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  useChat.setState({ extra: [], closed: [], activeId: "c1", runStates: {}, settingsOpen: false });
+  useChat.setState({
+    extra: [],
+    closed: [],
+    activeId: "c1",
+    runStates: {},
+    settingsOpen: false,
+  });
 });
 
 describe("ChatWorkspace — parameterized Agents component (Design-Sync P3)", () => {
@@ -39,20 +45,30 @@ describe("ChatWorkspace — parameterized Agents component (Design-Sync P3)", ()
     renderChat();
     const ws = screen.getByTestId("chat-workspace");
     expect(ws).toHaveAttribute("data-kind", "chat");
-    // Shared UI: session tabbar, new-session, settings gear, composer, control bar.
+    // Shared UI: session tabbar, new-session, settings gear, unified composer
+    // (design-sync-v2 graft — the old separate `composer-bar` is gone; the
+    // controls now live in the composer's control row + below-bar).
     expect(screen.getByTestId("session-tabbar")).toBeInTheDocument();
     expect(screen.getByTestId("session-new")).toBeInTheDocument();
     expect(screen.getByTestId("session-gear")).toBeInTheDocument();
     expect(screen.getByTestId("composer-input")).toBeInTheDocument();
-    expect(screen.getByTestId("composer-bar")).toBeInTheDocument();
-    expect(screen.getByTestId("composer-model")).toBeInTheDocument();
+    expect(screen.getByTestId("composer-status")).toBeInTheDocument();
+    // "Auto" is the routing control; there is no composer model dropdown
+    // (token-economy definition). The model is the ModelBadge on the tab.
+    expect(screen.getByTestId("composer-auto")).toBeInTheDocument();
+    expect(screen.queryByTestId("composer-model")).toBeNull();
   });
 
   it("uses its own chat sessions + default model (Sonnet), independent of agents", () => {
     renderChat();
     expect(screen.getByTestId("session-tab-c1")).toBeInTheDocument();
-    expect(within(screen.getByTestId("session-tab-c1")).getByText("Broker prompting rules")).toBeInTheDocument();
-    expect(screen.getByTestId("composer-model")).toHaveTextContent("Sonnet 4.8");
+    expect(
+      within(screen.getByTestId("session-tab-c1")).getByText("Broker prompting rules"),
+    ).toBeInTheDocument();
+    // The effective model shows as the session-tab badge, not a composer dropdown.
+    expect(
+      within(screen.getByTestId("session-tab-c1")).getByText("Sonnet"),
+    ).toBeInTheDocument();
     // No agents sessions leaked in.
     expect(screen.queryByTestId("session-tab-s1")).toBeNull();
   });

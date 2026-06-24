@@ -6,7 +6,13 @@ import { SearchPanel } from "./SearchPanel";
 import { StructurePanel } from "./StructurePanel";
 
 /** R4 Git-Near provider views, each in a 260px-wide left-panel-sized frame. */
-function PanelFrame({ children, height = 560 }: { children: React.ReactNode; height?: number }) {
+function PanelFrame({
+  children,
+  height = 560,
+}: {
+  children: React.ReactNode;
+  height?: number;
+}) {
   return (
     <div
       style={{ width: 300, height }}

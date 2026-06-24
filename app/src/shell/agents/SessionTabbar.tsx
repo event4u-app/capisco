@@ -2,7 +2,6 @@ import * as React from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, Settings, X } from "lucide-react";
 
-import { cn } from "@/lib/utils";
 import { StatusDot } from "@/components/capisco/status-dot";
 import { ModelBadge } from "@/components/capisco/model-badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -28,41 +27,29 @@ function SessionTab({
   // The outer element is layout-only (no interactive role) so the selectable
   // tab button and the close button are siblings — never nested interactives
   // (axe nested-interactive). The select button carries role=tab.
+  // Prototype `.session-tab` (verbatim CSS): the active teal strip is a
+  // continuous `border-top` on the tab element (never covered by a child bg —
+  // that was the "broken strip" bug). The select/close split stays for a11y
+  // (no nested interactives).
   return (
     <div
       data-testid={`session-tab-${s.id}`}
-      className={cn(
-        // Fixed 36px chrome tab height (Design-Sync P2 / .session-tab). h-9 ==
-        // 36px == --tabbar-h; a static class so it always resolves.
-        "group flex h-9 max-w-[320px] items-stretch whitespace-nowrap border-r border-border",
-        active && "bg-editor shadow-[inset_0_2px_0_0_hsl(var(--primary))]",
-      )}
+      className={"session-tab group" + (active ? " active" : "")}
     >
       <button
         type="button"
         aria-pressed={active}
         data-testid={`session-select-${s.id}`}
         onClick={onSelect}
-        className={cn(
-          "flex min-w-0 cursor-pointer items-center gap-1.5 pl-3.5 pr-1.5 text-muted-foreground",
-          "hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring",
-          active && "bg-editor text-foreground hover:bg-editor",
-        )}
+        className="session-tab-select focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring"
       >
         <StatusDot status={s.status} />
         <ModelBadge spotlight={active}>{effectiveModel(s, modelOverrides)}</ModelBadge>
-        {/* Session/chat titles trim with an ellipsis at 160px (.st-title);
-            file tabs (editor) stay untrimmed. */}
-        <span
-          data-testid={`session-title-${s.id}`}
-          className="max-w-40 overflow-hidden text-ellipsis whitespace-nowrap text-ui"
-        >
+        {/* Session/chat titles trim with an ellipsis at 160px (.st-title). */}
+        <span data-testid={`session-title-${s.id}`} className="st-title">
           {s.title}
         </span>
-        <span
-          data-testid={`session-meta-${s.id}`}
-          className="whitespace-nowrap font-mono text-[10.5px] text-muted-foreground"
-        >
+        <span data-testid={`session-meta-${s.id}`} className="st-meta">
           {formatTelemetry(s.telemetry, s.status)}
         </span>
       </button>
@@ -71,10 +58,7 @@ function SessionTab({
         aria-label={t("agents.tabbar.closeSession")}
         data-testid={`session-close-${s.id}`}
         onClick={onClose}
-        className={cn(
-          "mr-2 flex items-center rounded-sm px-0.5 text-muted-foreground opacity-0 transition-opacity",
-          "hover:bg-accent hover:text-foreground focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring group-hover:opacity-100",
-        )}
+        className="st-x focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
       >
         <X className="size-3.5" strokeWidth={1.6} />
       </button>
@@ -93,7 +77,7 @@ function NewSessionButton({ onCreate }: { onCreate: (model: string) => void }) {
           type="button"
           aria-label={t("agents.tabbar.newSession")}
           data-testid="session-new"
-          className="flex w-9 shrink-0 items-center justify-center border-l border-border text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          className="session-add focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
         >
           <Plus className="size-4" strokeWidth={1.6} />
         </button>
@@ -150,11 +134,11 @@ export function SessionTabbar({
   return (
     <div
       data-testid="session-tabbar"
-      className="flex h-[var(--tabbar-h)] shrink-0 items-stretch border-b border-border bg-card"
+      className="session-tabbar"
       role="toolbar"
       aria-label={t("agents.tabbar.label")}
     >
-      <div className="flex flex-1 items-stretch overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="session-tabs">
         {sessions.map((s) => (
           <SessionTab
             key={s.id}
@@ -173,10 +157,10 @@ export function SessionTabbar({
         aria-pressed={settingsOpen}
         data-testid="session-gear"
         onClick={onToggleSettings}
-        className={cn(
-          "flex w-10 shrink-0 items-center justify-center border-l border-border text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-          settingsOpen && "bg-primary/10 text-primary",
-        )}
+        className={
+          "session-gear focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" +
+          (settingsOpen ? " active" : "")
+        }
       >
         <Settings className="size-4" strokeWidth={1.6} />
       </button>

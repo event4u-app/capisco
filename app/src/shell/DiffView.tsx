@@ -1,10 +1,8 @@
 import * as React from "react";
 import { useTranslation } from "react-i18next";
-import { FileCode2, X } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { Icon } from "@/components/icon";
+import { X } from "lucide-react";
+import { FileIcon } from "@/shell/editor/FileIcon";
 import { VirtualList } from "@/components/ui/virtual-list";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import type { DiffDoc, DiffRow } from "@/contracts";
 import { mockDiff } from "@/mocks";
 import { useLayout } from "./store";
@@ -12,38 +10,30 @@ import { useLayout } from "./store";
 const ROW_HEIGHT = 20;
 
 function SplitRow({ row }: { row: DiffRow }) {
+  const leftCls =
+    "dv-cell" + (row.k === "del" ? " del" : row.k === "add" && !row.l ? " filler" : "");
+  const rightCls =
+    "dv-cell" + (row.k === "add" ? " add" : row.k === "del" && !row.r ? " filler" : "");
   return (
-    <div className="flex h-5 min-w-max font-mono text-code leading-5">
-      <div
-        className={cn(
-          "flex min-w-0 flex-1 items-center gap-2 px-2",
-          row.k === "del" && "bg-destructive/15",
-          row.k === "add" && !row.l && "bg-muted/40",
-        )}
-      >
+    <div className="dv-line">
+      <div className={leftCls}>
         {row.l ? (
           <>
-            <span className="w-8 shrink-0 select-none text-right text-muted-foreground">{row.l.n}</span>
-            <span className="whitespace-pre text-foreground">{row.l.t}</span>
+            <span className="dv-ln">{row.l.n}</span>
+            <span className="dv-code">{row.l.t}</span>
           </>
         ) : (
-          <span className="w-8 shrink-0" />
+          <span className="dv-ln" />
         )}
       </div>
-      <div
-        className={cn(
-          "flex min-w-0 flex-1 items-center gap-2 border-l border-border px-2",
-          row.k === "add" && "bg-success/15",
-          row.k === "del" && !row.r && "bg-muted/40",
-        )}
-      >
+      <div className={rightCls}>
         {row.r ? (
           <>
-            <span className="w-8 shrink-0 select-none text-right text-muted-foreground">{row.r.n}</span>
-            <span className="whitespace-pre text-foreground">{row.r.t}</span>
+            <span className="dv-ln">{row.r.n}</span>
+            <span className="dv-code">{row.r.t}</span>
           </>
         ) : (
-          <span className="w-8 shrink-0" />
+          <span className="dv-ln" />
         )}
       </div>
     </div>
@@ -54,32 +44,19 @@ function UnifiedRow({ row }: { row: DiffRow }) {
   const side = row.k === "add" ? row.r : row.l;
   const sign = row.k === "add" ? "+" : row.k === "del" ? "−" : " ";
   return (
-    <div
-      className={cn(
-        "flex h-5 min-w-max items-center gap-2 px-2 font-mono text-code leading-5",
-        row.k === "add" && "bg-success/15",
-        row.k === "del" && "bg-destructive/15",
-      )}
-    >
-      <span className="w-8 shrink-0 select-none text-right text-muted-foreground">{side?.n}</span>
-      <span
-        className={cn(
-          "w-3 shrink-0 select-none text-center",
-          row.k === "add" && "text-success",
-          row.k === "del" && "text-destructive",
-        )}
-      >
-        {sign}
-      </span>
-      <span className="whitespace-pre text-foreground">{side?.t}</span>
+    <div className={"dv-uline " + row.k}>
+      <span className="dv-ln">{side?.n}</span>
+      <span className="dv-sign">{sign}</span>
+      <span className="dv-code">{side?.t}</span>
     </div>
   );
 }
 
 /**
- * Recycled diff primitive (build-spec §2). Side-by-side Split / Unified toggle,
- * added/removed/context lines, horizontal scroll for long lines, virtualized
- * body for long diffs, Close → previous mode. Fed by the DiffDoc contract.
+ * Diff view — 1:1 port of the prototype `DiffView` (views.jsx): `.diffview` with
+ * a `.dv-head` (file · +/− stat · Split/Unified `.dv-toggle` · close) and a
+ * virtualized `.dv-body` (`.dv-line`/`.dv-cell` split, `.dv-uline` unified).
+ * Classes verbatim; DiffDoc data + testids preserved.
  */
 export function DiffView({ doc = mockDiff }: { doc?: DiffDoc }) {
   const { t } = useTranslation();
@@ -88,42 +65,44 @@ export function DiffView({ doc = mockDiff }: { doc?: DiffDoc }) {
   const [view, setView] = React.useState<"split" | "unified">("split");
 
   return (
-    <div data-testid="diff-view" className="flex h-full min-h-0 flex-col bg-editor">
-      <div className="flex h-7 shrink-0 items-center gap-2 border-b border-border bg-card px-2 text-ui">
-        <Icon icon={FileCode2} size={13} className="text-muted-foreground" />
-        <span data-testid="diff-file" className="font-mono text-code text-foreground">
+    <div data-testid="diff-view" className="diffview">
+      <div className="dv-head">
+        <FileIcon ext="ts" />
+        <span data-testid="diff-file" className="dv-file">
           {doc.file}
         </span>
-        <span className="font-mono text-micro">
-          <span className="text-success">+{doc.added}</span>{" "}
-          <span className="text-destructive">−{doc.removed}</span>
+        <span className="dv-stat">
+          <span className="gd-add">+{doc.added}</span>
+          <span className="gd-del">−{doc.removed}</span>
         </span>
-        <div className="flex-1" />
-        <ToggleGroup
-          type="single"
-          size="sm"
-          value={view}
-          onValueChange={(v) => v && setView(v as "split" | "unified")}
-          aria-label={t("diff.split")}
-        >
-          <ToggleGroupItem value="split" data-testid="diff-toggle-split" className="h-6 px-2 text-micro">
+        <div className="tb-spacer" />
+        <div className="dv-toggle" role="group" aria-label={t("diff.split")}>
+          <button
+            type="button"
+            data-testid="diff-toggle-split"
+            aria-pressed={view === "split"}
+            className={view === "split" ? "active" : ""}
+            onClick={() => setView("split")}
+          >
             {t("diff.split")}
-          </ToggleGroupItem>
-          <ToggleGroupItem
-            value="unified"
+          </button>
+          <button
+            type="button"
             data-testid="diff-toggle-unified"
-            className="h-6 px-2 text-micro"
+            aria-pressed={view === "unified"}
+            className={view === "unified" ? "active" : ""}
+            onClick={() => setView("unified")}
           >
             {t("diff.unified")}
-          </ToggleGroupItem>
-        </ToggleGroup>
+          </button>
+        </div>
         <button
           type="button"
           aria-label={t("diff.close")}
           title={t("diff.close")}
           data-testid="diff-close"
           onClick={() => setMode(previousMode === "diff" ? "editor" : previousMode)}
-          className="flex size-6 items-center justify-center rounded-sm text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          className="dv-close focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
         >
           <X className="size-4" strokeWidth={1.6} aria-hidden />
         </button>
@@ -132,8 +111,10 @@ export function DiffView({ doc = mockDiff }: { doc?: DiffDoc }) {
         testid="diff-body"
         items={doc.rows}
         rowHeight={ROW_HEIGHT}
-        className="min-h-0 flex-1"
-        renderRow={(row) => (view === "split" ? <SplitRow row={row} /> : <UnifiedRow row={row} />)}
+        className="dv-body"
+        renderRow={(row) =>
+          view === "split" ? <SplitRow row={row} /> : <UnifiedRow row={row} />
+        }
       />
     </div>
   );

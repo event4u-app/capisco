@@ -20,3 +20,5 @@ export * from "./lifecycle";
 export * from "./provisioning";
 export * from "./rtk";
 export * from "./model-routing";
+export * from "./ingest";
+export * from "./revert";

@@ -40,8 +40,9 @@ test.describe("chrome grid + chrome heights", () => {
       expect(idx, `"${token}" present and ordered`).toBeGreaterThan(last);
       last = idx;
     }
-    // Branch + sync indicator and brand are present.
-    expect(text).toContain("⎇ main");
+    // Branch + sync indicator and brand are present (prototype `.sb-item`:
+    // branch name + ↑2; brand last).
+    expect(text).toContain("↑2");
     expect(text.trimEnd().endsWith("capisco")).toBe(true);
   });
 });
@@ -74,9 +75,12 @@ test.describe("panels, splits, terminal", () => {
 
   test("the empty bottom group shows the persistent dashed dock zone", async ({ page }) => {
     await page.goto("/");
+    // Prototype `.ab-fillbottom`: empty group → dashed icon-sized placeholder is
+    // a CSS ::after (no text label). Empty → NOT `filled`.
     const zone = page.getByTestId("rail-bottom-drop-right");
     await expect(zone).toBeVisible();
-    await expect(zone).toContainText("Dock");
+    await expect(zone).toHaveClass(/ab-fillbottom/);
+    await expect(zone).not.toHaveClass(/filled/);
   });
 });
 

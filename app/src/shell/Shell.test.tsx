@@ -63,16 +63,17 @@ describe("shell panels & terminal", () => {
     expect(screen.getByTestId("terminal-splitter")).toBeInTheDocument();
   });
 
-  it("renders the persistent dashed bottom drop-zone with a dock hint when the group is empty", () => {
+  it("renders the persistent dashed bottom drop-zone when the group is empty", () => {
     renderShell();
-    // rightBottom is empty by default → dashed zone present with the dock hint.
+    // Prototype `.ab-fillbottom`: empty → the dashed icon-sized placeholder (a
+    // CSS ::after), so the element is NOT `filled`. rightBottom is empty by default.
     const zone = screen.getByTestId("rail-bottom-drop-right");
     expect(zone).toBeInTheDocument();
-    expect(zone.className).toContain("border-dashed");
-    expect(within(zone).getByText("Dock")).toBeInTheDocument();
-    // leftBottom holds the terminal by default → no dashed hint there.
+    expect(zone.className).toContain("ab-fillbottom");
+    expect(zone.className).not.toContain("filled");
+    // leftBottom holds the terminal by default → collapsed (`filled`), no placeholder.
     const leftZone = screen.getByTestId("rail-bottom-drop-left");
-    expect(leftZone.className).not.toContain("border-dashed");
+    expect(leftZone.className).toContain("filled");
   });
 });
 

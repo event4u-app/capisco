@@ -1,0 +1,548 @@
+import * as React from "react";
+import {
+  ArrowUp,
+  FileText,
+  FolderGit2,
+  Gauge,
+  MessageSquare,
+  Paperclip,
+  Plus,
+  SlidersHorizontal,
+  Square,
+  TriangleAlert,
+} from "lucide-react";
+import { useTranslation } from "react-i18next";
+
+import type { ContextSourceTag, RecentProject } from "@/contracts";
+import { agentSnapshot } from "@/mocks";
+import { pickFiles } from "@/lib/pick-files";
+import { getProviders } from "@/lib/desktop-shell";
+import { usePalette } from "@/shell/command-registry";
+import { MentionAutocomplete, type MentionFieldElement } from "./MentionAutocomplete";
+import { budgetTone } from "./store";
+
+/** Prototype fmtK — verbatim (agent.jsx). */
+const fmtK = (n: number) =>
+  n >= 1000 ? (n / 1000).toFixed(n >= 10000 ? 0 : 1) + "k" : String(n);
+
+interface Chip {
+  icon: "folder-git-2" | "file-text" | "file";
+  label: string;
+  closable?: boolean;
+  /** Absolute fs path of a picked file (desktop only) — the ingestion handle
+   * (road-to-composer-context-runtime P2). Browser-picked files have none. */
+  path?: string;
+  /** Origin tag from the broker-gated ingestion (`prod:*` = read-only). */
+  tag?: ContextSourceTag;
+  /** A refused ingestion (secret-form / denied) — shown with a warning. */
+  refused?: boolean;
+  /** Why the ingestion was refused (chip title). */
+  reason?: string;
+}
+const CHIP_ICON = {
+  "folder-git-2": FolderGit2,
+  "file-text": FileText,
+  file: FileText,
+} as const;
+
+const PLAN_COLOR: Record<string, string> = {
+  accent: "var(--ds-accent)",
+  warning: "var(--ds-warning)",
+  tertiary: "var(--ds-text-tertiary)",
+};
+
+/**
+ * Composer — 1:1 port of the design-system prototype's `Composer`
+ * (`agents/tmp/design-system/ui_kits/capisco-ide/agent.jsx`). Markup + class
+ * names are transcribed verbatim; styling lives in `styles/capisco-composer.css`
+ * (the prototype `.cmp*`/`.cb-*`/`.ctx-*`/`.tune-*` CSS, design tokens as --ds-*).
+ * The only deviation from the prototype is the textarea: it routes through
+ * `MentionAutocomplete` (multiline, bare) so the @-mention feature is preserved,
+ * while wearing the exact `cmp-ta` class.
+ */
+export function Composer({
+  isChat,
+  effort,
+  setEffort,
+  statusText,
+  used,
+  budget,
+  setBudget,
+  routingEnabled,
+  setRoutingEnabled,
+  composerRef,
+  onSend,
+  running = false,
+  onStop,
+  currentProject,
+  onOpenReference,
+}: {
+  isChat: boolean;
+  effort: number;
+  setEffort: (n: number) => void;
+  statusText: string;
+  used: number;
+  budget: number;
+  setBudget: (n: number) => void;
+  routingEnabled: boolean;
+  setRoutingEnabled: (on: boolean) => void;
+  composerRef: React.Ref<MentionFieldElement>;
+  onSend: () => void;
+  /** Whether THIS session has a run in flight (drives Send↔Stop). */
+  running?: boolean;
+  /** Cancel the in-flight run (P3). Required for the Stop affordance to fire. */
+  onStop?: () => void;
+  currentProject?: string;
+  onOpenReference?: (project: RecentProject) => Promise<boolean>;
+}) {
+  const { t } = useTranslation();
+  const levels = agentSnapshot.effortLevels;
+  const plan = agentSnapshot.planUsage;
+  // Live rules/guidelines size (P5) — same source as the sent system context;
+  // the warning flips at the real `limit`, not a hardcoded value.
+  const rulesChars = agentSnapshot.systemContext.chars;
+  const rulesLimit = agentSnapshot.systemContext.limit;
+
+  const [chips, setChips] = React.useState<Chip[]>([
+    { icon: "folder-git-2", label: currentProject ?? "agent-config" },
+    { icon: "file-text", label: "roadmaps-progress.md", closable: true },
+  ]);
+  const [dragOver, setDragOver] = React.useState(false);
+  const [planMode, setPlanMode] = React.useState(false);
+  const [panel, setPanel] = React.useState<"tune" | "ctx" | null>(null);
+  const register = usePalette((s) => s.register);
+
+  const togglePanel = (p: "tune" | "ctx") => setPanel((x) => (x === p ? null : p));
+  const removeChip = (i: number) => setChips((c) => c.filter((_, j) => j !== i));
+
+  // The SINGLE ingestion path both `+`-Add and Drag&Drop funnel through
+  // (road-to-composer-context-runtime P2 / file-ingestion-contract): each real
+  // path goes through the broker-gated `ingest.ingestFile` chokepoint — a
+  // secret-form path is refused, a prod-origin path is tagged read-only, and a
+  // reference (never the bytes) becomes a context chip. There is no second path.
+  const ingestPaths = React.useCallback((paths: string[]) => {
+    const ingest = getProviders().ingest;
+    paths.forEach((path) => {
+      void ingest.ingestFile(path).then((outcome) => {
+        setChips((c) =>
+          outcome.status === "reference"
+            ? [
+                ...c,
+                {
+                  icon: "file",
+                  label: outcome.entry.displayName,
+                  closable: true,
+                  path: outcome.entry.path,
+                  tag: outcome.entry.sourceTag,
+                },
+              ]
+            : [
+                ...c,
+                {
+                  icon: "file",
+                  label: outcome.displayName,
+                  closable: true,
+                  refused: true,
+                  reason: outcome.reason,
+                },
+              ],
+        );
+      });
+    });
+  }, []);
+
+  // `+`-Add / attach / palette all funnel through the DesktopShell file-dialog
+  // seam (never a raw input.click in the component). Files with a real path
+  // (desktop) go through the broker ingestion chokepoint; browser-picked files
+  // (name only, no path) become a plain display chip — ingestion is desktop-only.
+  const addFilesViaPicker = React.useCallback(() => {
+    void pickFiles({ multiple: true }).then((files) => {
+      if (!files.length) return;
+      const withPath = files.filter((f) => f.path).map((f) => f.path as string);
+      const nameOnly = files.filter((f) => !f.path);
+      if (withPath.length) ingestPaths(withPath);
+      if (nameOnly.length) {
+        setChips((c) => [
+          ...c,
+          ...nameOnly.map((f) => ({ icon: "file" as const, label: f.name, closable: true })),
+        ]);
+      }
+    });
+  }, [ingestPaths]);
+
+  // Self-register the "add context" action in the palette (escalation ladder).
+  React.useEffect(
+    () =>
+      register({
+        id: "context:add",
+        group: "tools",
+        icon: Plus,
+        label: t("agents.composer.contextAdd"),
+        run: addFilesViaPicker,
+      }),
+    [register, t, addFilesViaPicker],
+  );
+  // Send when idle; Stop (real cancel) when a run is in flight. The Stop icon
+  // never shows without a cancellable run (`running`) — honesty-gate (P3).
+  const send = () => {
+    if (running) {
+      onStop?.();
+      return;
+    }
+    onSend();
+  };
+
+  // Self-register the Stop action in the palette while a run is in flight.
+  React.useEffect(() => {
+    if (!running || !onStop) return;
+    return register({
+      id: "composer:stop",
+      group: "tools",
+      icon: Square,
+      label: t("agents.composer.stop"),
+      run: onStop,
+    });
+  }, [register, t, running, onStop]);
+
+  const ratio = budget > 0 ? used / budget : 0;
+  const tone = budgetTone(used, budget); // ok | warn | crit
+  const toneColor =
+    tone === "ok"
+      ? "var(--ds-success)"
+      : tone === "warn"
+        ? "var(--ds-warning)"
+        : "var(--ds-error)";
+  const presets = [100000, 150000, 200000, 300000];
+  const fillPct = ((budget - 50000) / 350000) * 100;
+
+  return (
+    <>
+      <div
+        className={"cmp" + (dragOver ? " cmp-drag" : "")}
+        data-testid="composer-box"
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDragOver(true);
+        }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setDragOver(false);
+          // Same chokepoint as `+`-Add: dropped files with a real path (desktop
+          // webview exposes File.path) go through broker ingestion.
+          const paths = Array.from(e.dataTransfer.files)
+            .map((f) => (f as File & { path?: string }).path)
+            .filter((p): p is string => Boolean(p));
+          if (paths.length) ingestPaths(paths);
+        }}
+      >
+        <div className="cmp-context">
+          {rulesChars > rulesLimit && (
+            <span className="cmp-warn-wrap">
+              <button
+                type="button"
+                className="cmp-ico cmp-warn"
+                data-testid="composer-rules-warn"
+                aria-label={t("agents.composer.rulesWarn", {
+                  chars: rulesChars.toLocaleString(),
+                  limit: rulesLimit.toLocaleString(),
+                })}
+              >
+                <TriangleAlert size={14} color="var(--ds-warning)" strokeWidth={2} />
+              </button>
+              <span className="cmp-warn-tip" role="tooltip">
+                {t("agents.composer.rulesWarn", {
+                  chars: rulesChars.toLocaleString(),
+                  limit: rulesLimit.toLocaleString(),
+                })}
+              </span>
+            </span>
+          )}
+          {chips.map((c, i) => {
+            const I = c.refused ? TriangleAlert : CHIP_ICON[c.icon];
+            const title = c.refused ? c.reason : c.tag && c.tag !== "local" ? c.tag : undefined;
+            return (
+              <span
+                key={i}
+                className="cmp-chip"
+                data-testid="composer-chip"
+                data-refused={c.refused || undefined}
+                data-tag={c.tag && c.tag !== "local" ? c.tag : undefined}
+                title={title}
+              >
+                <I
+                  size={12}
+                  color={c.refused ? "var(--ds-warning)" : "var(--ds-text-secondary)"}
+                  strokeWidth={2}
+                />
+                {c.label}
+                {c.closable && (
+                  <button
+                    type="button"
+                    className="cmp-chip-x"
+                    aria-label={t("agents.composer.contextRemove")}
+                    onClick={() => removeChip(i)}
+                  >
+                    ×
+                  </button>
+                )}
+              </span>
+            );
+          })}
+          <button
+            type="button"
+            className="cmp-addbtn"
+            data-testid="composer-add"
+            title={t("agents.composer.contextAdd")}
+            aria-label={t("agents.composer.contextAdd")}
+            onClick={addFilesViaPicker}
+          >
+            <Plus size={14} strokeWidth={2} />
+          </button>
+        </div>
+
+        <MentionAutocomplete
+          ref={composerRef}
+          multiline
+          rows={3}
+          className="cmp-ta"
+          data-testid="composer-input"
+          currentProject={currentProject}
+          onOpenReference={onOpenReference}
+          placeholder={t("agents.composer.placeholder")}
+          aria-label={t("agents.composer.placeholder")}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+              e.preventDefault();
+              send();
+            }
+          }}
+        />
+
+        <div className="cmp-controls">
+          <div className="cmp-left">
+            <button
+              type="button"
+              className={"cmp-auto" + (routingEnabled ? " on" : "")}
+              role="switch"
+              aria-checked={routingEnabled}
+              data-testid="composer-auto"
+              title={t("agents.composer.autoRoute")}
+              onClick={() => setRoutingEnabled(!routingEnabled)}
+            >
+              <span className="cmp-auto-label">{t("agents.composer.auto")}</span>
+              <span className="cmp-auto-track">
+                <span className="cmp-auto-knob" />
+              </span>
+            </button>
+            {!isChat && (
+              <button
+                type="button"
+                className={"cmp-plan" + (planMode ? " active" : "")}
+                data-testid="composer-plan"
+                aria-pressed={planMode}
+                title={t("agents.composer.planMode")}
+                onClick={() => setPlanMode((v) => !v)}
+              >
+                <MessageSquare size={15} strokeWidth={1.6} />
+              </button>
+            )}
+            {/* No model dropdown here: "Auto" is the routing control, not a model
+                selector (token-economy definition). The effective model is the
+                ModelBadge on the session tab; the override lives in
+                Agent settings → Token economy. */}
+          </div>
+          <div className="cmp-right">
+            <span className="cmp-ctx-wrap">
+              <button
+                type="button"
+                className={"cmp-ico" + (panel === "tune" ? " active" : "")}
+                data-testid="composer-tune"
+                title={t("agents.composer.tune")}
+                onClick={() => togglePanel("tune")}
+              >
+                <SlidersHorizontal size={15} strokeWidth={1.6} />
+              </button>
+              {panel === "tune" && (
+                <>
+                  <div className="menu-scrim" onClick={() => setPanel(null)} />
+                  <div className="tune-pop cb-pop" data-testid="composer-tune-pop">
+                    <div className="tune-sec">
+                      <div className="ep-head">
+                        <span className="ep-title">
+                          {t("agents.composer.effort")}{" "}
+                          <b>{(levels[effort] ?? levels[0]).label}</b>
+                        </span>
+                      </div>
+                      <div className="ep-ends">
+                        <span>{t("agents.composer.effortFaster")}</span>
+                        <span>{t("agents.composer.effortSmarter")}</span>
+                      </div>
+                      <div
+                        className="ep-slider"
+                        data-testid="composer-effort-slider"
+                        role="slider"
+                        aria-label={t("agents.composer.effort")}
+                        aria-valuenow={effort}
+                        aria-valuemin={0}
+                        aria-valuemax={levels.length - 1}
+                      >
+                        <div className="ep-track" />
+                        {levels.map((_, i) => (
+                          <button
+                            type="button"
+                            key={i}
+                            className={
+                              "ep-dot" +
+                              (i === effort ? " thumb" : "") +
+                              (i === levels.length - 1 ? " last" : "")
+                            }
+                            style={{ left: (i / (levels.length - 1)) * 100 + "%" }}
+                            aria-label={levels[i].label}
+                            onClick={() => setEffort(i)}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    <div className="tune-sec">
+                      <div className="bp-head">
+                        <span className="caps">{t("agents.composer.planUsage")}</span>
+                      </div>
+                      {plan.map((p) => (
+                        <div key={p.id} className="bp-row" data-testid={`plan-row-${p.id}`}>
+                          <div className="bp-line">
+                            <span className="bp-label">{p.label}</span>
+                            <span className="bp-right">{p.detail}</span>
+                          </div>
+                          <div className="bp-bar">
+                            <div
+                              className="bp-fill"
+                              style={{ width: p.pct + "%", background: PLAN_COLOR[p.tone] }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+            </span>
+            <button
+              type="button"
+              className="cmp-ico"
+              data-testid="composer-attach"
+              title={t("agents.composer.attach")}
+              aria-label={t("agents.composer.attach")}
+              onClick={addFilesViaPicker}
+            >
+              <Paperclip size={15} strokeWidth={1.6} />
+            </button>
+            <button
+              type="button"
+              className={"cmp-send" + (running ? " sending" : "")}
+              data-testid="composer-send"
+              data-running={running || undefined}
+              title={running ? t("agents.composer.stop") : t("agents.composer.send")}
+              aria-label={running ? t("agents.composer.stop") : t("agents.composer.send")}
+              onClick={send}
+            >
+              {running ? (
+                <Square size={15} strokeWidth={2} />
+              ) : (
+                <ArrowUp size={15} strokeWidth={1.8} />
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="cmp-belowbar">
+        <span className="cmp-ctx-wrap">
+          <button
+            type="button"
+            className={"cb-meter " + tone + (panel === "ctx" ? " active" : "")}
+            data-testid="context-meter"
+            data-tone={tone}
+            title={t("agents.composer.contextMeter")}
+            onClick={() => togglePanel("ctx")}
+          >
+            {tone === "crit" ? (
+              <TriangleAlert size={13} color={toneColor} strokeWidth={1.8} />
+            ) : (
+              <Gauge size={13} color={toneColor} strokeWidth={1.8} />
+            )}
+            <span
+              className="cb-meter-val"
+              data-testid="context-meter-value"
+              style={{ color: toneColor }}
+            >
+              {fmtK(used)}/{fmtK(budget)}
+            </span>
+            <span className="cb-meter-bar" data-testid="context-meter-bar">
+              <span
+                style={{ width: Math.min(100, ratio * 100) + "%", background: toneColor }}
+              />
+            </span>
+          </button>
+          {panel === "ctx" && (
+            <>
+              <div className="menu-scrim" onClick={() => setPanel(null)} />
+              <div className="ctx-pop cb-pop" data-testid="context-meter-pop">
+                <div className="bp-head">
+                  <span className="caps">{t("agents.composer.contextBudget")}</span>
+                  <span
+                    className="ctx-pct"
+                    data-testid="context-meter-pct"
+                    style={{ color: toneColor }}
+                  >
+                    {Math.round(ratio * 100)}%
+                  </span>
+                </div>
+                <div className="ctx-row">
+                  {t("agents.composer.contextWarnAt", {
+                    budget: fmtK(budget),
+                    used: fmtK(used),
+                  })}
+                </div>
+                <input
+                  type="range"
+                  className="ctx-range"
+                  data-testid="context-budget-slider"
+                  aria-label={t("agents.composer.contextBudget")}
+                  min={50000}
+                  max={400000}
+                  step={10000}
+                  value={budget}
+                  onChange={(e) => setBudget(+e.target.value)}
+                  style={{
+                    background: `linear-gradient(90deg, var(--ds-accent) 0 ${fillPct}%, var(--ds-bg-raised) ${fillPct}% 100%)`,
+                    height: "4px",
+                    borderRadius: "999px",
+                  }}
+                />
+                <div className="ctx-presets">
+                  {presets.map((v) => (
+                    <button
+                      type="button"
+                      key={v}
+                      className={"ctx-preset" + (budget === v ? " active" : "")}
+                      data-testid={`context-budget-preset-${v}`}
+                      aria-pressed={budget === v}
+                      onClick={() => setBudget(v)}
+                    >
+                      {fmtK(v)}
+                    </button>
+                  ))}
+                </div>
+                <div className="ctx-note">{t("agents.composer.contextNote")}</div>
+              </div>
+            </>
+          )}
+        </span>
+        <span className="cmp-statline" data-testid="composer-status">
+          {statusText}
+        </span>
+      </div>
+    </>
+  );
+}

@@ -33,7 +33,9 @@ describe("routeOrigin — route by ORIGIN, not content", () => {
   });
 
   it("routes test-writing + doc steps to small", () => {
-    expect(routeOrigin({ kind: "roadmap-step", stepCategory: "test-writing" }).tier).toBe("small");
+    expect(routeOrigin({ kind: "roadmap-step", stepCategory: "test-writing" }).tier).toBe(
+      "small",
+    );
     expect(routeOrigin({ kind: "roadmap-step", stepCategory: "doc" }).tier).toBe("small");
   });
 

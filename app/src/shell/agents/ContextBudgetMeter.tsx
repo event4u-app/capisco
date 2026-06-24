@@ -8,10 +8,7 @@ import { Slider } from "@/components/ui/slider";
 import { budgetTone, formatTokens, type BudgetTone } from "./store";
 
 /** Tone → token-driven colour classes (no raw hex; design tokens only). */
-const TONE_META: Record<
-  BudgetTone,
-  { text: string; bg: string; bar: string }
-> = {
+const TONE_META: Record<BudgetTone, { text: string; bg: string; bar: string }> = {
   ok: { text: "text-success", bg: "bg-success", bar: "[&>span]:bg-success" },
   warn: { text: "text-warning", bg: "bg-warning", bar: "[&>span]:bg-warning" },
   crit: { text: "text-destructive", bg: "bg-destructive", bar: "[&>span]:bg-destructive" },
@@ -106,7 +103,10 @@ export function ContextBudgetMeter({
           step={10_000}
           value={[budget]}
           onValueChange={(v) => setBudget(v[0])}
-          className={meta.bar}
+          // DS slider (design-sync-v2 §1): teal-filled track (shared Slider
+          // default) + SQUARE thumb (3px corner, DS control radius) — per-instance
+          // override so the shared round-thumb Slider stays untouched elsewhere.
+          className={cn(meta.bar, "[&_[role=slider]]:rounded-sm")}
         />
         <div className="mt-3 flex gap-1.5">
           {PRESETS.map((v) => (

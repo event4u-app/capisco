@@ -85,12 +85,12 @@ export function GitWorkspace() {
           />
         </div>
 
-        {/* Tabs */}
+        {/* Tabs (prototype .gitw-tabs / .gitw-tab / .gitw-tcount). */}
         <div
           data-testid="git-tabs"
           role="tablist"
           aria-label={t("git.tabsLabel")}
-          className="mt-4 flex flex-wrap gap-1 border-b border-border"
+          className="gitw-tabs mt-4"
         >
           {tabs.map(({ id, count }) => (
             <button
@@ -100,19 +100,10 @@ export function GitWorkspace() {
               aria-selected={tab === id}
               data-testid={`git-tab-${id}`}
               onClick={() => setTab(id)}
-              className={cn(
-                "inline-flex items-center gap-1.5 border-b-2 px-3 py-2 text-ui transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-                tab === id
-                  ? "border-primary text-foreground"
-                  : "border-transparent text-muted-foreground hover:text-foreground",
-              )}
+              className={cn("gitw-tab", tab === id && "active")}
             >
               {t(`git.tabs.${id}`)}
-              {count != null && (
-                <span className="rounded-sm bg-accent px-1 text-[9px] text-muted-foreground tabular-nums">
-                  {count}
-                </span>
-              )}
+              {count != null && <span className="gitw-tcount tabular-nums">{count}</span>}
             </button>
           ))}
         </div>
@@ -180,7 +171,12 @@ export function GitWorkspace() {
               </div>
               <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                 <ChartCard title={t("git.overview.cycleTime")} testid="git-cycle-card">
-                  <LineChart data={series.cycleTime} labels={weeks} height={170} testid="git-cycle-line" />
+                  <LineChart
+                    data={series.cycleTime}
+                    labels={weeks}
+                    height={170}
+                    testid="git-cycle-line"
+                  />
                 </ChartCard>
                 <ChartCard title={t("git.overview.prCategories")} testid="git-categories-card">
                   <Donut segments={git.getPrCategories()} testid="git-categories-donut" />
@@ -191,33 +187,44 @@ export function GitWorkspace() {
 
           {tab === "activity" && (
             <div className="flex flex-col gap-4">
-              <div data-testid="git-activity-stats" className="grid grid-cols-3 gap-3">
-                <div className="rounded-md border border-border bg-card p-3">
-                  <div className="text-lg font-semibold tabular-nums text-foreground">
-                    {activity.commits}
-                  </div>
-                  <div className="text-micro text-muted-foreground">{t("git.activity.commits")}</div>
+              <div data-testid="git-activity-stats" className="gd-stats">
+                <div className="gd-stat">
+                  <div className="gd-val tabular-nums">{activity.commits}</div>
+                  <div className="gd-lab">{t("git.activity.commits")}</div>
                 </div>
-                <div className="rounded-md border border-border bg-card p-3">
-                  <div className="text-lg font-semibold tabular-nums text-foreground">
+                <div className="gd-stat">
+                  <div className="gd-val tabular-nums">
                     {activity.prsOpened} / {activity.prsMerged}
                   </div>
-                  <div className="text-micro text-muted-foreground">{t("git.activity.prs")}</div>
+                  <div className="gd-lab">{t("git.activity.prs")}</div>
                 </div>
-                <div className="rounded-md border border-border bg-card p-3">
-                  <div className="text-lg font-semibold tabular-nums">
-                    <span className="text-success">+{activity.added.toLocaleString()}</span>{" "}
-                    <span className="text-destructive">−{activity.removed.toLocaleString()}</span>
+                <div className="gd-stat">
+                  <div className="gd-val tabular-nums">
+                    <span className="gd-add">+{activity.added.toLocaleString()}</span>{" "}
+                    <span className="gd-del">−{activity.removed.toLocaleString()}</span>
                   </div>
-                  <div className="text-micro text-muted-foreground">{t("git.activity.lines")}</div>
+                  <div className="gd-lab">{t("git.activity.lines")}</div>
                 </div>
               </div>
               <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                <ChartCard title={t("git.activity.commitsPerWeek")} testid="git-act-commits-card">
-                  <LineChart data={series.commits} labels={weeks} height={150} testid="git-act-commits" />
+                <ChartCard
+                  title={t("git.activity.commitsPerWeek")}
+                  testid="git-act-commits-card"
+                >
+                  <LineChart
+                    data={series.commits}
+                    labels={weeks}
+                    height={150}
+                    testid="git-act-commits"
+                  />
                 </ChartCard>
                 <ChartCard title={t("git.activity.prsPerWeek")} testid="git-act-prs-card">
-                  <LineChart data={series.prsMerged} labels={weeks} height={150} testid="git-act-prs" />
+                  <LineChart
+                    data={series.prsMerged}
+                    labels={weeks}
+                    height={150}
+                    testid="git-act-prs"
+                  />
                 </ChartCard>
                 <ChartCard title={t("git.activity.locPerWeek")} testid="git-act-loc-card">
                   <LineChart
@@ -228,8 +235,16 @@ export function GitWorkspace() {
                     testid="git-act-loc"
                   />
                 </ChartCard>
-                <ChartCard title={t("git.activity.reviewsPerWeek")} testid="git-act-reviews-card">
-                  <LineChart data={series.reviews} labels={weeks} height={150} testid="git-act-reviews" />
+                <ChartCard
+                  title={t("git.activity.reviewsPerWeek")}
+                  testid="git-act-reviews-card"
+                >
+                  <LineChart
+                    data={series.reviews}
+                    labels={weeks}
+                    height={150}
+                    testid="git-act-reviews"
+                  />
                 </ChartCard>
               </div>
               <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -244,7 +259,10 @@ export function GitWorkspace() {
                         <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-muted">
                           <div
                             className="h-full rounded-full"
-                            style={{ width: `${l.pct}%`, background: `hsl(var(${l.chartVar}))` }}
+                            style={{
+                              width: `${l.pct}%`,
+                              background: `hsl(var(${l.chartVar}))`,
+                            }}
                           />
                         </div>
                       </div>
@@ -307,7 +325,9 @@ export function GitWorkspace() {
                 <span>{t("git.working.outsideHint")}</span>
               </div>
               <ChartCard title={t("git.working.heatmap")} testid="git-heatmap-card">
-                <div className="mb-2 text-micro text-muted-foreground">{t("git.working.sub")}</div>
+                <div className="mb-2 text-micro text-muted-foreground">
+                  {t("git.working.sub")}
+                </div>
                 <Heatmap
                   grid={git.getWorkHeatmap()}
                   coreStart={coreStart}
@@ -320,7 +340,10 @@ export function GitWorkspace() {
                       className="size-2.5 rounded-[2px]"
                       style={{ background: "hsl(var(--chart-good))" }}
                     />
-                    {t("git.working.core", { start: `${pad(coreStart)}:00`, end: `${pad(coreEnd)}:00` })}
+                    {t("git.working.core", {
+                      start: `${pad(coreStart)}:00`,
+                      end: `${pad(coreEnd)}:00`,
+                    })}
                   </span>
                   <span className="inline-flex items-center gap-1.5">
                     <span
