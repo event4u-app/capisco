@@ -85,7 +85,11 @@ export function ServicesPanel() {
                   className="proj-root w-full text-left focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring"
                 >
                   <span className="tw-chevron">
-                    <ChevronRight className={cn("size-3 transition-transform", open && "rotate-90")} strokeWidth={2} aria-hidden />
+                    <ChevronRight
+                      className={cn("size-3 transition-transform", open && "rotate-90")}
+                      strokeWidth={2}
+                      aria-hidden
+                    />
                   </span>
                   <Icon icon={Folder} size={15} className="shrink-0 text-muted-foreground" />
                   <span className="proj-name">{g.project}</span>
@@ -108,7 +112,11 @@ function ServiceRowView({ service: c }: { service: ServiceStat }) {
   const isRunning = c.status === "running";
   return (
     <div data-testid={`services-row-${c.name}`} className="ct-row">
-      <span data-testid={`services-dot-${c.name}`} className={cn("ct-dot", statusDotClass(c.status))} aria-hidden />
+      <span
+        data-testid={`services-dot-${c.name}`}
+        className={cn("ct-dot", statusDotClass(c.status))}
+        aria-hidden
+      />
       <div className="ct-main">
         <div className="ct-top">
           <span className="ct-name">{c.name}</span>
@@ -125,7 +133,11 @@ function ServiceRowView({ service: c }: { service: ServiceStat }) {
         </div>
         {isRunning && (
           <div className="ct-bar">
-            <div data-testid={`services-cpubar-${c.name}`} className="ct-fill" style={{ width: `${c.cpu}%` }} />
+            <div
+              data-testid={`services-cpubar-${c.name}`}
+              className="ct-fill"
+              style={{ width: `${c.cpu}%` }}
+            />
           </div>
         )}
       </div>

@@ -40,7 +40,9 @@ export function OpenProjectBar({
           <Icon icon={FolderOpen} size={13} className="text-primary" />
           <span className="truncate font-medium text-foreground">{project.name}</span>
           <span className="truncate text-micro text-muted-foreground">— {project.path}</span>
-          <span className="ml-auto font-mono text-micro text-muted-foreground">{project.branch}</span>
+          <span className="ml-auto font-mono text-micro text-muted-foreground">
+            {project.branch}
+          </span>
           {onClose && (
             <button
               type="button"

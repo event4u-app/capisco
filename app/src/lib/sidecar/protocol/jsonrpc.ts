@@ -62,11 +62,7 @@ export interface RpcNotification<P = unknown> {
   params?: P;
 }
 
-export type RpcMessage =
-  | RpcRequest
-  | RpcResultResponse
-  | RpcErrorResponse
-  | RpcNotification;
+export type RpcMessage = RpcRequest | RpcResultResponse | RpcErrorResponse | RpcNotification;
 
 /** Reserved notification method for the multiplexed event stream. */
 export const EVENT_METHOD = "$/event" as const;

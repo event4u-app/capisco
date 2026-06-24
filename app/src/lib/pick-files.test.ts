@@ -14,7 +14,9 @@ afterEach(() => {
 describe("pick-files seam (composer-context-runtime P1)", () => {
   it("routes to the desktop host bridge when present (real paths)", async () => {
     const host = {
-      pickFiles: vi.fn().mockResolvedValue([{ name: "broker.ts", path: "/repo/src/broker.ts" }]),
+      pickFiles: vi
+        .fn()
+        .mockResolvedValue([{ name: "broker.ts", path: "/repo/src/broker.ts" }]),
     };
     installShellFileHost(host);
     expect(hasDesktopFilePicker()).toBe(true);

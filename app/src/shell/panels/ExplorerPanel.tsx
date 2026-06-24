@@ -27,7 +27,16 @@ const ROW_HEIGHT = 26;
 
 /** A row in the flattened, virtualized explorer model. */
 type ExplorerRow =
-  | { type: "project"; id: string; name: string; path: string; branch: string; tracking?: string; expanded: boolean; selected: boolean }
+  | {
+      type: "project";
+      id: string;
+      name: string;
+      path: string;
+      branch: string;
+      tracking?: string;
+      expanded: boolean;
+      selected: boolean;
+    }
   | {
       type: "file";
       id: string;
@@ -39,7 +48,15 @@ type ExplorerRow =
       active?: boolean;
       git?: "M" | "A" | "D" | "U";
     }
-  | { type: "branch"; id: string; depth: number; labelKey: string; icon: "library" | "scratch"; expandable: boolean; expanded?: boolean }
+  | {
+      type: "branch";
+      id: string;
+      depth: number;
+      labelKey: string;
+      icon: "library" | "scratch";
+      expandable: boolean;
+      expanded?: boolean;
+    }
   | { type: "scratch"; id: string; depth: number; name: string; ext: string };
 
 /**
@@ -155,7 +172,13 @@ export function ExplorerPanel() {
     });
     if (scratchOpen) {
       mockScratches.forEach((s, i) =>
-        out.push({ type: "scratch", id: `scratch/${s.name}/${i}`, depth: 1, name: s.name, ext: s.ext }),
+        out.push({
+          type: "scratch",
+          id: `scratch/${s.name}/${i}`,
+          depth: 1,
+          name: s.name,
+          ext: s.ext,
+        }),
       );
     }
     return out;
@@ -208,7 +231,11 @@ export function ExplorerPanel() {
           label={t("explorer.openProject")}
           onClick={() => setShowOpenBar((v) => !v)}
         />
-        <PanelHeadAction icon={ListCollapse} label={t("explorer.collapseAll")} onClick={collapseAll} />
+        <PanelHeadAction
+          icon={ListCollapse}
+          label={t("explorer.collapseAll")}
+          onClick={collapseAll}
+        />
         <PanelHeadAction icon={RefreshCw} label={t("explorer.refresh")} />
       </PanelHead>
       {(showOpenBar || project) && (
@@ -282,7 +309,11 @@ function ExplorerRowView({
         onClick={onActivate}
         // Prototype `.proj-root`: sticky raised separator bar (name + path +
         // branch); selected → accent-tint + inset teal strip.
-        className={cn("proj-root", row.selected && "selected", focused && "ring-1 ring-inset ring-ring")}
+        className={cn(
+          "proj-root",
+          row.selected && "selected",
+          focused && "ring-1 ring-inset ring-ring",
+        )}
       >
         <span className="tw-chevron">
           <ChevronRight
@@ -350,7 +381,13 @@ function ExplorerRowView({
       active={active}
       onActivate={onActivate}
       testid={`explorer-file-${row.name}`}
-      icon={isDir ? <Icon icon={Folder} size={13} className="text-muted-foreground" /> : <FileIcon ext={row.ext} />}
+      icon={
+        isDir ? (
+          <Icon icon={Folder} size={13} className="text-muted-foreground" />
+        ) : (
+          <FileIcon ext={row.ext} />
+        )
+      }
       label={row.name}
       trailing={row.git ? <GitMarker status={row.git} /> : undefined}
     />

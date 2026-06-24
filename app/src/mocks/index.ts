@@ -24,17 +24,9 @@ export {
   mockSignalProvider,
   signalSnapshot,
 } from "./tooling";
-export {
-  fakeRuntimeProvider,
-  FakeRuntimeProvider,
-  StubPortAllocator,
-} from "./runtime";
+export { fakeRuntimeProvider, FakeRuntimeProvider, StubPortAllocator } from "./runtime";
 export { mockShadowStore, createInMemoryShadowStore } from "./history";
-export {
-  mockRecentProjects,
-  createInMemoryRecentProjects,
-  THIS_INSTANCE_ID,
-} from "./recent";
+export { mockRecentProjects, createInMemoryRecentProjects, THIS_INSTANCE_ID } from "./recent";
 export { mockWorktreeProvider } from "./worktree";
 export { mockSessionStore, mockTodoProvider } from "./session";
 export { mockIngestProvider } from "./ingest";

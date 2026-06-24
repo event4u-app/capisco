@@ -1,13 +1,5 @@
 import { useTranslation } from "react-i18next";
-import {
-  ChevronDown,
-  Ellipsis,
-  GitBranch,
-  Play,
-  Search,
-  Settings,
-  Sun,
-} from "lucide-react";
+import { ChevronDown, Ellipsis, GitBranch, Play, Search, Settings, Sun } from "lucide-react";
 import { useTheme } from "@/lib/theme";
 import { usePalette } from "./command-registry";
 import { ProjectSwitcher } from "./ProjectSwitcher";
@@ -36,7 +28,12 @@ export function TitleBar() {
         <ChevronDown size={13} strokeWidth={1.6} />
       </button>
       <div className="tb-spacer" />
-      <button type="button" className="tb-ico" title={t("titlebar.run")} aria-label={t("titlebar.run")}>
+      <button
+        type="button"
+        className="tb-ico"
+        title={t("titlebar.run")}
+        aria-label={t("titlebar.run")}
+      >
         <Play size={15} strokeWidth={1.6} />
       </button>
       <button type="button" className="tb-chip tb-run" title={t("titlebar.runConfig")}>
@@ -61,7 +58,12 @@ export function TitleBar() {
       >
         <Sun size={15} strokeWidth={1.6} />
       </button>
-      <button type="button" className="tb-ico" title={t("titlebar.more")} aria-label={t("titlebar.more")}>
+      <button
+        type="button"
+        className="tb-ico"
+        title={t("titlebar.more")}
+        aria-label={t("titlebar.more")}
+      >
         <Ellipsis size={15} strokeWidth={1.6} />
       </button>
       <button

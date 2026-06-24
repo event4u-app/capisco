@@ -157,7 +157,10 @@ export function SessionTabbar({
         aria-pressed={settingsOpen}
         data-testid="session-gear"
         onClick={onToggleSettings}
-        className={"session-gear focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" + (settingsOpen ? " active" : "")}
+        className={
+          "session-gear focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" +
+          (settingsOpen ? " active" : "")
+        }
       >
         <Settings className="size-4" strokeWidth={1.6} />
       </button>

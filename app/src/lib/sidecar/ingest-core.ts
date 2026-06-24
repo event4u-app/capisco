@@ -19,7 +19,8 @@ const SECRET_DOTFILE = /(?:^|[/\\])\.(?:env|ssh|aws|npmrc|netrc|pgpass)(?:[/\\.]
 /** Credential / secret / key-pair filenames, boundary-anchored (no `secretary`). */
 const SECRET_NAME = /(?:^|[/\\._-])(?:credentials?|secrets?|id_rsa|id_ed25519)(?:$|[/\\._-])/i;
 /** Value-shaped markers embedded in a path (`key=`, `token`, `Authorization:`). */
-const SECRET_VALUE = /[:=]|\b(?:password|passwd|secret|token|apikey|api[_-]?key|bearer|authorization)\b/i;
+const SECRET_VALUE =
+  /[:=]|\b(?:password|passwd|secret|token|apikey|api[_-]?key|bearer|authorization)\b/i;
 
 /** Whether a path is secret-shaped and must never be ingested as context. */
 export function looksLikeSecretPath(path: string): boolean {
@@ -50,7 +51,10 @@ function underPrefix(path: string, prefix: string): boolean {
 }
 
 /** Origin tag, set at the ingestion boundary (re-checked at read). */
-export function tagForPath(path: string, datasources: readonly DatasourceRoot[]): ContextSourceTag {
+export function tagForPath(
+  path: string,
+  datasources: readonly DatasourceRoot[],
+): ContextSourceTag {
   for (const ds of datasources) {
     if (underPrefix(path, ds.prefix)) {
       return ds.prod ? `prod:${ds.name}` : `datasource:${ds.name}`;

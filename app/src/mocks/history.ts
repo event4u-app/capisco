@@ -28,7 +28,9 @@ export function createInMemoryShadowStore(seed: Snapshot[] = []): ShadowStore {
       return Promise.resolve(snap);
     },
     list(file) {
-      return Promise.resolve(snapshots.filter((s) => s.file === file).sort((a, b) => a.seq - b.seq));
+      return Promise.resolve(
+        snapshots.filter((s) => s.file === file).sort((a, b) => a.seq - b.seq),
+      );
     },
     get(id) {
       return Promise.resolve(snapshots.find((s) => s.id === id) ?? null);

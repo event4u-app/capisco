@@ -28,16 +28,106 @@ import type {
  * a subscriber observes movement deterministically.
  */
 const STATS_SCRIPT: RuntimeStatsFrame[] = [
-  { project: "capisco-core", name: "web", image: "node:22", status: "running", cpu: 34, mem: "412 MB", memPct: 41, ports: "5173→5173", uptime: "2h 14m" },
-  { project: "capisco-core", name: "postgres", image: "postgres:16", status: "running", cpu: 2, mem: "96 MB", memPct: 10, ports: "5432→5432", uptime: "3d" },
-  { project: "capisco-core", name: "traefik", image: "traefik:v3", status: "running", cpu: 1, mem: "48 MB", memPct: 5, ports: "80, 443", uptime: "3d" },
-  { project: "capisco-core", name: "playwright", image: "playwright:1.49", status: "exited", cpu: 0, mem: "0 MB", memPct: 0, ports: "—", uptime: "—" },
-  { project: "capisco-tauri", name: "tauri-build", image: "rust:1.81", status: "running", cpu: 8, mem: "128 MB", memPct: 13, ports: "—", uptime: "2h 14m" },
-  { project: "capisco-tauri", name: "redis", image: "redis:7", status: "running", cpu: 1, mem: "24 MB", memPct: 3, ports: "6379→6379", uptime: "2h 14m" },
+  {
+    project: "capisco-core",
+    name: "web",
+    image: "node:22",
+    status: "running",
+    cpu: 34,
+    mem: "412 MB",
+    memPct: 41,
+    ports: "5173→5173",
+    uptime: "2h 14m",
+  },
+  {
+    project: "capisco-core",
+    name: "postgres",
+    image: "postgres:16",
+    status: "running",
+    cpu: 2,
+    mem: "96 MB",
+    memPct: 10,
+    ports: "5432→5432",
+    uptime: "3d",
+  },
+  {
+    project: "capisco-core",
+    name: "traefik",
+    image: "traefik:v3",
+    status: "running",
+    cpu: 1,
+    mem: "48 MB",
+    memPct: 5,
+    ports: "80, 443",
+    uptime: "3d",
+  },
+  {
+    project: "capisco-core",
+    name: "playwright",
+    image: "playwright:1.49",
+    status: "exited",
+    cpu: 0,
+    mem: "0 MB",
+    memPct: 0,
+    ports: "—",
+    uptime: "—",
+  },
+  {
+    project: "capisco-tauri",
+    name: "tauri-build",
+    image: "rust:1.81",
+    status: "running",
+    cpu: 8,
+    mem: "128 MB",
+    memPct: 13,
+    ports: "—",
+    uptime: "2h 14m",
+  },
+  {
+    project: "capisco-tauri",
+    name: "redis",
+    image: "redis:7",
+    status: "running",
+    cpu: 1,
+    mem: "24 MB",
+    memPct: 3,
+    ports: "6379→6379",
+    uptime: "2h 14m",
+  },
   // Second tick — same containers, drifted CPU/mem (deterministic movement).
-  { project: "capisco-core", name: "web", image: "node:22", status: "running", cpu: 41, mem: "438 MB", memPct: 44, ports: "5173→5173", uptime: "2h 15m" },
-  { project: "capisco-core", name: "postgres", image: "postgres:16", status: "running", cpu: 3, mem: "97 MB", memPct: 10, ports: "5432→5432", uptime: "3d" },
-  { project: "capisco-tauri", name: "tauri-build", image: "rust:1.81", status: "running", cpu: 12, mem: "140 MB", memPct: 14, ports: "—", uptime: "2h 15m" },
+  {
+    project: "capisco-core",
+    name: "web",
+    image: "node:22",
+    status: "running",
+    cpu: 41,
+    mem: "438 MB",
+    memPct: 44,
+    ports: "5173→5173",
+    uptime: "2h 15m",
+  },
+  {
+    project: "capisco-core",
+    name: "postgres",
+    image: "postgres:16",
+    status: "running",
+    cpu: 3,
+    mem: "97 MB",
+    memPct: 10,
+    ports: "5432→5432",
+    uptime: "3d",
+  },
+  {
+    project: "capisco-tauri",
+    name: "tauri-build",
+    image: "rust:1.81",
+    status: "running",
+    cpu: 12,
+    mem: "140 MB",
+    memPct: 14,
+    ports: "—",
+    uptime: "2h 15m",
+  },
 ];
 
 function frameToStat(f: RuntimeStatsFrame): ServiceStat {
@@ -73,7 +163,8 @@ export class StubPortAllocator implements PortAllocator {
   allocate(owner: string): PortReservation {
     // Find the next free port from `next`, wrapping once across the range.
     for (let i = 0; i < this.end - this.start + 1; i++) {
-      const candidate = this.start + ((this.next - this.start + i) % (this.end - this.start + 1));
+      const candidate =
+        this.start + ((this.next - this.start + i) % (this.end - this.start + 1));
       if (!this.active.has(candidate)) {
         this.next = candidate + 1;
         const reservation: PortReservation = {

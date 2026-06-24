@@ -84,9 +84,7 @@ export class RpcServerPeer {
   pushEvent(channel: string, event: unknown): void {
     if (this.transport.closed) return;
     const params: EventParams = { channel, event };
-    this.transport.send(
-      encodeLine({ jsonrpc: JSONRPC_VERSION, method: EVENT_METHOD, params }),
-    );
+    this.transport.send(encodeLine({ jsonrpc: JSONRPC_VERSION, method: EVENT_METHOD, params }));
   }
 }
 

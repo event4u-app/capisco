@@ -82,8 +82,7 @@ export type Scope = "once" | "session";
 // Extra open tabs (Design-Sync P1) so the overflow dropdown + multi-row wrap
 // have something to fold. Lightweight stub bodies — they are real openable docs
 // (selecting one renders its text), deterministic, no provider overlays.
-const EXTRA_SRC =
-  "// Capisco source file.\n// Open in the editor from the tab strip.\n";
+const EXTRA_SRC = "// Capisco source file.\n// Open in the editor from the tab strip.\n";
 
 const DOCS: EditorDoc[] = [
   { file: "broker.ts", ext: "ts", text: BROKER_SRC, pinned: true },

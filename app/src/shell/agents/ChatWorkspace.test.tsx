@@ -31,7 +31,13 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  useChat.setState({ extra: [], closed: [], activeId: "c1", runStates: {}, settingsOpen: false });
+  useChat.setState({
+    extra: [],
+    closed: [],
+    activeId: "c1",
+    runStates: {},
+    settingsOpen: false,
+  });
 });
 
 describe("ChatWorkspace — parameterized Agents component (Design-Sync P3)", () => {
@@ -56,9 +62,13 @@ describe("ChatWorkspace — parameterized Agents component (Design-Sync P3)", ()
   it("uses its own chat sessions + default model (Sonnet), independent of agents", () => {
     renderChat();
     expect(screen.getByTestId("session-tab-c1")).toBeInTheDocument();
-    expect(within(screen.getByTestId("session-tab-c1")).getByText("Broker prompting rules")).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId("session-tab-c1")).getByText("Broker prompting rules"),
+    ).toBeInTheDocument();
     // The effective model shows as the session-tab badge, not a composer dropdown.
-    expect(within(screen.getByTestId("session-tab-c1")).getByText("Sonnet")).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId("session-tab-c1")).getByText("Sonnet"),
+    ).toBeInTheDocument();
     // No agents sessions leaked in.
     expect(screen.queryByTestId("session-tab-s1")).toBeNull();
   });

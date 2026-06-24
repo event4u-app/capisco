@@ -174,7 +174,12 @@ export function Terminal() {
         ))}
         <div className="t-line">
           <span className="t-prompt">❯</span>{" "}
-          <span data-testid="terminal-caret" data-reduced={reduced || undefined} className="t-caret" aria-hidden />
+          <span
+            data-testid="terminal-caret"
+            data-reduced={reduced || undefined}
+            className="t-caret"
+            aria-hidden
+          />
         </div>
       </div>
     </div>

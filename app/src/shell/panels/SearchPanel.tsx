@@ -31,7 +31,9 @@ export function SearchPanel() {
     const out: SearchRow[] = [];
     for (const f of s.files) {
       out.push({ type: "file", key: `f:${f.path}`, path: f.path, count: f.hits.length });
-      f.hits.forEach((h, i) => out.push({ type: "hit", key: `h:${f.path}:${i}`, path: f.path, hit: h }));
+      f.hits.forEach((h, i) =>
+        out.push({ type: "hit", key: `h:${f.path}:${i}`, path: f.path, hit: h }),
+      );
     }
     return out;
   }, [s.files]);
@@ -100,7 +102,12 @@ function SearchFileHeader({ path, count }: { path: string; count: number }) {
 function SearchHitRow({ hit, onOpen }: { hit: SearchHit; onOpen: () => void }) {
   const { t } = useTranslation();
   return (
-    <button type="button" className="sp-hit w-full text-left" onClick={onOpen} title={t("diff.open")}>
+    <button
+      type="button"
+      className="sp-hit w-full text-left"
+      onClick={onOpen}
+      title={t("diff.open")}
+    >
       <span className="sp-ln">{hit.line}</span>
       <span className="sp-code">
         {hit.before}

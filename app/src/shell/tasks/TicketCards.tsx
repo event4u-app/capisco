@@ -22,7 +22,13 @@ function avatar(who: string): string {
  * `.tkt-pts`), a `.tkt-title`, and a `.tkt-who` rail (`.tkt-av` + name). Rendered
  * as a `<button>` for keyboard a11y; classes + testids preserved.
  */
-export function TicketCard({ ticket: t, onOpen }: { ticket: Ticket; onOpen?: (t: Ticket) => void }) {
+export function TicketCard({
+  ticket: t,
+  onOpen,
+}: {
+  ticket: Ticket;
+  onOpen?: (t: Ticket) => void;
+}) {
   return (
     <button
       type="button"
@@ -50,7 +56,13 @@ export function TicketCard({ ticket: t, onOpen }: { ticket: Ticket; onOpen?: (t:
  * `.lc-card` with `.lc-top` (id + avatar), `.lc-title`, `.lc-labels` (priority
  * icon + type + mine), and an optional `.lc-foot` (PR / subtasks / points).
  */
-export function LinearCard({ ticket: t, onOpen }: { ticket: Ticket; onOpen?: (t: Ticket) => void }) {
+export function LinearCard({
+  ticket: t,
+  onOpen,
+}: {
+  ticket: Ticket;
+  onOpen?: (t: Ticket) => void;
+}) {
   const typeColor = TYPE_COLOR[t.type] ?? "var(--ds-text-tertiary)";
   return (
     <button

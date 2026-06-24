@@ -10,12 +10,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { railItem } from "./tools";
-import {
-  TERMINAL_ID,
-  useLayout,
-  type RailGroup,
-  type WorkspaceMode,
-} from "./store";
+import { TERMINAL_ID, useLayout, type RailGroup, type WorkspaceMode } from "./store";
 
 /** Prototype drag payload key (chrome.jsx) — verbatim. */
 const DND_TYPE = "cap-tool";
@@ -166,7 +161,11 @@ export function ActivityBar({ side }: { side: "left" | "right" }) {
     const top = visible(groups.leftTop);
     const bottom = visible(groups.leftBottom);
     return (
-      <nav className="activitybar left" data-testid="activity-left" aria-label={t("rail.leftTools")}>
+      <nav
+        className="activitybar left"
+        data-testid="activity-left"
+        aria-label={t("rail.leftTools")}
+      >
         {top.map((id) => renderItem(id, "leftTop", topActive === id))}
         <FillZone group="leftTop" variant="fill" testid="rail-fill-left" />
         {bottom.map((id) => renderItem(id, "leftBottom", botActive === id))}
@@ -183,7 +182,11 @@ export function ActivityBar({ side }: { side: "left" | "right" }) {
   const top = visible(groups.rightTop);
   const bottom = visible(groups.rightBottom);
   return (
-    <nav className="activitybar right" data-testid="activity-right" aria-label={t("rail.rightTools")}>
+    <nav
+      className="activitybar right"
+      data-testid="activity-right"
+      aria-label={t("rail.rightTools")}
+    >
       <div className="ab-top-fixed">
         {MODES.map((m) => (
           <button

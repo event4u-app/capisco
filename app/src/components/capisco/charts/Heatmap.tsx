@@ -56,10 +56,15 @@ export function Heatmap({ grid, coreStart, coreEnd, testid = "heatmap" }: Heatma
       {grid.map((row, d) => {
         const weekend = d >= 5;
         return (
-          <div key={d} className="flex items-center gap-[3px]" data-testid={`${testid}-row-${d}`}>
+          <div
+            key={d}
+            className="flex items-center gap-[3px]"
+            data-testid={`${testid}-row-${d}`}
+          >
             <span
               className={
-                "w-7 shrink-0 " + (weekend ? "text-muted-foreground/60" : "text-muted-foreground")
+                "w-7 shrink-0 " +
+                (weekend ? "text-muted-foreground/60" : "text-muted-foreground")
               }
             >
               {t(`chart.day.${DAY_KEYS[d]}`)}

@@ -334,7 +334,10 @@ function BackendRow({
           {selected && <CircleCheck size={13} color="var(--ds-accent)" strokeWidth={1.8} />}
           {backend.label}
         </div>
-        <div className={"bk-state " + meta.cls} data-testid={`agent-backend-${backend.id}-status`}>
+        <div
+          className={"bk-state " + meta.cls}
+          data-testid={`agent-backend-${backend.id}-status`}
+        >
           {t(meta.key)}
         </div>
       </div>

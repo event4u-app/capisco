@@ -77,7 +77,9 @@ describe("Composer — context add via the DesktopShell seam (P1)", () => {
     renderWorkspace();
     await user.click(screen.getByTestId("composer-add"));
     await waitFor(() =>
-      expect(screen.getAllByTestId("composer-chip").some((c) => c.textContent?.includes("notes.md"))).toBe(true),
+      expect(
+        screen.getAllByTestId("composer-chip").some((c) => c.textContent?.includes("notes.md")),
+      ).toBe(true),
     );
   });
 
@@ -102,7 +104,11 @@ describe("Composer — broker-gated ingestion chokepoint (P2)", () => {
     await user.click(screen.getByTestId("composer-add"));
     await waitFor(() => expect(spy).toHaveBeenCalledWith("/repo/src/broker.ts"));
     await waitFor(() =>
-      expect(screen.getAllByTestId("composer-chip").some((c) => c.textContent?.includes("broker.ts"))).toBe(true),
+      expect(
+        screen
+          .getAllByTestId("composer-chip")
+          .some((c) => c.textContent?.includes("broker.ts")),
+      ).toBe(true),
     );
     spy.mockRestore();
   });
@@ -114,7 +120,9 @@ describe("Composer — broker-gated ingestion chokepoint (P2)", () => {
     // Same chokepoint as +-Add — there is no second ingestion path.
     await waitFor(() => expect(spy).toHaveBeenCalledWith("/repo/src/app.ts"));
     await waitFor(() =>
-      expect(screen.getAllByTestId("composer-chip").some((c) => c.textContent?.includes("app.ts"))).toBe(true),
+      expect(
+        screen.getAllByTestId("composer-chip").some((c) => c.textContent?.includes("app.ts")),
+      ).toBe(true),
     );
     spy.mockRestore();
   });
@@ -122,7 +130,11 @@ describe("Composer — broker-gated ingestion chokepoint (P2)", () => {
   it("a secret-form dropped file is REFUSED at the chokepoint (warning chip, never ingested)", async () => {
     renderWorkspace();
     dropFiles([fileWithPath(".env", "/repo/.env.production")]);
-    await waitFor(() => expect(screen.getByTestId("composer-box").querySelector('[data-refused="true"]')).toBeTruthy());
+    await waitFor(() =>
+      expect(
+        screen.getByTestId("composer-box").querySelector('[data-refused="true"]'),
+      ).toBeTruthy(),
+    );
   });
 });
 

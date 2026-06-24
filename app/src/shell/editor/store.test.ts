@@ -37,16 +37,19 @@ describe("editor tab-strip store", () => {
     togglePin("worktree.ts");
     expect(useEditor.getState().tabs.find((t) => t.file === "worktree.ts")!.pinned).toBe(true);
     rename("types.ts", "shared types");
-    expect(useEditor.getState().tabs.find((t) => t.file === "types.ts")!.label).toBe("shared types");
+    expect(useEditor.getState().tabs.find((t) => t.file === "types.ts")!.label).toBe(
+      "shared types",
+    );
   });
 
   it("reorders a tab before another", () => {
     useEditor.getState().reorder("types.ts", "broker.ts");
-    expect(useEditor.getState().tabs.map((t) => t.file).slice(0, 3)).toEqual([
-      "types.ts",
-      "broker.ts",
-      "worktree.ts",
-    ]);
+    expect(
+      useEditor
+        .getState()
+        .tabs.map((t) => t.file)
+        .slice(0, 3),
+    ).toEqual(["types.ts", "broker.ts", "worktree.ts"]);
   });
 
   it("closing the active tab advances the active selection", () => {
@@ -72,9 +75,9 @@ describe("mock editor provider (provider-output contract, async)", () => {
     expect(pres).toMatchObject({ who: "mara", init: "ma", fromLine: 16, toLine: 17 });
     expect(pres.diff.length).toBe(3);
     expect((await mockEditorProvider.getFolds("broker.ts")).length).toBe(2);
-    expect((await mockEditorProvider.getChangeBars("broker.ts")).some((b) => b.kind === "M")).toBe(
-      true,
-    );
+    expect(
+      (await mockEditorProvider.getChangeBars("broker.ts")).some((b) => b.kind === "M"),
+    ).toBe(true);
     expect(await mockEditorProvider.getActiveLine("broker.ts")).toBe(18);
   });
 

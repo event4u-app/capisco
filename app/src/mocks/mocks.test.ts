@@ -19,7 +19,10 @@ describe("mock providers", () => {
     expect(a).toEqual(b); // deterministic — no Date.now / Math.random
     expect(a[0]).toMatchObject({ id: "s1", model: "Claude", status: "running" });
     // Telemetry is structured (Phase 1), not a pre-rendered meta string.
-    expect(a[0].telemetry).toMatchObject({ tokensOut: expect.any(Number), runtimeMs: expect.any(Number) });
+    expect(a[0].telemetry).toMatchObject({
+      tokensOut: expect.any(Number),
+      runtimeMs: expect.any(Number),
+    });
     expect((await mockAgentProvider.getPendingPermission("s1"))?.command).toBe(
       "Bash(rm -rf .worktrees/tmp)",
     );
@@ -76,7 +79,9 @@ describe("mock providers", () => {
     expect(prod.credentialRef).toBe("prod-readonly");
     expect(prod.credentialRef).not.toMatch(/[:=]|password|token|secret/i);
     // No non-prod datasource is silently read-only.
-    expect(mockDatasources.filter((d) => d.env !== "production").every((d) => !d.readonly)).toBe(true);
+    expect(
+      mockDatasources.filter((d) => d.env !== "production").every((d) => !d.readonly),
+    ).toBe(true);
   });
 
   it("shared signal rail folds every source into ONE SignalItem shape (§5.2)", async () => {

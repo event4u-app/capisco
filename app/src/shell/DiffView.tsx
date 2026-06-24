@@ -112,7 +112,9 @@ export function DiffView({ doc = mockDiff }: { doc?: DiffDoc }) {
         items={doc.rows}
         rowHeight={ROW_HEIGHT}
         className="dv-body"
-        renderRow={(row) => (view === "split" ? <SplitRow row={row} /> : <UnifiedRow row={row} />)}
+        renderRow={(row) =>
+          view === "split" ? <SplitRow row={row} /> : <UnifiedRow row={row} />
+        }
       />
     </div>
   );

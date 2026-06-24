@@ -63,7 +63,12 @@ export function DataPanel() {
       ) : (
         <div data-testid="data-tree" role="tree" aria-label={t("data.label")} className="tree">
           {mockDatasources.map((ds) => (
-            <DataConn key={ds.name} ds={ds} open={!collapsed.has(ds.name)} onToggle={() => toggle(ds.name)} />
+            <DataConn
+              key={ds.name}
+              ds={ds}
+              open={!collapsed.has(ds.name)}
+              onToggle={() => toggle(ds.name)}
+            />
           ))}
         </div>
       )}
@@ -71,7 +76,15 @@ export function DataPanel() {
   );
 }
 
-function DataConn({ ds, open, onToggle }: { ds: Datasource; open: boolean; onToggle: () => void }) {
+function DataConn({
+  ds,
+  open,
+  onToggle,
+}: {
+  ds: Datasource;
+  open: boolean;
+  onToggle: () => void;
+}) {
   const { t } = useTranslation();
   return (
     <div role="group">
@@ -84,7 +97,11 @@ function DataConn({ ds, open, onToggle }: { ds: Datasource; open: boolean; onTog
         className="ds-conn w-full text-left focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring"
       >
         <span className="tr-chevron">
-          <ChevronRight className={cn("size-3 transition-transform", open && "rotate-90")} strokeWidth={2} aria-hidden />
+          <ChevronRight
+            className={cn("size-3 transition-transform", open && "rotate-90")}
+            strokeWidth={2}
+            aria-hidden
+          />
         </span>
         <Icon
           icon={ds.engine === "redis" ? DatabaseZap : Database}

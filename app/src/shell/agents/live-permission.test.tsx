@@ -25,9 +25,9 @@ const PENDING: PermissionRequest = {
   fromUntrusted: true,
 };
 
-const resolveSpy = vi.fn<(sessionId: string, requestId: string, decision: unknown) => Promise<string>>(
-  () => Promise.resolve("once"),
-);
+const resolveSpy = vi.fn<
+  (sessionId: string, requestId: string, decision: unknown) => Promise<string>
+>(() => Promise.resolve("once"));
 
 let pendingValue: PermissionRequest | null = PENDING;
 
@@ -57,7 +57,12 @@ function renderTranscript() {
   return render(
     <ThemeProvider>
       <div style={{ height: 600 }}>
-        <Transcript session={SESSION} runState="ready" onRetry={() => {}} onOpenFile={() => {}} />
+        <Transcript
+          session={SESSION}
+          runState="ready"
+          onRetry={() => {}}
+          onOpenFile={() => {}}
+        />
       </div>
     </ThemeProvider>,
   );
@@ -114,6 +119,8 @@ describe("live PermissionPrompt in the Transcript (bridge-connected)", () => {
     await user.click(within(live).getByTestId("permission-scope-2"));
     expect(resolveSpy).toHaveBeenCalledWith("s1", "live:perm-1", { axis: "deny" });
     // The prompt clears optimistically on resolve.
-    await waitFor(() => expect(screen.queryByTestId("live-permission")).not.toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.queryByTestId("live-permission")).not.toBeInTheDocument(),
+    );
   });
 });

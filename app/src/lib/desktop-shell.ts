@@ -43,7 +43,9 @@ let cached: ProviderBundle | null = null;
 export function getProviders(): ProviderBundle {
   if (cached) return cached;
   const bridge = getBridge();
-  cached = bridge ? createIpcProviders(new SidecarClient(bridge.transport)) : createMockProviders();
+  cached = bridge
+    ? createIpcProviders(new SidecarClient(bridge.transport))
+    : createMockProviders();
   return cached;
 }
 

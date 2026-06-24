@@ -104,9 +104,7 @@ export function TaskOverview({ onOpenTicket }: { onOpenTicket: (t: Ticket) => vo
             />
           )}
 
-          {tab === "active" && (
-            <ActiveColumns active={active} onOpenTicket={onOpenTicket} />
-          )}
+          {tab === "active" && <ActiveColumns active={active} onOpenTicket={onOpenTicket} />}
 
           {tab === "insights" && (
             <div data-testid="tasks-insights" className="tk-insights">
@@ -147,27 +145,44 @@ export function TaskOverview({ onOpenTicket }: { onOpenTicket: (t: Ticket) => vo
               </div>
 
               <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                <ChartCard title={t("tasks.insights.sprintBurndown")} testid="tasks-sprint-burndown-card">
-                  <BurndownChart ideal={burndown.ideal} actual={burndown.team} testid="tasks-sprint-burndown" />
+                <ChartCard
+                  title={t("tasks.insights.sprintBurndown")}
+                  testid="tasks-sprint-burndown-card"
+                >
+                  <BurndownChart
+                    ideal={burndown.ideal}
+                    actual={burndown.team}
+                    testid="tasks-sprint-burndown"
+                  />
                   <BurndownLegend
                     remaining={sprint.committed - sprint.done}
                     total={sprint.committed}
                     accentVar="--chart-line"
                   />
                 </ChartCard>
-                <ChartCard title={t("tasks.insights.myBurndown")} testid="tasks-my-burndown-card">
+                <ChartCard
+                  title={t("tasks.insights.myBurndown")}
+                  testid="tasks-my-burndown-card"
+                >
                   <BurndownChart
                     ideal={burndown.myIdeal}
                     actual={burndown.mine}
                     accentVar="--chart-2"
                     testid="tasks-my-burndown"
                   />
-                  <BurndownLegend remaining={myCommitted - myDone} total={myCommitted} accentVar="--chart-2" />
+                  <BurndownLegend
+                    remaining={myCommitted - myDone}
+                    total={myCommitted}
+                    accentVar="--chart-2"
+                  />
                 </ChartCard>
               </div>
 
               <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                <ChartCard title={t("tasks.insights.myWipOverSprint")} testid="tasks-mywip-card">
+                <ChartCard
+                  title={t("tasks.insights.myWipOverSprint")}
+                  testid="tasks-mywip-card"
+                >
                   <LineChart
                     data={tasks.getMyWipSeries()}
                     labels={dayLabels}
@@ -211,8 +226,14 @@ export function TaskOverview({ onOpenTicket }: { onOpenTicket: (t: Ticket) => vo
                     testid="tasks-reviews-line"
                   />
                 </ChartCard>
-                <ChartCard title={t("tasks.insights.throughputChart")} testid="tasks-throughput-card">
-                  <div data-testid="tasks-throughput" className="flex h-[120px] items-end gap-2">
+                <ChartCard
+                  title={t("tasks.insights.throughputChart")}
+                  testid="tasks-throughput-card"
+                >
+                  <div
+                    data-testid="tasks-throughput"
+                    className="flex h-[120px] items-end gap-2"
+                  >
                     {throughput.map((v, i) => (
                       <div key={i} className="flex flex-1 flex-col items-center gap-1">
                         <div className="flex h-full w-full items-end rounded-sm bg-muted">
@@ -227,7 +248,11 @@ export function TaskOverview({ onOpenTicket }: { onOpenTicket: (t: Ticket) => vo
                   </div>
                 </ChartCard>
                 <ChartCard title={t("tasks.insights.workType")} testid="tasks-worktype-card">
-                  <Donut segments={tasks.getTypeSplit()} size={130} testid="tasks-worktype-donut" />
+                  <Donut
+                    segments={tasks.getTypeSplit()}
+                    size={130}
+                    testid="tasks-worktype-donut"
+                  />
                 </ChartCard>
               </div>
             </div>
@@ -251,7 +276,10 @@ function BurndownLegend({
   return (
     <div className="mt-2 flex flex-wrap gap-4 text-micro text-muted-foreground">
       <span className="inline-flex items-center gap-1.5">
-        <span className="h-0.5 w-4 border-t border-dashed" style={{ borderColor: "hsl(var(--chart-ideal))" }} />
+        <span
+          className="h-0.5 w-4 border-t border-dashed"
+          style={{ borderColor: "hsl(var(--chart-ideal))" }}
+        />
         {t("tasks.insights.ideal")}
       </span>
       <span className="inline-flex items-center gap-1.5">

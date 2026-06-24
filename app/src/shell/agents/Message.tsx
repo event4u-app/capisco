@@ -17,10 +17,7 @@ function renderInline(text: string): React.ReactNode[] {
   return parts.map((part, i) => {
     if (part.startsWith("`") && part.endsWith("`") && part.length > 1) {
       return (
-        <code
-          key={i}
-          className="rounded-sm bg-muted px-1 font-mono text-[12.5px] text-primary"
-        >
+        <code key={i} className="rounded-sm bg-muted px-1 font-mono text-[12.5px] text-primary">
           {part.slice(1, -1)}
         </code>
       );
@@ -58,10 +55,15 @@ export function Message({ msg }: { msg: MessageData }) {
       {msg.table && <MessageTableView table={msg.table} />}
       {msg.cards && msg.cards.length > 0 && (
         // Bleed right into the action-icon reserve (~56px) for full box width.
-        <div className="-mr-14 mt-2.5 grid grid-cols-3 gap-2" data-testid={`msg-cards-${msg.id}`}>
+        <div
+          className="-mr-14 mt-2.5 grid grid-cols-3 gap-2"
+          data-testid={`msg-cards-${msg.id}`}
+        >
           {msg.cards.map((c, i) => (
             <div key={i} className="rounded-sm border border-border bg-card px-2.5 py-2">
-              <div className="text-[10.5px] uppercase tracking-wide text-muted-foreground">{c.k}</div>
+              <div className="text-[10.5px] uppercase tracking-wide text-muted-foreground">
+                {c.k}
+              </div>
               <div
                 className={cn(
                   "mt-0.5 font-mono text-[19px] font-semibold",

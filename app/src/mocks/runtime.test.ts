@@ -8,7 +8,12 @@ describe("FakeRuntimeProvider", () => {
     const groups = await p.listServices();
     expect(groups.map((g) => g.project)).toEqual(["capisco-core", "capisco-tauri"]);
     const core = groups.find((g) => g.project === "capisco-core")!;
-    expect(core.services.map((s) => s.name)).toEqual(["web", "postgres", "traefik", "playwright"]);
+    expect(core.services.map((s) => s.name)).toEqual([
+      "web",
+      "postgres",
+      "traefik",
+      "playwright",
+    ]);
     // Snapshot is the FIRST tick — web at cpu 34, not the drifted 41.
     expect(core.services.find((s) => s.name === "web")?.cpu).toBe(34);
     // Two identical providers produce identical snapshots (deterministic).

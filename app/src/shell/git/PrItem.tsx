@@ -90,7 +90,9 @@ export function PrItem({
             <Icon icon={GitBranch} size={11} />
             {pr.branch}
           </span>
-          <span>{t("git.pr.openedAgo", { repo: pr.repo, days: pr.days, author: pr.author })}</span>
+          <span>
+            {t("git.pr.openedAgo", { repo: pr.repo, days: pr.days, author: pr.author })}
+          </span>
         </div>
         {pr.labels.length > 0 && (
           <div className="ghpr-labels">

@@ -18,7 +18,11 @@ export const ShortDiff = () => (
         added: 2,
         removed: 1,
         rows: [
-          { l: { n: 1, t: "export class Broker {" }, r: { n: 1, t: "export class Broker {" }, k: "ctx" },
+          {
+            l: { n: 1, t: "export class Broker {" },
+            r: { n: 1, t: "export class Broker {" },
+            k: "ctx",
+          },
           { l: { n: 2, t: "  grant() {}" }, r: null, k: "del" },
           { l: null, r: { n: 2, t: "  grant(scope: Scope) {" }, k: "add" },
           { l: null, r: { n: 3, t: "    return this.scopes.add(scope);" }, k: "add" },

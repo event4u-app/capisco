@@ -31,7 +31,12 @@ export function CommitPanel() {
         {/* tablist wraps ONLY the tabs (contents = no layout box) so the
             refresh/more actions are not non-tab children (aria-required-children). */}
         <div role="tablist" aria-label={t("commit.tabsLabel")} className="contents">
-          <StashTab id="changes" active={tab} onSelect={setTab} label={t("commit.tabs.changes")} />
+          <StashTab
+            id="changes"
+            active={tab}
+            onSelect={setTab}
+            label={t("commit.tabs.changes")}
+          />
           <StashTab id="shelf" active={tab} onSelect={setTab} label={t("commit.tabs.shelf")} />
         </div>
         <div className="tb-spacer" />
@@ -48,7 +53,9 @@ export function CommitPanel() {
               <span className="ws-count">{totalChanges}</span>
             </div>
             {totalChanges === 0 ? (
-              <p className="px-3 py-2 text-micro text-muted-foreground">{t("commit.changesEmpty")}</p>
+              <p className="px-3 py-2 text-micro text-muted-foreground">
+                {t("commit.changesEmpty")}
+              </p>
             ) : (
               stash.groups.map((g) => (
                 <ChangeGroupView key={g.project} group={g} onOpenDiff={() => setMode("diff")} />
@@ -60,7 +67,9 @@ export function CommitPanel() {
       ) : (
         <div role="tabpanel" data-testid="commit-shelf" className="ws-scroll">
           {stash.shelf.length === 0 ? (
-            <p className="px-3 py-2 text-micro text-muted-foreground">{t("commit.shelfEmpty")}</p>
+            <p className="px-3 py-2 text-micro text-muted-foreground">
+              {t("commit.shelfEmpty")}
+            </p>
           ) : (
             stash.shelf.map((s) => <ShelfRow key={s.name} entry={s} />)
           )}
@@ -89,14 +98,24 @@ function StashTab({
       aria-selected={selected}
       data-testid={`commit-tab-${id}`}
       onClick={() => onSelect(id)}
-      className={"ws-tab" + (selected ? " active" : "") + " focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"}
+      className={
+        "ws-tab" +
+        (selected ? " active" : "") +
+        " focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+      }
     >
       {label}
     </button>
   );
 }
 
-function ChangeGroupView({ group, onOpenDiff }: { group: ChangeGroup; onOpenDiff: () => void }) {
+function ChangeGroupView({
+  group,
+  onOpenDiff,
+}: {
+  group: ChangeGroup;
+  onOpenDiff: () => void;
+}) {
   return (
     <div>
       <div className="ws-group-head">
@@ -163,7 +182,12 @@ function CommitBox({ branch }: { branch: string }) {
         className="ws-commit-msg"
       />
       <div className="ws-commit-actions">
-        <Button data-testid="commit-button" variant="default" size="md" className="flex-1 gap-1.5">
+        <Button
+          data-testid="commit-button"
+          variant="default"
+          size="md"
+          className="flex-1 gap-1.5"
+        >
           <Icon icon={Check} size={13} />
           {t("commit.commitTo", { branch })}
         </Button>

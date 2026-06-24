@@ -8,10 +8,7 @@ import { Slider } from "@/components/ui/slider";
 import { budgetTone, formatTokens, type BudgetTone } from "./store";
 
 /** Tone → token-driven colour classes (no raw hex; design tokens only). */
-const TONE_META: Record<
-  BudgetTone,
-  { text: string; bg: string; bar: string }
-> = {
+const TONE_META: Record<BudgetTone, { text: string; bg: string; bar: string }> = {
   ok: { text: "text-success", bg: "bg-success", bar: "[&>span]:bg-success" },
   warn: { text: "text-warning", bg: "bg-warning", bar: "[&>span]:bg-warning" },
   crit: { text: "text-destructive", bg: "bg-destructive", bar: "[&>span]:bg-destructive" },

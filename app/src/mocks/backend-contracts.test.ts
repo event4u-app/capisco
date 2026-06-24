@@ -1,10 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  makeDatasource,
-  makeWriteEscape,
-  type SessionEvent,
-} from "@/contracts";
+import { makeDatasource, makeWriteEscape, type SessionEvent } from "@/contracts";
 import {
   aggregateTelemetry,
   createInMemoryShadowStore,
@@ -217,7 +213,7 @@ describe("History-2 shadow store (Phase 2, §5.1)", () => {
 
 describe("WorkspaceProvider async surface (Phase 0)", () => {
   it("resolves the deterministic workspace data", async () => {
-    expect((await mockWorkspaceProvider.getCurrentBranch())).toBe("feat/worktree-teardown");
+    expect(await mockWorkspaceProvider.getCurrentBranch()).toBe("feat/worktree-teardown");
     expect((await mockWorkspaceProvider.getStructure("broker.ts")).length).toBe(8);
     expect((await mockWorkspaceProvider.getChangeSet()).hasPullRequest).toBe(true);
   });

@@ -56,13 +56,7 @@ export function InlayHints({ hints }: { hints: InlayHint[] }) {
   );
 }
 
-function LivePresence({
-  marker,
-  onClose,
-}: {
-  marker: PresenceMarker;
-  onClose: () => void;
-}) {
+function LivePresence({ marker, onClose }: { marker: PresenceMarker; onClose: () => void }) {
   const { t } = useTranslation();
   const ref = React.useRef<HTMLDivElement>(null);
 

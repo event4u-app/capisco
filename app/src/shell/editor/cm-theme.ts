@@ -70,8 +70,15 @@ export const capiscoHighlight = HighlightStyle.define([
   { tag: [t.controlKeyword, t.operatorKeyword], color: "var(--syn-control)" },
   { tag: [t.string, t.special(t.string)], color: "var(--syn-string)" },
   { tag: [t.number, t.bool, t.null], color: "var(--syn-number)" },
-  { tag: [t.lineComment, t.blockComment, t.comment], color: "var(--syn-comment)", fontStyle: "italic" },
-  { tag: [t.function(t.variableName), t.function(t.propertyName)], color: "var(--syn-function)" },
+  {
+    tag: [t.lineComment, t.blockComment, t.comment],
+    color: "var(--syn-comment)",
+    fontStyle: "italic",
+  },
+  {
+    tag: [t.function(t.variableName), t.function(t.propertyName)],
+    color: "var(--syn-function)",
+  },
   { tag: [t.typeName, t.className, t.namespace], color: "var(--syn-type)" },
   { tag: [t.variableName, t.definition(t.variableName)], color: "var(--syn-variable)" },
   { tag: [t.propertyName], color: "var(--syn-property)" },

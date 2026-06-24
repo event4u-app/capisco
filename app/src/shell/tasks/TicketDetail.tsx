@@ -94,7 +94,9 @@ export function TicketDetail({ ticket: t }: { ticket: Ticket }) {
             </div>
 
             <div className="td-section">
-              <div className="td-sechead">{tr("tasks.detail.activity", { count: comments.length })}</div>
+              <div className="td-sechead">
+                {tr("tasks.detail.activity", { count: comments.length })}
+              </div>
               <div data-testid={`ticket-comments-${t.id}`} className="td-comments">
                 {comments.map((c, i) => (
                   <div key={i} className="td-comment">
@@ -184,7 +186,11 @@ export function TicketDetail({ ticket: t }: { ticket: Ticket }) {
               </div>
             )}
             <div className="td-actions">
-              <Button data-testid={`ticket-create-branch-${t.id}`} variant="default" className="w-full">
+              <Button
+                data-testid={`ticket-create-branch-${t.id}`}
+                variant="default"
+                className="w-full"
+              >
                 <Icon icon={GitBranchPlus} size={13} />
                 {tr("tasks.detail.createBranch")}
               </Button>

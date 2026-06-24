@@ -72,9 +72,7 @@ function Tab({
       {/* Active tab adopts the editor bg + a continuous top teal strip (full
           width via this absolute span — the prototype's inset box-shadow would
           be covered by the inner button bg, so we keep the span). */}
-      {active && (
-        <span aria-hidden className="absolute left-0 top-0 h-0.5 w-full bg-primary" />
-      )}
+      {active && <span aria-hidden className="absolute left-0 top-0 h-0.5 w-full bg-primary" />}
       {editing ? (
         <div className="flex items-center gap-1.5 pl-3">
           <FileIcon ext={tab.ext} />
@@ -111,48 +109,50 @@ function Tab({
       )}
 
       <div className="flex items-center gap-1 pr-2">
-      {/* Pin toggle — appears on hover / when pinned. */}
-      <button
-        type="button"
-        aria-label={tab.pinned ? t("editor.tab.unpin") : t("editor.tab.pin")}
-        title={tab.pinned ? t("editor.tab.unpin") : t("editor.tab.pin")}
-        data-testid={`editor-tab-pin-${tab.file}`}
-        onClick={(e) => {
-          e.stopPropagation();
-          onTogglePin();
-        }}
-        className={cn(
-          "flex size-4 items-center justify-center rounded-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-          tab.pinned ? "text-primary" : "opacity-0 group-hover:opacity-100 focus-visible:opacity-100",
-        )}
-      >
-        <Icon icon={tab.pinned ? Pin : PinOff} size={12} />
-      </button>
+        {/* Pin toggle — appears on hover / when pinned. */}
+        <button
+          type="button"
+          aria-label={tab.pinned ? t("editor.tab.unpin") : t("editor.tab.pin")}
+          title={tab.pinned ? t("editor.tab.unpin") : t("editor.tab.pin")}
+          data-testid={`editor-tab-pin-${tab.file}`}
+          onClick={(e) => {
+            e.stopPropagation();
+            onTogglePin();
+          }}
+          className={cn(
+            "flex size-4 items-center justify-center rounded-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+            tab.pinned
+              ? "text-primary"
+              : "opacity-0 group-hover:opacity-100 focus-visible:opacity-100",
+          )}
+        >
+          <Icon icon={tab.pinned ? Pin : PinOff} size={12} />
+        </button>
 
-      {/* Dirty dot OR close affordance (close hidden for pinned tabs). */}
-      {tab.dirty ? (
-        <span
-          role="img"
-          data-testid={`editor-tab-dirty-${tab.file}`}
-          className="size-1.5 rounded-full bg-muted-foreground"
-          aria-label={t("editor.tab.unsaved")}
-        />
-      ) : (
-        !tab.pinned && (
-          <button
-            type="button"
-            aria-label={t("editor.tab.close", { name: tab.label })}
-            data-testid={`editor-tab-close-${tab.file}`}
-            onClick={(e) => {
-              e.stopPropagation();
-              onClose();
-            }}
-            className="flex size-4 items-center justify-center rounded-sm text-muted-foreground opacity-0 hover:text-foreground focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring group-hover:opacity-100"
-          >
-            <Icon icon={X} size={12} />
-          </button>
-        )
-      )}
+        {/* Dirty dot OR close affordance (close hidden for pinned tabs). */}
+        {tab.dirty ? (
+          <span
+            role="img"
+            data-testid={`editor-tab-dirty-${tab.file}`}
+            className="size-1.5 rounded-full bg-muted-foreground"
+            aria-label={t("editor.tab.unsaved")}
+          />
+        ) : (
+          !tab.pinned && (
+            <button
+              type="button"
+              aria-label={t("editor.tab.close", { name: tab.label })}
+              data-testid={`editor-tab-close-${tab.file}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                onClose();
+              }}
+              className="flex size-4 items-center justify-center rounded-sm text-muted-foreground opacity-0 hover:text-foreground focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring group-hover:opacity-100"
+            >
+              <Icon icon={X} size={12} />
+            </button>
+          )
+        )}
       </div>
     </div>
   );
@@ -198,7 +198,12 @@ function OverflowMenu({
           <Icon icon={ChevronDown} size={15} />
         </button>
       </PopoverTrigger>
-      <PopoverContent align="end" sideOffset={4} className="w-60 p-1" data-testid="editor-tab-menu">
+      <PopoverContent
+        align="end"
+        sideOffset={4}
+        className="w-60 p-1"
+        data-testid="editor-tab-menu"
+      >
         <div
           className="mb-1 flex items-center justify-between gap-2 border-b border-border px-2 pb-1.5 pt-1"
           data-testid="editor-tab-rows"
@@ -206,7 +211,11 @@ function OverflowMenu({
           <span className="text-[10.5px] font-semibold uppercase tracking-wide text-muted-foreground">
             {t("editor.overflow.rows")}
           </span>
-          <div role="group" aria-label={t("editor.overflow.rows")} className="flex gap-0.5 rounded-sm border border-border bg-muted p-0.5">
+          <div
+            role="group"
+            aria-label={t("editor.overflow.rows")}
+            className="flex gap-0.5 rounded-sm border border-border bg-muted p-0.5"
+          >
             {ROW_OPTIONS.map((n) => (
               <button
                 key={n}
@@ -244,7 +253,9 @@ function OverflowMenu({
             >
               <FileIcon ext={tab.ext} />
               <span className="min-w-0 flex-1 truncate">{tab.label}</span>
-              {tab.pinned && <Icon icon={Pin} size={11} className="shrink-0 text-muted-foreground" />}
+              {tab.pinned && (
+                <Icon icon={Pin} size={11} className="shrink-0 text-muted-foreground" />
+              )}
               {tab.dirty && (
                 <span
                   className="size-1.5 shrink-0 rounded-full bg-muted-foreground"

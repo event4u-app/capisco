@@ -116,7 +116,9 @@ describe("Explorer — real opened project (P1)", () => {
 
     // Real tree appears; the mock tree is gone.
     const tree = await screen.findByTestId("real-project-tree");
-    await waitFor(() => expect(within(tree).getByTestId("real-file-README.md")).toBeInTheDocument());
+    await waitFor(() =>
+      expect(within(tree).getByTestId("real-file-README.md")).toBeInTheDocument(),
+    );
     expect(screen.queryByTestId("explorer-tree")).not.toBeInTheDocument();
     expect(within(tree).getByTestId("real-file-src")).toBeInTheDocument();
 

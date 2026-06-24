@@ -23,14 +23,18 @@ export function ChangesPanel() {
   const cs = mockChangeSet;
 
   const defaultRole = cs.hasPullRequest ? "target" : "parent";
-  const initialBase = (cs.branches.find((b) => b.role === defaultRole) ?? cs.branches[0])?.id ?? "";
+  const initialBase =
+    (cs.branches.find((b) => b.role === defaultRole) ?? cs.branches[0])?.id ?? "";
   const [base, setBase] = React.useState(initialBase);
 
   const current = cs.branches.find((b) => b.id === base) ?? cs.branches[0];
-  const total = cs.files.reduce((a, f) => ({ added: a.added + f.added, removed: a.removed + f.removed }), {
-    added: 0,
-    removed: 0,
-  });
+  const total = cs.files.reduce(
+    (a, f) => ({ added: a.added + f.added, removed: a.removed + f.removed }),
+    {
+      added: 0,
+      removed: 0,
+    },
+  );
 
   return (
     <div data-testid="changes-panel" className="flex h-full min-h-0 flex-col">
@@ -68,7 +72,11 @@ export function ChangesPanel() {
           </p>
         ) : (
           cs.files.map((f) => (
-            <ChangeFileRow key={`${f.path}/${f.name}`} file={f} onOpen={() => setMode("diff")} />
+            <ChangeFileRow
+              key={`${f.path}/${f.name}`}
+              file={f}
+              onOpen={() => setMode("diff")}
+            />
           ))
         )}
       </div>
@@ -175,7 +183,9 @@ function BaseBranchCombobox({
             </div>
             <div className="max-h-[240px] overflow-auto py-1">
               {filtered.length === 0 ? (
-                <p className="px-2 py-1.5 text-micro text-muted-foreground">{t("changes.noBranches")}</p>
+                <p className="px-2 py-1.5 text-micro text-muted-foreground">
+                  {t("changes.noBranches")}
+                </p>
               ) : (
                 filtered.map((b) => (
                   <button
@@ -193,14 +203,20 @@ function BaseBranchCombobox({
                       b.id === value && "bg-accent/60",
                     )}
                   >
-                    <Icon icon={GitBranch} size={11} className="shrink-0 text-muted-foreground" />
+                    <Icon
+                      icon={GitBranch}
+                      size={11}
+                      className="shrink-0 text-muted-foreground"
+                    />
                     <span className="truncate">{b.name}</span>
                     {b.role && (
                       <span className="shrink-0 rounded-sm bg-secondary px-1 text-[10px] text-muted-foreground">
                         {roleLabel(b.role)}
                       </span>
                     )}
-                    {b.id === value && <Icon icon={Check} size={12} className="ml-auto shrink-0 text-primary" />}
+                    {b.id === value && (
+                      <Icon icon={Check} size={12} className="ml-auto shrink-0 text-primary" />
+                    )}
                   </button>
                 ))
               )}

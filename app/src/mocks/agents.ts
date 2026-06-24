@@ -81,7 +81,10 @@ function tel(tokensIn: number, tokensOut: number, runtimeMs: number): Telemetry 
 }
 
 /** Roll a node's own telemetry up with every subagent's (parent ← subagent). */
-export function aggregateTelemetry(own: Telemetry, subs: { telemetry: Telemetry }[]): Telemetry {
+export function aggregateTelemetry(
+  own: Telemetry,
+  subs: { telemetry: Telemetry }[],
+): Telemetry {
   return subs.reduce(
     (acc, s) => ({
       tokensIn: acc.tokensIn + s.telemetry.tokensIn,
@@ -242,13 +245,43 @@ const BLOCKS: Record<string, TranscriptBlock[]> = {
           scorecard: true,
           head: ["Area", "Before", "After", "Δ"],
           rows: [
-            [{ text: "Immutable grants" }, { text: "2 / 10", tone: "bad" }, { text: "10 / 10", tone: "ok" }, { text: "+8", tone: "ok" }],
-            [{ text: "Revocation via tombstone" }, { text: "0 / 10", tone: "bad" }, { text: "10 / 10", tone: "ok" }, { text: "+10", tone: "ok" }],
-            [{ text: "API compatibility" }, { text: "5 / 10", tone: "bad" }, { text: "10 / 10", tone: "ok" }, { text: "+5", tone: "ok" }],
-            [{ text: "Test coverage" }, { text: "1 / 10", tone: "bad" }, { text: "10 / 10", tone: "ok" }, { text: "+9", tone: "ok" }],
-            [{ text: "Broker audit log" }, { text: "6 / 10", tone: "warn" }, { text: "9 / 10", tone: "ok" }, { text: "+3", tone: "ok" }],
+            [
+              { text: "Immutable grants" },
+              { text: "2 / 10", tone: "bad" },
+              { text: "10 / 10", tone: "ok" },
+              { text: "+8", tone: "ok" },
+            ],
+            [
+              { text: "Revocation via tombstone" },
+              { text: "0 / 10", tone: "bad" },
+              { text: "10 / 10", tone: "ok" },
+              { text: "+10", tone: "ok" },
+            ],
+            [
+              { text: "API compatibility" },
+              { text: "5 / 10", tone: "bad" },
+              { text: "10 / 10", tone: "ok" },
+              { text: "+5", tone: "ok" },
+            ],
+            [
+              { text: "Test coverage" },
+              { text: "1 / 10", tone: "bad" },
+              { text: "10 / 10", tone: "ok" },
+              { text: "+9", tone: "ok" },
+            ],
+            [
+              { text: "Broker audit log" },
+              { text: "6 / 10", tone: "warn" },
+              { text: "9 / 10", tone: "ok" },
+              { text: "+3", tone: "ok" },
+            ],
           ],
-          foot: [{ text: "Total" }, { text: "14 / 50", tone: "bad" }, { text: "49 / 50", tone: "ok" }, { text: "+35", tone: "ok" }],
+          foot: [
+            { text: "Total" },
+            { text: "14 / 50", tone: "bad" },
+            { text: "49 / 50", tone: "ok" },
+            { text: "+35", tone: "ok" },
+          ],
         },
         cards: [
           { k: "Before", v: "14/50", s: "mutable grants · no tombstone", tone: "bad" },
@@ -362,7 +395,11 @@ export function grantOf(sessionId: string, requestId: string): GrantAxis | undef
 }
 
 const BACKEND: BackendConfig = { kind: "api", provider: "Anthropic · Claude" };
-const DETECTED_CLI: BackendConfig = { kind: "cli", provider: "claude 1.4.2", detail: "/usr/local/bin/claude" };
+const DETECTED_CLI: BackendConfig = {
+  kind: "cli",
+  provider: "claude 1.4.2",
+  detail: "/usr/local/bin/claude",
+};
 
 /**
  * Deterministic agent-backend catalog (B8 P3) — the structured `AgentBackend[]`

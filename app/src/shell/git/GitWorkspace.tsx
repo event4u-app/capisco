@@ -171,7 +171,12 @@ export function GitWorkspace() {
               </div>
               <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                 <ChartCard title={t("git.overview.cycleTime")} testid="git-cycle-card">
-                  <LineChart data={series.cycleTime} labels={weeks} height={170} testid="git-cycle-line" />
+                  <LineChart
+                    data={series.cycleTime}
+                    labels={weeks}
+                    height={170}
+                    testid="git-cycle-line"
+                  />
                 </ChartCard>
                 <ChartCard title={t("git.overview.prCategories")} testid="git-categories-card">
                   <Donut segments={git.getPrCategories()} testid="git-categories-donut" />
@@ -202,11 +207,24 @@ export function GitWorkspace() {
                 </div>
               </div>
               <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                <ChartCard title={t("git.activity.commitsPerWeek")} testid="git-act-commits-card">
-                  <LineChart data={series.commits} labels={weeks} height={150} testid="git-act-commits" />
+                <ChartCard
+                  title={t("git.activity.commitsPerWeek")}
+                  testid="git-act-commits-card"
+                >
+                  <LineChart
+                    data={series.commits}
+                    labels={weeks}
+                    height={150}
+                    testid="git-act-commits"
+                  />
                 </ChartCard>
                 <ChartCard title={t("git.activity.prsPerWeek")} testid="git-act-prs-card">
-                  <LineChart data={series.prsMerged} labels={weeks} height={150} testid="git-act-prs" />
+                  <LineChart
+                    data={series.prsMerged}
+                    labels={weeks}
+                    height={150}
+                    testid="git-act-prs"
+                  />
                 </ChartCard>
                 <ChartCard title={t("git.activity.locPerWeek")} testid="git-act-loc-card">
                   <LineChart
@@ -217,8 +235,16 @@ export function GitWorkspace() {
                     testid="git-act-loc"
                   />
                 </ChartCard>
-                <ChartCard title={t("git.activity.reviewsPerWeek")} testid="git-act-reviews-card">
-                  <LineChart data={series.reviews} labels={weeks} height={150} testid="git-act-reviews" />
+                <ChartCard
+                  title={t("git.activity.reviewsPerWeek")}
+                  testid="git-act-reviews-card"
+                >
+                  <LineChart
+                    data={series.reviews}
+                    labels={weeks}
+                    height={150}
+                    testid="git-act-reviews"
+                  />
                 </ChartCard>
               </div>
               <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -233,7 +259,10 @@ export function GitWorkspace() {
                         <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-muted">
                           <div
                             className="h-full rounded-full"
-                            style={{ width: `${l.pct}%`, background: `hsl(var(${l.chartVar}))` }}
+                            style={{
+                              width: `${l.pct}%`,
+                              background: `hsl(var(${l.chartVar}))`,
+                            }}
                           />
                         </div>
                       </div>
@@ -296,7 +325,9 @@ export function GitWorkspace() {
                 <span>{t("git.working.outsideHint")}</span>
               </div>
               <ChartCard title={t("git.working.heatmap")} testid="git-heatmap-card">
-                <div className="mb-2 text-micro text-muted-foreground">{t("git.working.sub")}</div>
+                <div className="mb-2 text-micro text-muted-foreground">
+                  {t("git.working.sub")}
+                </div>
                 <Heatmap
                   grid={git.getWorkHeatmap()}
                   coreStart={coreStart}
@@ -309,7 +340,10 @@ export function GitWorkspace() {
                       className="size-2.5 rounded-[2px]"
                       style={{ background: "hsl(var(--chart-good))" }}
                     />
-                    {t("git.working.core", { start: `${pad(coreStart)}:00`, end: `${pad(coreEnd)}:00` })}
+                    {t("git.working.core", {
+                      start: `${pad(coreStart)}:00`,
+                      end: `${pad(coreEnd)}:00`,
+                    })}
                   </span>
                   <span className="inline-flex items-center gap-1.5">
                     <span

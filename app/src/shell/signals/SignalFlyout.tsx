@@ -74,7 +74,10 @@ export function SignalFlyout({
       </div>
 
       {items.length === 0 ? (
-        <p data-testid={`signal-empty-${channel}`} className="px-3 py-2 text-micro text-muted-foreground">
+        <p
+          data-testid={`signal-empty-${channel}`}
+          className="px-3 py-2 text-micro text-muted-foreground"
+        >
           {t("signals.empty")}
         </p>
       ) : (

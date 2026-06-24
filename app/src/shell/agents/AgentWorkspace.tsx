@@ -153,8 +153,7 @@ export function AgentWorkspace({ kind = "agents" }: { kind?: WorkspaceKind } = {
   // already-reported tokens; the Rot-banner shows when the tone is `crit`
   // (≥ 85% of budget) and the user has not dismissed it for this session.
   const used = contextUsed(cur);
-  const budgetCritical =
-    budgetTone(used, budget) === "crit" && !bannerDismissed.has(cur.id);
+  const budgetCritical = budgetTone(used, budget) === "crit" && !bannerDismissed.has(cur.id);
   const budgetPct = budget > 0 ? Math.round((used / budget) * 100) : 0;
   const dismissBanner = () => setBannerDismissed((prev) => new Set(prev).add(cur.id));
   // Red→new-session handoff (Phase 1): start a fresh session seeded with a

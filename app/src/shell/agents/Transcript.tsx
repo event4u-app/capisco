@@ -43,7 +43,9 @@ function HandoffSeed({ text }: { text: string }) {
       <div className="mb-1.5 text-micro font-semibold uppercase tracking-wide text-muted-foreground">
         {t("agents.handoff.label")}
       </div>
-      <div className="whitespace-pre-wrap font-mono text-micro text-muted-foreground">{text}</div>
+      <div className="whitespace-pre-wrap font-mono text-micro text-muted-foreground">
+        {text}
+      </div>
     </div>
   );
 }
@@ -111,7 +113,11 @@ function Block({
         // (road-to-composer-context-runtime P4) — `revert.revertPath`, which is
         // honestly `skipped` without a worktree. The label stays "Discard code
         // change", never "undo" (Overview §2.3).
-        onRevert={tool.added != null || tool.removed != null ? () => onRevertPath?.(tool.target) : undefined}
+        onRevert={
+          tool.added != null || tool.removed != null
+            ? () => onRevertPath?.(tool.target)
+            : undefined
+        }
       >
         {tool.diff?.map((line, i) => (
           // Rich diff row (design-sync-v2 §3): line-number gutter + +/− sign
@@ -278,7 +284,9 @@ function LivePermissionBanner({
           label={t("agents.permission.label")}
           scopes={request.scopes}
           credentialRef={request.credentialRef}
-          credentialNote={request.credentialRef ? t("agents.permission.credentialNote") : undefined}
+          credentialNote={
+            request.credentialRef ? t("agents.permission.credentialNote") : undefined
+          }
           prodNote={t("agents.permission.prodNote")}
           onGrant={onGrant}
         />

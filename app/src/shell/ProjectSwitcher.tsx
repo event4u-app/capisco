@@ -73,7 +73,9 @@ export function ProjectSwitcher({ current }: { current: string }) {
                     ? "size-2 fill-[hsl(var(--chart-good))] text-[hsl(var(--chart-good))]"
                     : "size-2 fill-muted text-muted"
                 }
-                aria-label={p.active ? t("projectSwitcher.active") : t("projectSwitcher.inactive")}
+                aria-label={
+                  p.active ? t("projectSwitcher.active") : t("projectSwitcher.inactive")
+                }
               />
             </DropdownMenuItem>
           ))

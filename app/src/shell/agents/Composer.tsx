@@ -39,7 +39,11 @@ interface Chip {
   /** Why the ingestion was refused (chip title). */
   reason?: string;
 }
-const CHIP_ICON = { "folder-git-2": FolderGit2, "file-text": FileText, file: FileText } as const;
+const CHIP_ICON = {
+  "folder-git-2": FolderGit2,
+  "file-text": FileText,
+  file: FileText,
+} as const;
 
 const PLAN_COLOR: Record<string, string> = {
   accent: "var(--ds-accent)",
@@ -132,7 +136,16 @@ export function Composer({
                   tag: outcome.entry.sourceTag,
                 },
               ]
-            : [...c, { icon: "file", label: outcome.displayName, closable: true, refused: true, reason: outcome.reason }],
+            : [
+                ...c,
+                {
+                  icon: "file",
+                  label: outcome.displayName,
+                  closable: true,
+                  refused: true,
+                  reason: outcome.reason,
+                },
+              ],
         );
       });
     });
@@ -159,7 +172,14 @@ export function Composer({
 
   // Self-register the "add context" action in the palette (escalation ladder).
   React.useEffect(
-    () => register({ id: "context:add", group: "tools", icon: Plus, label: t("agents.composer.contextAdd"), run: addFilesViaPicker }),
+    () =>
+      register({
+        id: "context:add",
+        group: "tools",
+        icon: Plus,
+        label: t("agents.composer.contextAdd"),
+        run: addFilesViaPicker,
+      }),
     [register, t, addFilesViaPicker],
   );
   // Send when idle; Stop (real cancel) when a run is in flight. The Stop icon
@@ -175,13 +195,23 @@ export function Composer({
   // Self-register the Stop action in the palette while a run is in flight.
   React.useEffect(() => {
     if (!running || !onStop) return;
-    return register({ id: "composer:stop", group: "tools", icon: Square, label: t("agents.composer.stop"), run: onStop });
+    return register({
+      id: "composer:stop",
+      group: "tools",
+      icon: Square,
+      label: t("agents.composer.stop"),
+      run: onStop,
+    });
   }, [register, t, running, onStop]);
 
   const ratio = budget > 0 ? used / budget : 0;
   const tone = budgetTone(used, budget); // ok | warn | crit
   const toneColor =
-    tone === "ok" ? "var(--ds-success)" : tone === "warn" ? "var(--ds-warning)" : "var(--ds-error)";
+    tone === "ok"
+      ? "var(--ds-success)"
+      : tone === "warn"
+        ? "var(--ds-warning)"
+        : "var(--ds-error)";
   const presets = [100000, 150000, 200000, 300000];
   const fillPct = ((budget - 50000) / 350000) * 100;
 
@@ -340,7 +370,8 @@ export function Composer({
                     <div className="tune-sec">
                       <div className="ep-head">
                         <span className="ep-title">
-                          {t("agents.composer.effort")} <b>{(levels[effort] ?? levels[0]).label}</b>
+                          {t("agents.composer.effort")}{" "}
+                          <b>{(levels[effort] ?? levels[0]).label}</b>
                         </span>
                       </div>
                       <div className="ep-ends">
@@ -440,11 +471,17 @@ export function Composer({
             ) : (
               <Gauge size={13} color={toneColor} strokeWidth={1.8} />
             )}
-            <span className="cb-meter-val" data-testid="context-meter-value" style={{ color: toneColor }}>
+            <span
+              className="cb-meter-val"
+              data-testid="context-meter-value"
+              style={{ color: toneColor }}
+            >
               {fmtK(used)}/{fmtK(budget)}
             </span>
             <span className="cb-meter-bar" data-testid="context-meter-bar">
-              <span style={{ width: Math.min(100, ratio * 100) + "%", background: toneColor }} />
+              <span
+                style={{ width: Math.min(100, ratio * 100) + "%", background: toneColor }}
+              />
             </span>
           </button>
           {panel === "ctx" && (
@@ -453,12 +490,19 @@ export function Composer({
               <div className="ctx-pop cb-pop" data-testid="context-meter-pop">
                 <div className="bp-head">
                   <span className="caps">{t("agents.composer.contextBudget")}</span>
-                  <span className="ctx-pct" data-testid="context-meter-pct" style={{ color: toneColor }}>
+                  <span
+                    className="ctx-pct"
+                    data-testid="context-meter-pct"
+                    style={{ color: toneColor }}
+                  >
                     {Math.round(ratio * 100)}%
                   </span>
                 </div>
                 <div className="ctx-row">
-                  {t("agents.composer.contextWarnAt", { budget: fmtK(budget), used: fmtK(used) })}
+                  {t("agents.composer.contextWarnAt", {
+                    budget: fmtK(budget),
+                    used: fmtK(used),
+                  })}
                 </div>
                 <input
                   type="range"

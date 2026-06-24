@@ -47,7 +47,13 @@ export function VirtualList<T>({
       <div
         key={i}
         data-vrow={i}
-        style={{ position: "absolute", top: i * rowHeight, left: 0, right: 0, height: rowHeight }}
+        style={{
+          position: "absolute",
+          top: i * rowHeight,
+          left: 0,
+          right: 0,
+          height: rowHeight,
+        }}
       >
         {renderRow(items[i], i)}
       </div>,
@@ -62,7 +68,9 @@ export function VirtualList<T>({
       className={className}
       style={{ overflow: "auto", ...style }}
     >
-      <div style={{ position: "relative", height: total, minWidth: "max-content" }}>{slice}</div>
+      <div style={{ position: "relative", height: total, minWidth: "max-content" }}>
+        {slice}
+      </div>
     </div>
   );
 }

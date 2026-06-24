@@ -69,7 +69,11 @@ class MockSessionStore implements SessionStore {
       worktreePath: input.worktreePath,
       seq,
     };
-    this.#sessions.set(id, { session, blocks: [], tree: { nodes: {}, roots: [], activeLeaf: "" } });
+    this.#sessions.set(id, {
+      session,
+      blocks: [],
+      tree: { nodes: {}, roots: [], activeLeaf: "" },
+    });
     return Promise.resolve({ ...session });
   }
 
@@ -101,7 +105,11 @@ class MockSessionStore implements SessionStore {
 
   resume(id: string): Promise<ResumedSession> {
     const rec = this.#require(id);
-    return Promise.resolve({ session: { ...rec.session }, blocks: [...rec.blocks], tree: rec.tree });
+    return Promise.resolve({
+      session: { ...rec.session },
+      blocks: [...rec.blocks],
+      tree: rec.tree,
+    });
   }
 
   retryAsBranch(id: string): Promise<string> {

@@ -15,7 +15,9 @@ export function StatusBar() {
         <GitBranch size={12} strokeWidth={1.6} />
         feat/worktree-teardown <span className="up">↑2</span>
       </span>
-      <span className="sb-item" title="blame">Blame: matze 2d ago</span>
+      <span className="sb-item" title="blame">
+        Blame: matze 2d ago
+      </span>
       <span className="sb-item">Ln 24, Col 8</span>
       <span className="sb-item">LF</span>
       <span className="sb-item">UTF-8</span>

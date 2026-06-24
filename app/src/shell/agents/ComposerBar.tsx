@@ -22,7 +22,13 @@ const TONE_CLASS: Record<string, string> = {
  */
 
 /** Model picker — choose the model behind the active session. */
-export function ModelControl({ model, setModel }: { model: string; setModel: (m: string) => void }) {
+export function ModelControl({
+  model,
+  setModel,
+}: {
+  model: string;
+  setModel: (m: string) => void;
+}) {
   const { t } = useTranslation();
   const [open, setOpen] = React.useState(false);
   const agents = agentSnapshot.agents;
@@ -73,7 +79,13 @@ export function ModelControl({ model, setModel }: { model: string; setModel: (m:
  * `design-update-v1`): the composer bar stays lean, the token-economy toggles
  * (Caveman terse mode, auto model routing) live in Agent settings.
  */
-export function TuneControl({ effort, setEffort }: { effort: number; setEffort: (n: number) => void }) {
+export function TuneControl({
+  effort,
+  setEffort,
+}: {
+  effort: number;
+  setEffort: (n: number) => void;
+}) {
   const { t } = useTranslation();
   const [open, setOpen] = React.useState(false);
   const levels = agentSnapshot.effortLevels;
@@ -105,7 +117,8 @@ export function TuneControl({ effort, setEffort }: { effort: number; setEffort: 
         <div>
           <div className="mb-3.5 flex items-center justify-between">
             <span className="text-ui text-muted-foreground">
-              {t("agents.composer.effort")} <b className="ml-1 text-foreground">{current.label}</b>
+              {t("agents.composer.effort")}{" "}
+              <b className="ml-1 text-foreground">{current.label}</b>
             </span>
             <CircleHelp
               className="size-3.5 text-muted-foreground"
@@ -136,7 +149,11 @@ export function TuneControl({ effort, setEffort }: { effort: number; setEffort: 
             <span className="text-[10.5px] font-semibold uppercase tracking-wide text-muted-foreground">
               {t("agents.composer.planUsage")}
             </span>
-            <ArrowRight className="size-3.5 text-muted-foreground" strokeWidth={1.6} aria-hidden />
+            <ArrowRight
+              className="size-3.5 text-muted-foreground"
+              strokeWidth={1.6}
+              aria-hidden
+            />
           </div>
           <div className="flex flex-col gap-2.5">
             {plan.map((row) => (
@@ -149,7 +166,10 @@ export function TuneControl({ effort, setEffort }: { effort: number; setEffort: 
                     {row.detail}
                   </span>
                 </div>
-                <Progress value={row.pct} className={cn("h-1 bg-muted", TONE_CLASS[row.tone])} />
+                <Progress
+                  value={row.pct}
+                  className={cn("h-1 bg-muted", TONE_CLASS[row.tone])}
+                />
               </div>
             ))}
           </div>
@@ -158,4 +178,3 @@ export function TuneControl({ effort, setEffort }: { effort: number; setEffort: 
     </Popover>
   );
 }
-

@@ -40,7 +40,13 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  useAgents.setState({ extra: [], closed: [], activeId: "s1", runStates: {}, settingsOpen: false });
+  useAgents.setState({
+    extra: [],
+    closed: [],
+    activeId: "s1",
+    runStates: {},
+    settingsOpen: false,
+  });
 });
 
 describe("AgentWorkspace", () => {
@@ -145,7 +151,9 @@ describe("AgentWorkspace", () => {
     expect(screen.getByTestId("agent-settings")).toBeInTheDocument();
     expect(screen.getByTestId("agent-settings-api-body")).toBeInTheDocument();
     await user.click(screen.getByTestId("agent-settings-cli"));
-    expect(screen.getByTestId("agent-settings-cli-body")).toHaveTextContent("/usr/local/bin/claude");
+    expect(screen.getByTestId("agent-settings-cli-body")).toHaveTextContent(
+      "/usr/local/bin/claude",
+    );
   });
 
   it("lists the agent backends with status + actions; the stub is the default in-use backend", async () => {
@@ -272,7 +280,10 @@ describe("AgentWorkspace", () => {
     const terse = screen.getByTestId("agent-settings-terse-toggle");
     expect(terse).toHaveAttribute("aria-checked", "true");
     // The level picker shows full as the active level.
-    expect(screen.getByTestId("agent-settings-terse-level-full")).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByTestId("agent-settings-terse-level-full")).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
     // Opt out via the switch.
     await user.click(terse);
     expect(useAgents.getState().terseEnabled).toBe(false);

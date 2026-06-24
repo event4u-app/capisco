@@ -26,8 +26,10 @@ import { activeMention, insertReference, matchProjects } from "@/lib/mention/men
 
 export type MentionFieldElement = HTMLInputElement | HTMLTextAreaElement;
 
-export interface MentionAutocompleteProps
-  extends Omit<React.ComponentProps<typeof Input>, "onSelect"> {
+export interface MentionAutocompleteProps extends Omit<
+  React.ComponentProps<typeof Input>,
+  "onSelect"
+> {
   /** Current project name, excluded from the suggestions (never @-mention self). */
   currentProject?: string;
   /**
@@ -47,8 +49,22 @@ export interface MentionAutocompleteProps
   rows?: number;
 }
 
-export const MentionAutocomplete = React.forwardRef<MentionFieldElement, MentionAutocompleteProps>(
-  ({ currentProject, onOpenReference, onKeyDown, className, multiline, rows = 3, ...inputProps }, forwardedRef) => {
+export const MentionAutocomplete = React.forwardRef<
+  MentionFieldElement,
+  MentionAutocompleteProps
+>(
+  (
+    {
+      currentProject,
+      onOpenReference,
+      onKeyDown,
+      className,
+      multiline,
+      rows = 3,
+      ...inputProps
+    },
+    forwardedRef,
+  ) => {
     const { t } = useTranslation();
     const innerRef = React.useRef<MentionFieldElement>(null);
     React.useImperativeHandle(forwardedRef, () => innerRef.current as MentionFieldElement);
@@ -62,9 +78,7 @@ export const MentionAutocomplete = React.forwardRef<MentionFieldElement, Mention
     // the visual harness, no list before the user reaches for it).
     const ensureLoaded = React.useCallback(() => {
       if (projects.length > 0) return;
-      void getProviders()
-        .recent.list()
-        .then(setProjects);
+      void getProviders().recent.list().then(setProjects);
     }, [projects.length]);
 
     const hits = query === null ? [] : matchProjects(projects, query, currentProject);
@@ -196,13 +210,17 @@ export const MentionAutocomplete = React.forwardRef<MentionFieldElement, Mention
                   }}
                   className={cn(
                     "flex h-7 w-full items-center gap-2 rounded-sm px-2 text-left text-ui focus-visible:outline-none",
-                    i === highlight ? "bg-accent text-foreground" : "text-foreground hover:bg-accent",
+                    i === highlight
+                      ? "bg-accent text-foreground"
+                      : "text-foreground hover:bg-accent",
                   )}
                 >
                   <FolderGit2 className="size-3.5 text-muted-foreground" strokeWidth={1.6} />
                   <span className="flex-1 truncate">{p.name}</span>
                   {p.branch ? (
-                    <span className="font-mono text-[11px] text-muted-foreground">{p.branch}</span>
+                    <span className="font-mono text-[11px] text-muted-foreground">
+                      {p.branch}
+                    </span>
                   ) : null}
                 </button>
               </li>

@@ -69,7 +69,9 @@ export function RangeFilter({
           onClick={() => onChange(r)}
           className={cn(
             "rounded-[2px] px-2 py-0.5 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-            value === r ? "bg-accent text-foreground" : "text-muted-foreground hover:text-foreground",
+            value === r
+              ? "bg-accent text-foreground"
+              : "text-muted-foreground hover:text-foreground",
           )}
         >
           {t(`git.range.${r}`)}
@@ -85,19 +87,19 @@ export function RangeFilter({
           onClick={() => setOpen((o) => !o)}
           className={cn(
             "inline-flex items-center gap-1 rounded-[2px] px-2 py-0.5 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-            customActive ? "bg-accent text-foreground" : "text-muted-foreground hover:text-foreground",
+            customActive
+              ? "bg-accent text-foreground"
+              : "text-muted-foreground hover:text-foreground",
           )}
         >
-          {customActive && value !== "custom" ? t(`git.rangePreset.${value}`) : t("git.range.custom")}
+          {customActive && value !== "custom"
+            ? t(`git.rangePreset.${value}`)
+            : t("git.range.custom")}
           <Icon icon={ChevronDown} size={12} />
         </button>
         {open && (
           <>
-            <div
-              className="fixed inset-0 z-40"
-              aria-hidden
-              onClick={() => setOpen(false)}
-            />
+            <div className="fixed inset-0 z-40" aria-hidden onClick={() => setOpen(false)} />
             <div
               data-testid="git-range-pop"
               role="dialog"
@@ -117,7 +119,9 @@ export function RangeFilter({
                     }}
                     className={cn(
                       "rounded-sm px-2 py-1 text-left text-micro transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-                      value === p ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent/60",
+                      value === p
+                        ? "bg-accent text-foreground"
+                        : "text-muted-foreground hover:bg-accent/60",
                     )}
                   >
                     {t(`git.rangePreset.${p}`)}

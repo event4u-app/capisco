@@ -82,7 +82,8 @@ class IndentGuideWidget extends WidgetType {
     wrap.setAttribute("aria-hidden", "true");
     for (let i = 0; i < this.levels; i++) {
       const g = document.createElement("span");
-      g.className = "cm-indent-guide" + (i === this.activeLevel ? " cm-indent-guide-active" : "");
+      g.className =
+        "cm-indent-guide" + (i === this.activeLevel ? " cm-indent-guide-active" : "");
       wrap.appendChild(g);
     }
     return wrap;
