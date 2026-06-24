@@ -843,7 +843,7 @@
 /* ===== Agent settings popover (prototype .agent-settings / .as-* / .bk-*) — verbatim ===== */
 .agent-settings {
   position: absolute;
-  top: calc(var(--tabbar-h) + 6px);
+  top: calc(var(--ds-tabbar-h) + 6px);
   right: 8px;
   width: 300px;
   background: var(--ds-surface-panel);
@@ -2230,7 +2230,7 @@
   align-items: flex-start;
   background: var(--ds-surface-panel);
   border-bottom: 1px solid var(--ds-border);
-  min-height: var(--tabbar-h);
+  min-height: var(--ds-tabbar-h);
   flex-shrink: 0;
 }
 .tab-scroll {
@@ -2259,7 +2259,7 @@
 }
 .tab-overflow {
   width: 32px;
-  height: var(--tabbar-h);
+  height: var(--ds-tabbar-h);
   border: none;
   background: transparent;
   color: var(--ds-text-secondary);
@@ -2340,7 +2340,8 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  height: var(--tabbar-h);
+  height: var(--ds-tabbar-h);
+  flex-shrink: 0;
   padding: 0 8px 0 12px;
   max-width: 200px;
   background: transparent;
@@ -2401,7 +2402,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  height: var(--tabbar-h);
+  height: var(--ds-tabbar-h);
   padding: 0 6px 0 12px;
   background: var(--ds-surface-panel);
   border-bottom: 1px solid var(--ds-border);
