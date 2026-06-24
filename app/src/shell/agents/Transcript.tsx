@@ -1,3 +1,4 @@
+import * as React from "react";
 import { useTranslation } from "react-i18next";
 import { AlertTriangle, Loader2, Sparkles } from "lucide-react";
 
@@ -8,10 +9,52 @@ import { PermissionPrompt } from "@/components/capisco/permission-prompt";
 import { VirtualTranscript } from "@/components/ui/virtual-transcript";
 import { useReducedMotion } from "@/lib/use-reduced-motion";
 import { agentSnapshot, chatSnapshot } from "@/mocks";
+import { getProviders, isDesktop } from "@/lib/desktop-shell";
 import type { PermissionRequest, Session, TranscriptBlock } from "@/contracts";
 import { Message } from "./Message";
 import type { RunState, WorkspaceKind } from "./store";
 import { useLivePermission } from "./use-live-permission";
+
+/**
+ * Live transcript blocks for a bridge-connected agents session. Loads
+ * `getBlocks` once (keyed on the session id) and re-fetches on every stream
+ * event from `subscribe`, unsubscribing on cleanup. Returns `null` when the
+ * argument is `null` (no bridge / chat) — the caller then uses the snapshot
+ * path, so the no-bridge render is byte-identical to before.
+ */
+function useLiveBlocks(sessionId: string | null): TranscriptBlock[] | null {
+  // Keyed by sessionId so a session switch starts from `null` (snapshot
+  // fallback) without a synchronous reset inside the effect.
+  const [state, setState] = React.useState<{
+    id: string | null;
+    blocks: TranscriptBlock[] | null;
+  }>({ id: sessionId, blocks: null });
+  React.useEffect(() => {
+    if (sessionId == null) return;
+    const agent = getProviders().agent;
+    // Defensive: a bridge whose agent provider does not implement the live
+    // block surface (getBlocks / subscribe) falls back to the snapshot path.
+    if (typeof agent.getBlocks !== "function" || typeof agent.subscribe !== "function") {
+      return;
+    }
+    let alive = true;
+    const load = () => {
+      void agent.getBlocks(sessionId).then((b) => {
+        if (alive) setState({ id: sessionId, blocks: b });
+      });
+    };
+    load();
+    const unsubscribe = agent.subscribe(sessionId, load);
+    return () => {
+      alive = false;
+      unsubscribe();
+    };
+  }, [sessionId]);
+  // Only surface live blocks for the CURRENT session id; a stale id (mid-switch)
+  // or no bridge → null, so the caller uses the snapshot path.
+  if (sessionId == null || state.id !== sessionId) return null;
+  return state.blocks;
+}
 
 function EmptyState({ model }: { model: string }) {
   const { t } = useTranslation();
@@ -202,7 +245,13 @@ export function Transcript({
   handoffSeed?: string;
 }) {
   const isChat = kind === "chat";
-  const blocks = isChat ? chatSnapshot.blocks(session.id) : agentSnapshot.blocks(session.id);
+  // Live gate: only an installed desktop bridge on the agents kind reads blocks
+  // from the live AgentProvider (loaded async, re-fetched on each stream event).
+  // With NO bridge (browser / visual harness / tests) — or chat — this is the
+  // verbatim snapshot path below, byte-identical to before.
+  const liveBlocks = useLiveBlocks(!isChat && isDesktop() ? session.id : null);
+  const blocks =
+    liveBlocks ?? (isChat ? chatSnapshot.blocks(session.id) : agentSnapshot.blocks(session.id));
   // LIVE gate: the active session's parked `ask` over the sidecar bridge. Inert
   // (null) with no bridge — the snapshot path below is then byte-identical.
   // Chat has no tools / permissions, so the live gate never applies.

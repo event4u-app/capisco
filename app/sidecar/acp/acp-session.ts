@@ -84,6 +84,14 @@ export interface AcpSessionOptions {
   untrusted?: boolean;
   /** Human-in-the-loop gate. Defaults to deny-all (fail closed). */
   resolvePermission?: PermissionResolver;
+  /**
+   * Run this turn INTO an existing store session instead of creating a new one
+   * (road-to-agent-backend-enablement P2 — interactive chat continuity). When
+   * set, `start` skips `store.create`, marks the existing session `running`, and
+   * the streamed tool/permission/status events append to it. Absent (the
+   * ToDo→agent default) → a fresh session is created, byte-identical to before.
+   */
+  existingSessionId?: string;
   /** Optional single-shot prod-write escape supplier. */
   writeEscape?: WriteEscapeSupplier;
   /** Spawn override for tests (command/args). Defaults to the stub agent. */
@@ -123,6 +131,8 @@ export class AcpSession {
   /** CLIENT-ASSIGNED session-level taint (default true). The agent cannot lower it. */
   readonly #untrusted: boolean;
   readonly #resolve: PermissionResolver;
+  /** Existing store session to run into (P2); empty → create a fresh one. */
+  readonly #existingSessionId: string;
   readonly #writeEscape: WriteEscapeSupplier;
   readonly #perform: (call: AcpToolCall) => void;
   readonly #listeners = new Set<SessionListener>();
@@ -139,6 +149,8 @@ export class AcpSession {
   readonly #terse: TerseConfig;
   /** The exact system context sent to the agent (assert helper). */
   #sentSystemContext = "";
+  /** Buffers streamed token deltas per messageId until the run reaches `done`. */
+  readonly #tokenBuf = new Map<string, string>();
 
   constructor(opts: AcpSessionOptions) {
     this.#broker = opts.broker;
@@ -150,6 +162,7 @@ export class AcpSession {
     // explicitly marks the session trusted (opts.untrusted === false).
     this.#untrusted = opts.untrusted ?? true;
     this.#resolve = opts.resolvePermission ?? DENY_ALL;
+    this.#existingSessionId = opts.existingSessionId ?? "";
     this.#writeEscape = opts.writeEscape ?? (() => undefined);
     this.#perform = opts.perform ?? (() => {});
     this.#command = opts.command;
@@ -188,13 +201,21 @@ export class AcpSession {
    * stream until the agent emits `done`. Resolves the store session id.
    */
   async start(prompt: string): Promise<string> {
-    const stored = await this.#store.create({
-      model: this.#model,
-      title: prompt,
-      status: "running",
-      worktreePath: this.#cwd,
-    });
-    this.#sessionId = stored.id;
+    if (this.#existingSessionId) {
+      // P2 — interactive chat: run this turn into the existing session. Skip
+      // create; mark it running. Streamed tool/permission/status events append
+      // to it (via #applyEvent → this.#sessionId), keeping one transcript.
+      this.#sessionId = this.#existingSessionId;
+      await this.#store.update(this.#sessionId, { status: "running" });
+    } else {
+      const stored = await this.#store.create({
+        model: this.#model,
+        title: prompt,
+        status: "running",
+        worktreePath: this.#cwd,
+      });
+      this.#sessionId = stored.id;
+    }
 
     const done = new Promise<void>((resolve) => {
       this.#transport = new AcpTransport({
@@ -255,9 +276,29 @@ export class AcpSession {
     await this.#applyEvent(event);
     this.#emit(event);
     if (event.type === "done") {
+      // Assemble the agent's streamed reply (buffered token deltas) into a
+      // durable message block BEFORE marking the session done — closes the
+      // gap left by #applyEvent's deliberate non-persistence of `token`.
+      await this.#flushAgentMessage();
       await this.#store.update(this.#sessionId, { status: "done" });
       finish();
     }
+  }
+
+  /**
+   * Append one agent message block per buffered messageId with non-empty text,
+   * then clear the buffer. Additive: turns the streamed token deltas into the
+   * durable transcript shape `Message` already supports.
+   */
+  async #flushAgentMessage(): Promise<void> {
+    for (const [messageId, text] of this.#tokenBuf) {
+      if (text.length === 0) continue;
+      await this.#store.append(this.#sessionId, {
+        type: "message",
+        block: { id: messageId, role: "agent", body: text },
+      });
+    }
+    this.#tokenBuf.clear();
   }
 
   /** Persist an event into the session store (tokens/tools/status/telemetry). */
@@ -275,10 +316,15 @@ export class AcpSession {
       case "telemetry":
         await this.#store.update(this.#sessionId, { telemetry: event.telemetry });
         break;
-      // token deltas are streamed to subscribers; the store keeps tool/perm/status
-      // records (the durable transcript shape). A real store would also assemble
-      // the streamed message — out of scope for the deterministic spine proof.
+      // token deltas are streamed to subscribers AND accumulated per messageId;
+      // the assembled agent message is appended to the store on the `done` path
+      // (#flushAgentMessage), closing the streamed-message persistence gap.
       case "token":
+        this.#tokenBuf.set(
+          event.messageId,
+          (this.#tokenBuf.get(event.messageId) ?? "") + event.delta,
+        );
+        break;
       case "done":
         break;
     }

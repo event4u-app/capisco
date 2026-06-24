@@ -20,6 +20,7 @@ import { registerBroker } from "./register-broker.ts";
 import { registerSession } from "./register-session.ts";
 import { PendingPermissionRegistry } from "./acp/pending-permission-registry.ts";
 import { createLiveAgentProvider } from "./acp/live-agent-provider.ts";
+import { readRealAcpEnv } from "./acp/real-acp-config.ts";
 import { PROVIDER_IDS } from "./register-mocks.ts";
 import { registerQuality } from "./register-quality.ts";
 import { registerTaskForge } from "./register-task-forge.ts";
@@ -84,11 +85,20 @@ export function registerAllProviders(
   // `getPendingPermission`/`resolvePermission` reach the awaiting resolver) is
   // dev-bridge-only (`liveAgent`) so the unix sidecar's mock-data contract holds.
   const pending = new PendingPermissionRegistry();
-  const { store } = registerSession(registry, broker, { pending });
+  // Agent backend selection (road-to-agent-backend-enablement P1). Default is the
+  // deterministic in-repo `acp` stub (mock/test parity, byte-identical goldens);
+  // `CAPISCO_AGENT_BACKEND=native` selects the ClaudeCodeProvider stream-json
+  // adapter, which drives the user's existing `claude` login (no raw key). The
+  // same `backend` is what Phase 2's interactive chat run reuses.
+  const backend = process.env.CAPISCO_AGENT_BACKEND === "native" ? ("native" as const) : undefined;
+  const { store } = registerSession(registry, broker, { pending, backend });
   if (opts.liveAgent) {
+    // P2 — the interactive chat run. The broker is the side-effect chokepoint;
+    // `acp` (env-sourced) selects the real claude-code-acp bridge CLI when set,
+    // else the deterministic stub. Permission asks park for the UI (`pending`).
     registry.replace(
       PROVIDER_IDS.agent,
-      createLiveAgentProvider({ store, pending }) as never,
+      createLiveAgentProvider({ store, pending, broker, acp: readRealAcpEnv() }) as never,
     );
   }
   // B5 — the quality-tool runner (eslint/tsc/vitest) + deferred AI-review fake.

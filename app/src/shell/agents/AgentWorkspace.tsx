@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { agentSnapshot, chatSnapshot, mockWorktrees } from "@/mocks";
 import { useOpenProject } from "@/shell/open-project-store";
 import { useWorktrees } from "@/shell/worktree-store";
-import { getProviders } from "@/lib/desktop-shell";
+import { getProviders, isDesktop } from "@/lib/desktop-shell";
 import type { MentionFieldElement } from "./MentionAutocomplete";
 import { useLayout } from "@/shell/store";
 import { usePalette } from "@/shell/command-registry";
@@ -134,6 +134,8 @@ export function AgentWorkspace({ kind = "agents" }: { kind?: WorkspaceKind } = {
   const [terseHintOpen, setTerseHintOpen] = React.useState(false);
   const send = () => {
     const el = composerRef.current;
+    // Capture the typed turn BEFORE clearing — a live run needs the text.
+    const text = el?.value?.trim();
     if (el) el.value = "";
     // Start the run (P3): the session goes `loading`, which drives the
     // composer's Stop affordance. The real stream lands on the AgentProvider;
@@ -142,6 +144,13 @@ export function AgentWorkspace({ kind = "agents" }: { kind?: WorkspaceKind } = {
     if (terseEnabled && !terseHintSeen) {
       setTerseHintOpen(true);
       markTerseHintSeen();
+    }
+    // Live agent run (road-to-agent-backend-enablement): only when a desktop
+    // bridge is present AND this is the agents kind. No bridge → mock path is
+    // untouched (the browser/visual harness never reaches this). Chat has no
+    // tools / live run, so it stays mock-only too.
+    if (text && cur && !isChat && isDesktop()) {
+      void getProviders().agent.sendPrompt(cur.id, text);
     }
   };
   const dismissTerseHint = () => setTerseHintOpen(false);
