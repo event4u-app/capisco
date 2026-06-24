@@ -522,6 +522,8 @@ export const mockAgentProvider: AgentProvider = {
   getPlanUsage: () => Promise.resolve(PLAN_USAGE),
   getDetectedCli: () => Promise.resolve(DETECTED_CLI),
   getSystemContextSize: () => Promise.resolve(SYSTEM_CONTEXT),
+  // No live agent in the browser/mock — sendPrompt is a no-op (UI tests spy it).
+  sendPrompt: () => Promise.resolve(),
 };
 
 // Synchronous deterministic snapshots for render-only consumers (the async

@@ -59,7 +59,7 @@ function wire(): void {
     model: "Stub Agent",
   });
   // The dev-bridge-only live agent swap (mirrors registerAllProviders liveAgent).
-  registry.replace(PROVIDER_IDS.agent, createLiveAgentProvider({ store, pending }) as never);
+  registry.replace(PROVIDER_IDS.agent, createLiveAgentProvider({ store, pending, broker }) as never);
   const conn = new IpcConnection(serverSide, registry);
   client = new SidecarClient(clientSide);
   teardown = () => {

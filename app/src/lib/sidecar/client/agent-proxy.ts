@@ -69,5 +69,6 @@ export function createAgentProxy(client: SidecarClient): AgentProvider {
     getPlanUsage: () => call<PlanUsageRow[]>("getPlanUsage"),
     getDetectedCli: () => call<BackendConfig>("getDetectedCli"),
     getSystemContextSize: () => call<SystemContextSize>("getSystemContextSize"),
+    sendPrompt: (sessionId, text) => call<void>("sendPrompt", [sessionId, text]),
   };
 }

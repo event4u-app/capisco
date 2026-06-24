@@ -22,6 +22,7 @@ import type {
   AgentProvider,
   BackendConfig,
   AgentOption,
+  CapabilityBroker,
   EffortLevel,
   GrantAxis,
   Message,
@@ -39,19 +40,30 @@ import type {
 } from "@/contracts";
 import { mockAgentProvider } from "@/mocks";
 import type { PendingPermissionRegistry } from "./pending-permission-registry.ts";
+import { AcpSession } from "./acp-session.ts";
+import { type RealAcpConfig } from "./real-acp-config.ts";
 
 /** Project a persisted session record onto the UI {@link Session} shape. */
 function toSession(s: StoredSession): Session {
   return { id: s.id, model: s.model, status: s.status, title: s.title, telemetry: s.telemetry };
 }
 
+/** Monotonic id for a user message block (runtime only — never in a golden). */
+let userMsgSeq = 0;
+
 export interface LiveAgentProviderOptions {
   store: SessionStore;
   pending: PendingPermissionRegistry;
+  /** Broker chokepoint — every chat-run side effect flows through it (P2). */
+  broker: CapabilityBroker;
+  /** Real ACP CLI config (env-sourced). Absent → the deterministic stub agent. */
+  acp?: RealAcpConfig;
+  /** Fallback worktree cwd when a session has none yet. */
+  defaultCwd?: string;
 }
 
 export function createLiveAgentProvider(opts: LiveAgentProviderOptions): AgentProvider {
-  const { store, pending } = opts;
+  const { store, pending, broker, acp, defaultCwd } = opts;
 
   return {
     listSessions: async (): Promise<Session[]> => {
@@ -110,5 +122,46 @@ export function createLiveAgentProvider(opts: LiveAgentProviderOptions): AgentPr
     // System-context size (P5) — the live ACP path reuses the deterministic
     // mock size until the real assembled-context sum is wired (a thin swap).
     getSystemContextSize: () => mockAgentProvider.getSystemContextSize(),
+
+    // --- THE INTERACTIVE CHAT RUN (P2) ---
+    // Append the user's turn, then drive a broker-gated agent run INTO the same
+    // session. The ACP path covers the deterministic stub (default) AND the real
+    // `claude-code-acp` bridge (`CAPISCO_ACP_CLI`). Permission asks park for the
+    // UI via `pending.resolver` (fail-closed); the run's stream is forwarded to
+    // the UI subscribers so the transcript renders the reply live. (A native
+    // ClaudeCodeProvider chat adapter is a follow-up; the ACP path already gives
+    // real `claude` via the bridge CLI.)
+    sendPrompt: async (sessionId: string, text: string): Promise<void> => {
+      const session = await store.get(sessionId);
+      if (!session) return;
+      await store.append(sessionId, {
+        type: "message",
+        block: { id: `u-${userMsgSeq++}`, role: "user", body: text },
+      });
+      // Nudge subscribers so the user's message renders immediately.
+      pending.publish(sessionId, { type: "status", status: "running" });
+
+      const run = new AcpSession({
+        broker,
+        store,
+        cwd: session.worktreePath || defaultCwd || process.cwd(),
+        model: session.model,
+        existingSessionId: sessionId,
+        resolvePermission: pending.resolver,
+        command: acp?.cliCommand,
+        args: acp?.cliArgs,
+        handshake: Boolean(acp?.cliCommand),
+      });
+      const unsub = run.subscribe((ev) => pending.publish(sessionId, ev));
+      // Fire-and-forget: the forwarded stream drives the UI; tear the run down
+      // on completion (or error). The turn is "dispatched" once we return.
+      void run
+        .start(text)
+        .catch(() => {})
+        .finally(() => {
+          unsub();
+          run.close();
+        });
+    },
   };
 }

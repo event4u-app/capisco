@@ -86,6 +86,49 @@ describe("ACP transport ↔ stub agent ↔ broker", () => {
 
     // Both actions ran THROUGH the broker (the client performed them, not the stub).
     expect(performed).toEqual(["file-read:README.md", "file-write:TODO-done.md"]);
+
+    // The streamed token deltas were assembled into a durable agent message
+    // block. The stub streams `Working on: <prompt>` across two deltas, where
+    // <prompt> is the exact (terse-injected) prompt string sent to the agent.
+    const agentMessages = resumed.blocks
+      .filter((b) => b.type === "message")
+      .map((b) => b.block)
+      .filter((m) => m.role === "agent");
+    expect(agentMessages).toHaveLength(1);
+    expect(agentMessages[0]?.body).toBe(`Working on: ${session.sentSystemContext}`);
+  });
+
+  it("runs a turn INTO an existing session (P2 chat continuity) — no new session", async () => {
+    const broker = new Broker();
+    const store = new InMemorySessionStore();
+    // An existing chat session the user is already in.
+    const existing = await store.create({
+      model: "Stub Agent",
+      title: "chat",
+      status: "idle",
+      worktreePath: "/tmp/worktree-x",
+    });
+
+    const session = track(
+      new AcpSession({
+        broker,
+        store,
+        cwd: "/tmp/worktree-x",
+        model: "Stub Agent",
+        resolvePermission: ALLOW_ALL,
+        existingSessionId: existing.id,
+      }),
+    );
+    const returned = await session.start("the user's next turn");
+
+    // Ran INTO the existing session — no fresh session created.
+    expect(returned).toBe(existing.id);
+    expect((await store.list()).length).toBe(1);
+    // Streamed tool events appended to that same session; status reaches done.
+    const stored = await store.get(existing.id);
+    expect(stored?.status).toBe("done");
+    const resumed = await store.resume(existing.id);
+    expect(resumed.blocks.some((b) => b.type === "tool")).toBe(true);
   });
 
   it("the broker is un-bypassable: a deny blocks the agent's write", async () => {

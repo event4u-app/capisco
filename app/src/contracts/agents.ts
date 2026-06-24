@@ -297,6 +297,16 @@ export interface AgentProvider {
    * rules-warning flips at the real `limit`, not a hardcoded value.
    */
   getSystemContextSize(): Promise<SystemContextSize>;
+  /**
+   * Send a user turn into an existing session and drive a live agent run
+   * (road-to-agent-backend-enablement P2). Appends the user message, runs the
+   * agent (broker-gated, human-gated), and streams its reply/tool blocks into
+   * the session — observed via {@link subscribe} / {@link getBlocks}. Resolves
+   * when the turn is dispatched (the stream completes asynchronously). The mock
+   * is a no-op (the browser has no live agent); the live provider drives the ACP
+   * session.
+   */
+  sendPrompt(sessionId: string, text: string): Promise<void>;
 }
 
 /** Live system-context size — the loaded rules/guidelines char count + limit. */

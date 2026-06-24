@@ -204,6 +204,17 @@ export class PendingPermissionRegistry {
     for (const l of set) l(event);
   }
 
+  /**
+   * Push a live run's stream event to this session's subscribers (the UI's
+   * event channel). The interactive chat run (road-to-agent-backend-enablement
+   * P2) forwards its {@link AcpSession} stream here so the transcript re-renders;
+   * permission events still flow through {@link resolver}. Pure relay — it never
+   * widens the broker's allowlist.
+   */
+  publish(sessionId: string, event: SessionEvent): void {
+    this.#emit(sessionId, event);
+  }
+
   /** Fail-closed teardown — deny every still-parked `ask` (e.g. on shutdown). */
   denyAll(): void {
     for (const sessionId of [...this.#pending.keys()]) {
