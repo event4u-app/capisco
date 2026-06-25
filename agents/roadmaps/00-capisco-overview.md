@@ -48,6 +48,8 @@ Command-Palette) → R2 → R3 → R4 → R5 → R6. R0a/R0b sind harte Vorausse
 | `road-to-agent-backend-enablement` | Agent / Runtime | abgeschlossen (archiviert) | Stub-verifiziert; echte `claude`-Antwort = 1-Zeilen-Demo |
 | `road-to-design-sync-v2` | UI-Sync | abgeschlossen (archiviert) · Klasse-C-Sicht-Abnahme offen | DOM + Goldens + **Sicht-Abnahme** |
 | `road-to-composer-context-runtime` | Token-Ökonomie / Runtime | abgeschlossen (archiviert) · Klasse-C-Sicht-Abnahme offen | Unit/Invarianten + Sicht-Abnahme |
+| `road-to-tauri-desktop-shell` | Desktop / Packaging | ready | `task dev` öffnet native App; Bridge-/Provider-Asserts |
+| `road-to-desktop-release` | Desktop / Packaging | ready | `tauri build` + CI-Matrix; Signing/Tag = human-gated |
 
 `design-sync-v2` ist reine UI-Projektion der Morning-Deltas (2026-06-22); die dort als
 Stub angelegten Datenpfade füllt `composer-context-runtime`.
