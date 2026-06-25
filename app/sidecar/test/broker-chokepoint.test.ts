@@ -33,6 +33,12 @@ const SIDECAR_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
  * this list pins *where* the primitives may physically live.
  */
 const EXECUTION_PRIMITIVES: Record<string, ReadonlyArray<SideEffect>> = {
+  // The shared process supervisor (road-to-actually-works P1) — THE managed
+  // spawn point for long-lived children (PTY/LSP/container-exec/DAP). spawn, no
+  // shell, sealed env by default, piped stderr. It is the mechanism; the
+  // capability DECISION to start a PTY/LSP/debugger is broker-gated at the layer
+  // that calls it (those phases), the same posture as claude-stream-exec.ts.
+  "supervisor/process-supervisor.ts": ["process"],
   // The system-`git` exec primitive (B1). execFile, no shell.
   "git/git-exec.ts": ["process"],
   // The quality-tool runner (B5) shells out to eslint/tsc/vitest. execFile.
