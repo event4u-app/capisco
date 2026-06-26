@@ -112,9 +112,9 @@ bereits — jetzt mit echten Tools gespeist).
 - [ ] **Diagnostics + anwendbare Fixes** in der UI; Tool-Findings als Grundwahrheit.
 - [ ] **KI-Review geerdet:** erst Tools laufen, deren Fakten dem Modell als Kontext
       geben (`FakeAiReviewProvider` → echter, key-gebundener Pfad).
-- [ ] **Model-Routing-Eskalation real speisen:** `QualityGate` an
+- [x] **Model-Routing-Eskalation real speisen:** `QualityGate` an
       `QualityProvider.runAll` mit echten PHPStan/ESLint-Ergebnissen; RED stuft hoch,
-      Diagnostics als Kontext mitgeführt.
+      Diagnostics als Kontext mitgeführt. <!-- realQualityGate (model-routing/quality-gate.ts) bindet den escalation-QualityGate-Seam an QualityProvider.runAll → verdictFromResults; escalation.ts bleibt reine Orchestrierung (kein Provider-Import). Live gegen den echten B5-Runner: eslint prefer-const-Error → RED mit echtem Diagnostic, clean → GREEN, tsc Type-Error → RED; Eskalation über das REALE Gate auf rotem Worktree klettert small→mid→large und trägt die ECHTE eslint-Rule in den Re-Spawn-Prompt (quality-gate.int.test.ts, 0 skipped). PHPStan/Rector/ECS = PHP-Tool-Pack (Folge); der Modell-Spawn-Seam (RunSession) bleibt key-gated → Matze. -->
 - [ ] **Doppellauf-Kosten sichtbar** (`EscalationOutcome.attempts`) am echten Lauf.
 
 **Stolpersteine:** Tool-Installation pro Projekt/Container; Output-Format-Drift je
