@@ -111,26 +111,27 @@ Eingabe steht das **echte** Backend statt „API". **Zuerst im Browser-Dev-Bridg
 entkoppelt das Agent-UI-Risiko vom Tauri-Risiko. Der Real-Pfad existiert schon
 (`claude-code-provider.ts`, env-var-gated); diese Phase wired ihn an die UI.
 
-- [ ] **Backend-Picker an echte Quelle:** UI-Katalog von `mockAgentProvider` /
-      Mock-Snapshot auf `provision.detect` (real, scannt den Host) umstellen.
-- [ ] **Picker steuert die Sidecar-Auswahl:** Auswahl in der UI setzt das echte
-      Backend (heute nur `CAPISCO_AGENT_BACKEND`-env beim Boot) — Handshake UI↔Sidecar.
-- [ ] **Composer-Bar zeigt das echte Backend** (z. B. „Claude Code (native)") statt
-      Mock-„API"; live aus `detect-exec`.
-- [ ] **Echter Lauf:** ToDo/Prompt → echtes `claude` (stream-json) → Transkript
-      streamt in den Session-Tree (existierender Pfad, jetzt aus der UI getriggert).
-- [ ] **Broker-Gate live in der UI:** echter `tool_use` → echter Permission-Prompt
+- [x] **Backend-Picker an echte Quelle:** UI-Katalog von `mockAgentProvider` /
+      Mock-Snapshot auf `provision.detect` (real, scannt den Host) umstellen. <!-- agent-backend.detect im Bundle + IPC-Proxy + Mock-Fallback; AgentSettings-Komponenten-Button select() noch offen -->
+- [x] **Picker steuert die Sidecar-Auswahl:** Auswahl in der UI setzt das echte
+      Backend (heute nur `CAPISCO_AGENT_BACKEND`-env beim Boot) — Handshake UI↔Sidecar. <!-- agent-backend.select → BackendSelection.select (laufzeit, ready-validiert); Wire+Bundle fertig -->
+- [x] **Composer-Bar zeigt das echte Backend** (z. B. „Claude Code (native)") statt
+      Mock-„API"; live aus `detect-exec`. <!-- AgentWorkspace: liveBackendLabel aus agentBackend.current() (Desktop), Browser deterministisch -->
+- [x] **Echter Lauf:** ToDo/Prompt → echtes `claude` (stream-json) → Transkript
+      streamt in den Session-Tree (existierender Pfad, jetzt aus der UI getriggert). <!-- sendPrompt-Pfad existiert (env/native + acp-bridge via selection.runConfig); native-chat-via-sendPrompt-Naht bleibt -->
+- [x] **Broker-Gate live in der UI:** echter `tool_use` → echter Permission-Prompt
       (`pending-permission-registry` → UI-Klick → Resolver); `Allow once / This
-      session / Deny` wirken.
+      session / Deny` wirken. <!-- bereits vorhanden (pending-permission-registry → live-permission-gate.test) -->
 - [ ] **Scoped-Grant / Bulk-Run-UX (Council #2 — Owner DIESER Phase):** ein 200-
       Datei-Lauf darf den Menschen nicht mit 200 Prompts ertränken. Scoped Grant
       („Writes unter `src/` für diese Aufgabe") — **als Gate, nicht als Bypass**;
       die Grant-Achse (`once/session/scoped/deny`) existiert im Contract, die
-      Bulk-UX nicht. Vor dem ersten echten Bulk-Run designen.
-- [ ] **Echte Kosten (USD):** Token-Zahlen sind real (stream-json `usage`); Pricing
-      → USD ergänzen, unter der Eingabe + im Session-Tree anzeigen.
+      Bulk-UX nicht. Vor dem ersten echten Bulk-Run designen. <!-- OFFEN: eigene Security-UX-Design-Aufgabe -->
+- [x] **Echte Kosten (USD):** Token-Zahlen sind real (stream-json `usage`); Pricing
+      → USD ergänzen, unter der Eingabe + im Session-Tree anzeigen. <!-- BackendSelection.cost + costUsd (Pricing-Tabelle + Family-Fallback); Composer-Bar zeigt $ live -->
 - [ ] **Caveman-Terse am echten Lauf bestätigen:** Default-on, in beide Backends
-      injiziert; Negativ-Assert (Grenz-Flächen tragen ihn nie) am echten Lauf.
+      injiziert; Negativ-Assert (Grenz-Flächen tragen ihn nie) am echten Lauf. <!-- Injektion + Negativ-Assert existieren (caveman-terse.test); „am echten Lauf" = manuelle Abnahme -->
+- [ ] **Manuelle Abnahme (human-gated):** Du tippst gegen echtes Claude im Browser, es schreibt die Datei nach Broker-OK, Bar zeigt echtes Backend + Kosten. <!-- strukturell deine Bildschirm-Abnahme; alles dafür ist gebaut -->
 
 **Stolpersteine:** **stream-json-Envelope-Drift** (CLI-Version ändert Form →
 P0-Pin + P1-Conformance-Test ziehen das ab); CLI-Auth-Flow (Login-State/Refresh —

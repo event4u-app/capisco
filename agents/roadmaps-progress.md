@@ -6,17 +6,17 @@
 
 ## Overall
 
-**13 / 126 steps done · 10%**
+**19 / 127 steps done · 15%**
 
 ```text
-████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░   10%
+██████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░   15%
 ```
 
 ## Open roadmaps
 
 | # | Roadmap | Phases | Steps | Open | Done | Deferred | Cancelled | Progress |
 |---|---|---:|---:|---:|---:|---:|---:|---|
-| 1 | [road-to-actually-works.md](roadmaps/road-to-actually-works.md) | 9 | 53 | 40 | 13 | 0 | 0 | ██░░░░░░░░ 25% |
+| 1 | [road-to-actually-works.md](roadmaps/road-to-actually-works.md) | 9 | 54 | 35 | 19 | 0 | 0 | ████░░░░░░ 35% |
 | 2 | [road-to-desktop-release.md](roadmaps/road-to-desktop-release.md) | 6 | 14 | 14 | 0 | 0 | 0 | ░░░░░░░░░░ 0% |
 | 3 | [road-to-real-breadth.md](roadmaps/road-to-real-breadth.md) | 5 | 30 | 30 | 0 | 0 | 0 | ░░░░░░░░░░ 0% |
 | 4 | [road-to-real-runtime.md](roadmaps/road-to-real-runtime.md) | 5 | 29 | 29 | 0 | 0 | 0 | ░░░░░░░░░░ 0% |
@@ -27,13 +27,13 @@
 
 ### [road-to-actually-works.md](roadmaps/road-to-actually-works.md)
 
-**Road to Actually Works — die Spine zur gefühlten IDE** — 13 / 53 done (25%)
+**Road to Actually Works — die Spine zur gefühlten IDE** — 19 / 54 done (35%)
 
 | # | Phase | State | Open | Done | Deferred | Cancelled | % |
 |---|---|---|---:|---:|---:|---:|---:|
 | 0 | Reality-Gate als ausführbarer `doctor` | ✅ done | 0 | 7 | 0 | 0 | 100% |
 | 1 | Fundament-Primitive + Test-Spine (einmal, trägt alles) | ✅ done | 0 | 6 | 0 | 0 | 100% |
-| 2 | Echter Agent end-to-end, IM BROWSER bewiesen (gefühlte Scheibe #1) | ⬜ not started | 8 | 0 | 0 | 0 | 0% |
+| 2 | Echter Agent end-to-end, IM BROWSER bewiesen (gefühlte Scheibe #1) | 🟡 in progress | 3 | 6 | 0 | 0 | 67% |
 | 3 | Minimal-Observability in der Spine (Council #5) | ⬜ not started | 4 | 0 | 0 | 0 | 0% |
 | 4 | Editor fertig (Grammatik · File-Watch · Folding — KEIN LSP) | ⬜ not started | 4 | 0 | 0 | 0 | 0% |
 | 5 | LSP-Basis (Diagnostics · Hover · Autovervollständigung) | ⬜ not started | 6 | 0 | 0 | 0 | 0% |
