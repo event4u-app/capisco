@@ -1,9 +1,10 @@
 import * as React from "react";
-import { EditorState } from "@codemirror/state";
+import { EditorState, type Extension } from "@codemirror/state";
 import { EditorView, lineNumbers, gutter, GutterMarker } from "@codemirror/view";
 import { foldGutter, codeFolding, foldKeymap, foldService } from "@codemirror/language";
 import { keymap } from "@codemirror/view";
 import { javascript } from "@codemirror/lang-javascript";
+import { php } from "@codemirror/lang-php";
 
 import type { ChangeBar, EditorDoc, FoldRange } from "@/contracts";
 import { editorSnapshot } from "@/mocks";
@@ -16,6 +17,20 @@ import {
 } from "./cm-extensions";
 
 /** Git change-bar gutter marker (Modified amber / Added green / Deleted red). */
+/**
+ * Pick the CodeMirror language by file extension (road-to-actually-works P4).
+ * The grammar drives syntax highlighting AND syntactic folding (the language's
+ * fold ranges feed `codeFolding()`). LSP-accurate folding/diagnostics arrive in
+ * P5; this is the grammar layer. Unknown extensions fall back to JS/TS so a file
+ * is never unstyled.
+ */
+function languageForFile(file: string): Extension {
+  const dot = file.lastIndexOf(".");
+  const ext = dot >= 0 ? file.slice(dot + 1).toLowerCase() : "";
+  if (ext === "php" || ext === "phtml") return php();
+  return javascript({ typescript: ext !== "js" && ext !== "jsx" && ext !== "mjs" && ext !== "cjs" });
+}
+
 class ChangeBarMarker extends GutterMarker {
   readonly kind: ChangeBar["kind"];
   constructor(kind: ChangeBar["kind"]) {
@@ -142,7 +157,7 @@ export function CodeMirrorView({
         providerFolds(folds),
         foldGutter(),
         keymap.of(foldKeymap),
-        javascript({ typescript: true }),
+        languageForFile(doc.file),
         capiscoTheme,
         capiscoSyntax,
         rainbowBrackets,
