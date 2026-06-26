@@ -183,7 +183,7 @@ externen Provider + die geteilte Signal-Schiene.
 
 - [x] **Observability-Provider** (Sentry/Datadog/New Relic via MCP); Dev-Grafana-Embed. <!-- Sentry-Issues-Kern: RealSentryProvider (Bearer via ProviderAuth, secret-by-reference), listIssues → Spec-Shape + toSignals (source observability); gegen echtes galabau-workgroup-gmbh-Sentry live verifiziert; dev-bridge registriert wenn org+token. Crons/Performance/Alerts (Spec §4.2–4.4) + Datadog/NewRelic/Grafana = Folge-Slices -->
 - [ ] **IDE-Selbst-Telemetrie** strikt opt-in, gescrubbt, nie aus Tresor/Code.
-- [ ] **Geteilte Signal-Fläche** live (PR/Container/Observability auf *einer* Schiene).
+- [x] **Geteilte Signal-Fläche** live (PR/Container/Observability auf *einer* Schiene). <!-- RealSignalProvider: aggregiert PR-Status (prsToSignals) + Container-Health (servicesToSignals) + Observability/Sentry (toSignals) auf EINE SignalItem-Schiene, dedup by id (jede Quelle namespaced: pr:/container:/sentry:), routet per dumb Rules (pr/container/observability→alerts, lint→inspect). Quellen ziehen zur Call-Zeit aus der Registry → reflektiert echten gh-Forge/Sentry/Runtime; tote Quelle blankt die Schiene nie. dev-bridge ersetzt den Mock-Signal-Provider; dev-bridge-ipc bootet damit (5 grün). Tests: Folds + Aggregation/Dedup/Routing + live gegen echten Forge (13 grün). Cross-source semantische Dedup (gemeinsamer Korrelations-Key) = Folge-Slice -->
 
 **Stolpersteine:** MCP-Server-Anbindung; Signal-Dedup über Quellen.
 
