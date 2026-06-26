@@ -135,7 +135,8 @@ export function AgentWorkspace({ kind = "agents" }: { kind?: WorkspaceKind } = {
     void p.agentBackend
       .current()
       .then((cfg) => {
-        if (!cancelled) setLiveBackendLabel(cfg.kind === "api" ? cfg.provider : `CLI · ${cfg.provider}`);
+        if (!cancelled)
+          setLiveBackendLabel(cfg.kind === "api" ? cfg.provider : `CLI · ${cfg.provider}`);
       })
       .catch(() => {});
     void p.agentBackend

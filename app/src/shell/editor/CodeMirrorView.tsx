@@ -28,7 +28,9 @@ function languageForFile(file: string): Extension {
   const dot = file.lastIndexOf(".");
   const ext = dot >= 0 ? file.slice(dot + 1).toLowerCase() : "";
   if (ext === "php" || ext === "phtml") return php();
-  return javascript({ typescript: ext !== "js" && ext !== "jsx" && ext !== "mjs" && ext !== "cjs" });
+  return javascript({
+    typescript: ext !== "js" && ext !== "jsx" && ext !== "mjs" && ext !== "cjs",
+  });
 }
 
 class ChangeBarMarker extends GutterMarker {
