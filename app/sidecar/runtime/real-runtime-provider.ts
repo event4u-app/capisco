@@ -20,6 +20,8 @@ import type {
   RuntimeProvider,
   RuntimeStatsFrame,
   ServiceStat,
+  SignalItem,
+  SignalSeverity,
   Unsubscribe,
 } from "@/contracts";
 
@@ -180,4 +182,25 @@ export class RealRuntimeProvider implements RuntimeProvider {
   dispose(): void {
     if (this.#timer) clearTimeout(this.#timer);
   }
+}
+
+/** Pure: a container's status → shared-rail severity. running→success, error→warning, exited→idle. */
+function severityFor(status: ContainerStatus): SignalSeverity {
+  return status === "running" ? "success" : status === "error" ? "warning" : "idle";
+}
+
+/** Pure: one service → a shared-rail SignalItem (source `container`). */
+export function serviceToSignal(project: string, svc: ServiceStat): SignalItem {
+  return {
+    id: `container:${project}:${svc.name}`,
+    sev: severityFor(svc.status),
+    source: "container",
+    title: `${svc.name} — ${svc.status}`,
+    sub: `${project} · ${svc.image} · cpu ${svc.cpu}% · mem ${svc.mem} · ${svc.uptime}`,
+  };
+}
+
+/** Pure: grouped service snapshot → SignalItems (the §5.2 container fold). */
+export function servicesToSignals(groups: readonly { project: string; services: ServiceStat[] }[]): SignalItem[] {
+  return groups.flatMap((g) => g.services.map((s) => serviceToSignal(g.project, s)));
 }
