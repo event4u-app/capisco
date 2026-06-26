@@ -48,6 +48,14 @@ const EXECUTION_PRIMITIVES: Record<string, ReadonlyArray<SideEffect>> = {
   // discrete argv; a mutating-verb guard refuses run/rm/exec/kill so it stays
   // read-only (`docker ps` / `docker stats --no-stream`). Same posture as detect-exec.ts.
   "runtime/docker-exec.ts": ["process"],
+  // macOS keychain access (road-to-real-breadth P0). execFile `security`, no shell,
+  // discrete argv. The one place secret VALUES touch a subprocess — single `capisco`
+  // service namespace, `-U` idempotent (no duplicate items). Backs KeychainSecretStore.
+  "broker/keychain-exec.ts": ["process"],
+  // The 0600 file fallback for the secret vault (road-to-real-breadth P0), used
+  // when the macOS keychain is unavailable. Owner-only JSON file; single fixed
+  // path (no garbage). The persistence write/read for KeychainSecretStore's peer.
+  "broker/file-secret-store.ts": ["fs-read", "fs-write"],
   // The system-`git` exec primitive (B1). execFile, no shell.
   "git/git-exec.ts": ["process"],
   // The quality-tool runner (B5) shells out to eslint/tsc/vitest. execFile.
