@@ -138,9 +138,9 @@ Luft).
 - [x] **Go-to-Definition, Find-References, Rename-Symbol** über den LSP-Host. <!-- LspHost.definition/references/rename (textDocument/definition|references|rename), capabilities deklariert; reine Normalizer (lsp-normalize.ts) falten die polymorphen LSP-Antworten (Location|Location[]|LocationLink[], WorkspaceEdit.changes|documentChanges) in die Contract-Shapes (LspLocation/LspWorkspaceEdit). LspManager + register-lsp exponieren sie über die Wire. Tests: reine Normalizer + live gegen echten typescript-language-server (definition→Deklarationszeile, references≥2, rename→Edits — 0 skipped). UI-Wiring (Jump/References-Panel/Rename-Apply gated) = consumer-side Folge-Slice -->
 - [x] **Inlay-Hints** (Parameter-Namen), **Blame-Line** inline (aus echtem Git). <!-- Inlay: LspHost.inlayHints (textDocument/inlayHint) + normalizeInlayHints (string- & InlayHintLabelPart[]-Labels); LspServerSpec.initializationOptions durchgereicht, tsserver-Inlay-Preferences im SERVERS-Def gesetzt (sonst leer); live gegen echten tsserver verifiziert (Variable-Type-Hints, 0 skipped). Blame-Line: nutzt die schon-reale RealGitProvider.blame (GitOps-Contract) — Sidecar-Capability da. UI-Wiring (CM6-Inlay-Dekorationen + Blame-Gutter) = consumer-side Folge-Slice -->
 - [x] **Structure/Outline** (linke Bar) aus echten LSP-Symbolen. <!-- LspHost.documentSymbol (textDocument/documentSymbol) → normalizeSymbols faltet DocumentSymbol[] (hierarchisch) + SymbolInformation[] (flach) in flache LspSymbol[] mit depth; live gegen typescript-language-server verifiziert (listet `greeting` etc.). Linke Outline-Bar-Wiring (ersetzt SymbolNode-getStructure-Mock) = consumer-side Folge-Slice -->
-- [ ] **Per-Worktree-LSP-Lifecycle (Council-Trap):** N Worktrees × M Sprachen =
+- [x] **Per-Worktree-LSP-Lifecycle (Council-Trap):** N Worktrees × M Sprachen =
       viele Prozesse; Crash-Restart / didOpen-didChange-Sync / Idle-Reaping — **über
-      den `actually-works`-P1-Supervisor**, nicht neu gebaut.
+      den `actually-works`-P1-Supervisor**, nicht neu gebaut. <!-- LspHost spawnt jetzt mit on-crash-Restart-Policy (backoff 200ms→5s, cap 5) über den P1-Supervisor (nicht neu gebaut); bei Server-Tod re-initialize + Replay aller getrackten didOpen (#openDocs) = State-Resync, in-flight-Requests fail-fast statt 15s-Hang, optionaler onRestart-Callback fürs UI. Deterministischer Fake-Server-Test (Crash→Respawn→Doc-Replay→Reads ok) + live gegen echten typescript-language-server: externes SIGKILL → Supervisor-Respawn → Resync → Reads ok (0 skipped). Idle-Reaping = vorhandene Supervisor-Capability (idleTimeoutMs); didChange-Sync N/A bis ein didChange-Pfad existiert. UI-Wiring ("neu gestartet"-Toast) = consumer-side Folge-Slice -->
 
 **Stolpersteine:** LSP-Prozess-Lifecycle (Absturz/Restart); per-Worktree-Roots;
 Init-Performance bei großen Projekten; PHP-LSP-Eigenheiten (Stubs/Indexing).
@@ -161,10 +161,10 @@ Phase besaß bisher „was, wenn einer stirbt".
 - [ ] **`claude` hängt / bricht ab:** Timeout + sauberer Abbruch + Wiederaufnahme
       (Retry-as-branch, Session-Tree).
 - [ ] **Container gekillt:** Health-Erkennung → Neustart-Angebot, Ports/Mounts wieder her.
-- [ ] **LSP/PTY-Crash:** Supervisor-Restart-mit-Backoff (aus `actually-works`-P1),
-      UI zeigt „neu gestartet".
-- [ ] **Adversarial-Test:** Prozesse absichtlich killen, assertieren, dass die App
-      sauber erholt statt zu hängen/Daten zu verlieren.
+- [x] **LSP/PTY-Crash:** Supervisor-Restart-mit-Backoff (aus `actually-works`-P1),
+      UI zeigt „neu gestartet". <!-- LSP: LspHost konsumiert die actually-works-P1-Supervisor-Restart-mit-Backoff-Policy (on-crash, 200ms→5s, cap 5) + State-Resync (re-initialize + didOpen-Replay) + onRestart-Signal fürs UI; live per externem SIGKILL verifiziert (lsp-recovery.int.test.ts). PTY erbt denselben Supervisor-Mechanismus, sobald der PTY-Host landet (actually-works P6, noch nicht gebaut). UI-Toast = consumer-side Folge-Slice -->
+- [x] **Adversarial-Test:** Prozesse absichtlich killen, assertieren, dass die App
+      sauber erholt statt zu hängen/Daten zu verlieren. <!-- lsp-recovery.int.test.ts: (1) deterministisch über den echten Supervisor mit injiziertem Fake-Server — Crash→Backoff-Respawn→re-initialize→Doc-Replay→Reads ok, in-flight-Requests fail-fast, Dispose ohne Respawn; (2) live adversarial — echter typescript-language-server per process.kill(pid,"SIGKILL") getötet, App erkennt+respawnt+resynct, Reads danach wieder ok (0 skipped) -->
 
 **Stolpersteine:** Reconnect-Races; Session-State-Konsistenz nach Reconnect;
 Backoff-Tuning (kein Restart-Sturm).
