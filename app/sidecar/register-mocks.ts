@@ -40,6 +40,7 @@ export const PROVIDER_IDS = {
   projectFs: "projectFs",
   ingest: "ingest",
   revert: "revert",
+  telemetry: "telemetry",
 } as const;
 
 /**

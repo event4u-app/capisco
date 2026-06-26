@@ -22,6 +22,7 @@ import { PendingPermissionRegistry } from "./acp/pending-permission-registry.ts"
 import { createLiveAgentProvider } from "./acp/live-agent-provider.ts";
 import { readRealAcpEnv } from "./acp/real-acp-config.ts";
 import { PROVIDER_IDS } from "./register-mocks.ts";
+import { FileTelemetryStore } from "./telemetry/telemetry-store.ts";
 import { registerQuality } from "./register-quality.ts";
 import { registerTaskForge } from "./register-task-forge.ts";
 import { registerProvision } from "./register-provision.ts";
@@ -81,6 +82,10 @@ export function registerAllProviders(
 ): Broker {
   const recent = createFileRecentProjects({ filePath: resolveRecentFilePath() });
   registerMockProviders(registry, recent);
+  // IDE self-telemetry (P3): the REAL file-backed store, strict opt-in (disabled
+  // by default), scrubbed, local-only. A first-party fs primitive like
+  // recent-projects — holds no SecretStore, so it cannot leak the vault.
+  registry.register(PROVIDER_IDS.telemetry, new FileTelemetryStore() as never);
   // The capability broker — the un-bypassable execution chokepoint (B4). Booted
   // with the conservative human-authored default allowlist and NO production
   // datasources (production is human-confirmed config, never inferred). B3 (ACP)

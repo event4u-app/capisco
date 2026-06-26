@@ -24,3 +24,4 @@ export * from "./rtk";
 export * from "./model-routing";
 export * from "./ingest";
 export * from "./revert";
+export * from "./telemetry";

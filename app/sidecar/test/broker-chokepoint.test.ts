@@ -72,6 +72,10 @@ const EXECUTION_PRIMITIVES: Record<string, ReadonlyArray<SideEffect>> = {
   // primitive (explicit review) — but it REFUSES any `mutation` document, so it
   // can only query. Token injected via ProviderAuth (secret-by-reference).
   "task-forge/linear-http.ts": ["fetch"],
+  // IDE self-telemetry store (real-breadth P3): local, opt-in, scrubbed event
+  // log. A first-party fs primitive like recent-projects — atomic write + read,
+  // holds no SecretStore (cannot leak the vault), no untrusted-derived egress.
+  "telemetry/telemetry-store.ts": ["fs-read", "fs-write"],
   // The system-`git` exec primitive (B1). execFile, no shell.
   "git/git-exec.ts": ["process"],
   // The quality-tool runner (B5) shells out to eslint/tsc/vitest. execFile.
