@@ -78,3 +78,10 @@ export async function ghPrList(repo: string, fields: readonly string[], limit = 
   const parsed: unknown = JSON.parse(out || "[]");
   return Array.isArray(parsed) ? parsed : [];
 }
+
+/** Changed-file paths of one PR (read-only `gh pr view --json files`). */
+export async function ghPrFiles(repo: string, num: number): Promise<string[]> {
+  const out = await run(["pr", "view", String(num), "--repo", repo, "--json", "files"]);
+  const parsed = JSON.parse(out || "{}") as { files?: { path?: string }[] };
+  return (parsed.files ?? []).map((f) => f.path).filter((p): p is string => typeof p === "string");
+}
