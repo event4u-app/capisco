@@ -71,7 +71,7 @@ Tokens schon.
       Windows DPAPI / Linux libsecret. Secrets überleben Neustart, **nie im
       LLM-Context**, nie ins Subprozess-env. (Wird von P1-Datasource mitgenutzt.) <!-- KeychainSecretStore (cache+write-through, 1 service `capisco`, -U idempotent, kein Garbage) + FileSecretStore (0600 fallback) + createSecretStore-Factory; in dev-bridge + unix-sidecar verdrahtet; gegen echte Keychain getestet; scripts/secret.mjs (stdin, kein argv-leak). Windows DPAPI/libsecret = Datei-Fallback bis nativ -->
 - [x] **Task-Provider real** (Jira/Linear via MCP/API-Token, aus dem Keychain):
-      „meine Tickets", „nächstes aus dem Sprint ziehen". <!-- RealTaskProvider (Jira, token-Modus via ProviderAuth, Token-by-reference aus Keychain); listTickets/myTickets/nextFromSprint über JQL; gegen echtes galawork-Jira getestet; dev-bridge Fixture→Real-Swap (env|store). Linear + OAuth/MCP-Modi offen -->
+      „meine Tickets", „nächstes aus dem Sprint ziehen". <!-- RealTaskProvider (Jira, token-Modus via ProviderAuth, Token-by-reference aus Keychain); listTickets/myTickets/nextFromSprint über JQL; gegen echtes galawork-Jira getestet; dev-bridge Fixture→Real-Swap (env|store). Linear: RealLinearTaskProvider (read-only GraphQL, Mutations verweigert; rawTokenAuth Personal-Key; viewer/issues-Filter; teilt pickNextFromSprint mit Jira) gegen echte api.linear.app verifiziert; `task-backend=linear` schaltet um. OAuth/MCP-Modi offen -->
 - [ ] **Ticket-Lifecycle live:** Ticket ziehen → Worktree+Runtime (`real-runtime`-P0)
       → Status „In Progress"; fertig → Review → Status.
 - [x] **Forge-Provider real** (GitHub/GitLab): PR-Board, **„wessen Zug?"**-Filter,
