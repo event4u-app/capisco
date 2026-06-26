@@ -56,6 +56,10 @@ const EXECUTION_PRIMITIVES: Record<string, ReadonlyArray<SideEffect>> = {
   // when the macOS keychain is unavailable. Owner-only JSON file; single fixed
   // path (no garbage). The persistence write/read for KeychainSecretStore's peer.
   "broker/file-secret-store.ts": ["fs-read", "fs-write"],
+  // Read-only GitHub CLI (road-to-real-breadth P0). execFile `gh`, no shell; a
+  // mutating-verb guard refuses pr create/merge/close + `api -X`. Reads PRs under
+  // the user's existing gh login (no token in this process). Backs RealForgeProvider.
+  "task-forge/gh-exec.ts": ["process"],
   // The system-`git` exec primitive (B1). execFile, no shell.
   "git/git-exec.ts": ["process"],
   // The quality-tool runner (B5) shells out to eslint/tsc/vitest. execFile.

@@ -30,6 +30,9 @@ import { ProviderRegistry } from "../registry/registry.ts";
 import { IpcConnection } from "../server/ipc-server.ts";
 import { registerAllProviders } from "../main.ts";
 import { createSecretStore } from "../broker/create-secret-store.ts";
+import { ghAvailable, ghRepo } from "../task-forge/gh-exec.ts";
+import { createRealForgeProvider } from "../task-forge/real-forge-provider.ts";
+import { FORGE_PROVIDER_ID } from "../register-task-forge.ts";
 import { registerDevWorkspace } from "../register-dev-workspace.ts";
 import { isWebSocketUpgrade, WsServerTransport } from "./ws-server-transport.ts";
 
@@ -72,6 +75,19 @@ export async function buildDevRegistry(repo?: string): Promise<ProviderRegistry>
   // registry, so a real agent run's `ask` can be approved/denied from the UI.
   const broker = registerAllProviders(registry, { liveAgent: true, secrets });
   registerDevWorkspace(registry, { repo, broker });
+  // Real GitHub forge (P0): when `gh` is authed and the checkout has a GitHub
+  // remote, swap the fixture forge for the live one — the user's existing gh
+  // login, no token entry. Any hiccup keeps the deterministic fixture.
+  if (await ghAvailable()) {
+    const ghr = await ghRepo(repo);
+    if (ghr) {
+      try {
+        registry.replace(FORGE_PROVIDER_ID, (await createRealForgeProvider({ repo: ghr })) as never);
+      } catch {
+        /* keep the fixture forge on any gh error */
+      }
+    }
+  }
   return registry;
 }
 
