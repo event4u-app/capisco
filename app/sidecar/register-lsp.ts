@@ -28,6 +28,8 @@ export function registerLsp(registry: ProviderRegistry): LspManager {
       manager.rename(root, languageId, uri, line, character, newName),
     documentSymbol: (root: string, languageId: string, uri: string) =>
       manager.documentSymbol(root, languageId, uri),
+    inlayHints: (root: string, languageId: string, uri: string, startLine: number, endLine: number) =>
+      manager.inlayHints(root, languageId, uri, startLine, endLine),
   } as never);
   return manager;
 }

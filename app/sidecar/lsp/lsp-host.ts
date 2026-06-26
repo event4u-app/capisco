@@ -17,8 +17,13 @@ import { pathToFileURL } from "node:url";
 
 import { ProcessSupervisor, type SupervisedProcess } from "../supervisor/process-supervisor.ts";
 import { LspDecoder, encode, type JsonRpcMessage } from "./lsp-jsonrpc.ts";
-import { normalizeLocations, normalizeSymbols, normalizeWorkspaceEdit } from "./lsp-normalize.ts";
-import type { LspLocation, LspSymbol, LspWorkspaceEdit } from "@/contracts";
+import {
+  normalizeInlayHints,
+  normalizeLocations,
+  normalizeSymbols,
+  normalizeWorkspaceEdit,
+} from "./lsp-normalize.ts";
+import type { LspInlayHint, LspLocation, LspSymbol, LspWorkspaceEdit } from "@/contracts";
 
 export interface LspServerSpec {
   /** Stable id, e.g. `lsp:ts:/repo`. */
@@ -27,6 +32,8 @@ export interface LspServerSpec {
   args?: string[];
   /** Worktree root the server is initialised against. */
   rootPath: string;
+  /** Server-specific initialize options (e.g. tsserver inlay-hint preferences). */
+  initializationOptions?: Record<string, unknown>;
 }
 
 export interface LspCompletionItem {
@@ -54,8 +61,10 @@ export class LspHost {
   #seq = 0;
   #disposed = false;
   readonly #ready: Promise<void>;
+  readonly #initOptions?: Record<string, unknown>;
 
   constructor(spec: LspServerSpec, opts: LspHostOptions = {}) {
+    this.#initOptions = spec.initializationOptions;
     const supervisor = opts.supervisor ?? new ProcessSupervisor();
     this.#proc = supervisor.spawn(
       { id: spec.id, command: spec.command, args: spec.args ?? ["--stdio"], cwd: spec.rootPath, restart: "never" },
@@ -112,6 +121,7 @@ export class LspHost {
     await this.request("initialize", {
       processId: process.pid,
       rootUri: fileUri(rootPath),
+      initializationOptions: this.#initOptions,
       capabilities: {
         textDocument: {
           synchronization: { didSave: true, dynamicRegistration: false },
@@ -122,6 +132,7 @@ export class LspHost {
           references: { dynamicRegistration: false },
           rename: { dynamicRegistration: false },
           documentSymbol: { dynamicRegistration: false, hierarchicalDocumentSymbolSupport: true },
+          inlayHint: { dynamicRegistration: false },
         },
       },
     });
@@ -206,6 +217,19 @@ export class LspHost {
   async documentSymbol(uri: string): Promise<LspSymbol[]> {
     await this.#ready;
     return normalizeSymbols(await this.request("textDocument/documentSymbol", { textDocument: { uri } }));
+  }
+
+  async inlayHints(uri: string, startLine: number, endLine: number): Promise<LspInlayHint[]> {
+    await this.#ready;
+    return normalizeInlayHints(
+      await this.request("textDocument/inlayHint", {
+        textDocument: { uri },
+        range: {
+          start: { line: startLine, character: 0 },
+          end: { line: endLine, character: 0 },
+        },
+      }),
+    );
   }
 
   diagnostics(uri: string): unknown[] {

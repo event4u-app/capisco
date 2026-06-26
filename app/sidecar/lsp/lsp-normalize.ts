@@ -7,7 +7,15 @@
  * each into the single contract shape. Pure → unit-tested without a server.
  */
 
-import type { LspLocation, LspRange, LspSymbol, LspTextEdit, LspWorkspaceEdit } from "@/contracts";
+import type {
+  LspInlayHint,
+  LspLocation,
+  LspPosition,
+  LspRange,
+  LspSymbol,
+  LspTextEdit,
+  LspWorkspaceEdit,
+} from "@/contracts";
 
 const ZERO: LspRange = { start: { line: 0, character: 0 }, end: { line: 0, character: 0 } };
 
@@ -65,6 +73,31 @@ export function normalizeWorkspaceEdit(raw: unknown): LspWorkspaceEdit {
     }
   }
   return { changes };
+}
+
+/** textDocument/inlayHint: InlayHint[] → LspInlayHint[] (label may be string | InlayHintLabelPart[]). */
+export function normalizeInlayHints(raw: unknown): LspInlayHint[] {
+  if (!Array.isArray(raw)) return [];
+  const out: LspInlayHint[] = [];
+  for (const h of raw) {
+    const o = h as Record<string, unknown>;
+    const pos = o.position as Partial<LspPosition> | undefined;
+    if (!pos) continue;
+    const rawLabel = o.label;
+    const label =
+      typeof rawLabel === "string"
+        ? rawLabel
+        : Array.isArray(rawLabel)
+          ? rawLabel.map((p) => `${(p as { value?: string }).value ?? ""}`).join("")
+          : "";
+    const hint: LspInlayHint = {
+      position: { line: pos.line ?? 0, character: pos.character ?? 0 },
+      label,
+    };
+    if (typeof o.kind === "number") hint.kind = o.kind;
+    out.push(hint);
+  }
+  return out;
 }
 
 /** textDocument/documentSymbol: DocumentSymbol[] | SymbolInformation[] → flat LspSymbol[] with depth. */

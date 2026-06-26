@@ -50,6 +50,14 @@ export interface LspWorkspaceEdit {
   changes: { uri: string; edits: LspTextEdit[] }[];
 }
 
+/** One inlay hint (inline parameter-name / type annotation) at a position. */
+export interface LspInlayHint {
+  position: LspPosition;
+  label: string;
+  /** LSP InlayHintKind (1=Type, 2=Parameter) — optional. */
+  kind?: number;
+}
+
 export interface LspProvider {
   /** True when a language server is installed for this LSP languageId. */
   available(languageId: string): Promise<boolean>;
@@ -98,4 +106,12 @@ export interface LspProvider {
   ): Promise<LspWorkspaceEdit>;
   /** The document outline (flattened symbols with depth). Empty when no server. */
   documentSymbol(root: string, languageId: string, uri: string): Promise<LspSymbol[]>;
+  /** Inlay hints (inline parameter/type annotations) within a line range [startLine, endLine]. */
+  inlayHints(
+    root: string,
+    languageId: string,
+    uri: string,
+    startLine: number,
+    endLine: number,
+  ): Promise<LspInlayHint[]>;
 }

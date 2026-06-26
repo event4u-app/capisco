@@ -11,7 +11,12 @@ import { delimiter, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { LspHost, fileUri } from "../lsp/lsp-host.ts";
-import { normalizeLocations, normalizeSymbols, normalizeWorkspaceEdit } from "../lsp/lsp-normalize.ts";
+import {
+  normalizeInlayHints,
+  normalizeLocations,
+  normalizeSymbols,
+  normalizeWorkspaceEdit,
+} from "../lsp/lsp-normalize.ts";
 
 const R = { start: { line: 1, character: 2 }, end: { line: 1, character: 9 } };
 
@@ -54,6 +59,18 @@ describe("normalizeSymbols", () => {
     expect(normalizeSymbols([{ name: "g", kind: 13, location: { uri: "file:///a", range: R } }])).toEqual([
       { name: "g", kind: 13, range: R, depth: 0 },
     ]);
+  });
+});
+
+describe("normalizeInlayHints", () => {
+  it("handles string labels and InlayHintLabelPart[] labels", () => {
+    expect(normalizeInlayHints([{ position: { line: 2, character: 5 }, label: ": string", kind: 1 }])).toEqual([
+      { position: { line: 2, character: 5 }, label: ": string", kind: 1 },
+    ]);
+    expect(
+      normalizeInlayHints([{ position: { line: 0, character: 0 }, label: [{ value: "name" }, { value: ":" }] }]),
+    ).toEqual([{ position: { line: 0, character: 0 }, label: "name:" }]);
+    expect(normalizeInlayHints(null)).toEqual([]);
   });
 });
 
@@ -130,5 +147,24 @@ describe("LspHost navigation ↔ real typescript-language-server", () => {
     const syms = await retry(() => host!.documentSymbol(uri));
     expect(syms.length).toBeGreaterThan(0);
     expect(syms.map((s) => s.name)).toContain("greeting");
+  }, 30_000);
+
+  run("inlayHints returns variable-type hints when the server is configured for them", async () => {
+    // tsserver only emits inlay hints with the preferences set at initialize.
+    host = new LspHost({
+      id: "lsp:ts:inlay",
+      command: "typescript-language-server",
+      args: ["--stdio"],
+      rootPath: dir,
+      initializationOptions: {
+        preferences: { includeInlayVariableTypeHints: true, includeInlayParameterNameHints: "all" },
+      },
+    });
+    await host.ready();
+    const uri = fileUri(join(dir, "sample.ts"));
+    await host.openDoc(uri, "typescript", text);
+    const hints = await retry(() => host!.inlayHints(uri, 0, 4));
+    expect(hints.length).toBeGreaterThan(0);
+    expect(typeof hints[0].label).toBe("string");
   }, 30_000);
 });
