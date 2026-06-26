@@ -6,7 +6,7 @@
 
 ## Overall
 
-**33 / 159 steps done · 21%**
+**34 / 159 steps done · 21%**
 
 ```text
 ████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░   21%
@@ -19,7 +19,7 @@
 | 1 | [road-to-actually-works.md](roadmaps/road-to-actually-works.md) | 9 | 54 | 27 | 27 | 0 | 0 | █████░░░░░ 50% |
 | 2 | [road-to-composer-intelligence.md](roadmaps/road-to-composer-intelligence.md) | 7 | 32 | 32 | 0 | 0 | 0 | ░░░░░░░░░░ 0% |
 | 3 | [road-to-desktop-release.md](roadmaps/road-to-desktop-release.md) | 6 | 14 | 14 | 0 | 0 | 0 | ░░░░░░░░░░ 0% |
-| 4 | [road-to-real-breadth.md](roadmaps/road-to-real-breadth.md) | 5 | 30 | 28 | 2 | 0 | 0 | █░░░░░░░░░ 7% |
+| 4 | [road-to-real-breadth.md](roadmaps/road-to-real-breadth.md) | 5 | 30 | 27 | 3 | 0 | 0 | █░░░░░░░░░ 10% |
 | 5 | [road-to-real-runtime.md](roadmaps/road-to-real-runtime.md) | 5 | 29 | 25 | 4 | 0 | 0 | █░░░░░░░░░ 14% |
 
 ---
@@ -71,11 +71,11 @@
 
 ### [road-to-real-breadth.md](roadmaps/road-to-real-breadth.md)
 
-**Road to Real Breadth — die Breite (Tickets · Datasource · Secrets · Token · Observability · Browser)** — 2 / 30 done (7%)
+**Road to Real Breadth — die Breite (Tickets · Datasource · Secrets · Token · Observability · Browser)** — 3 / 30 done (10%)
 
 | # | Phase | State | Open | Done | Deferred | Cancelled | % |
 |---|---|---|---:|---:|---:|---:|---:|
-| 0 | Tickets + Forge real (Jira · Linear · GitHub) + Keychain-Primitive | 🟡 in progress | 5 | 2 | 0 | 0 | 29% |
+| 0 | Tickets + Forge real (Jira · Linear · GitHub) + Keychain-Primitive | 🟡 in progress | 4 | 3 | 0 | 0 | 43% |
 | 1 | Datasource real (Redis · MySQL · Postgres · Tenant-Fan-out) | ⬜ not started | 11 | 0 | 0 | 0 | 0% |
 | 2 | Token-Ökonomie live (RTK · Caveman · Model-Routing-Kalibrierung) | ⬜ not started | 4 | 0 | 0 | 0 | 0% |
 | 3 | Observability-Provider (volle Fläche) | ⬜ not started | 3 | 0 | 0 | 0 | 0% |

@@ -37,6 +37,28 @@ Threat-Model, höchstes Risiko, zuletzt).
 
 ---
 
+## Provider-Auth (Multi-Mode) — gilt für ALLE externen Provider
+
+**Entscheidung (2026-06-26, Matze):** Jeder externe Provider (GitHub, GitLab, Jira,
+Linear, Sentry, Observability, …) unterstützt **mehrere Auth-/Transport-Modi**, und
+wir nutzen, was immer verfügbar ist — in dieser Präferenz:
+
+1. **MCP** — wenn ein MCP-Server für den Dienst verbunden ist (reichste, auth-delegierte Integration).
+2. **Web-OAuth** — interaktiver Login (Browser-Flow), Token via Refresh erneuert.
+3. **API-Token** — aus der OS-Keychain (P0), Basic/Bearer, **secret-by-reference** (Wert nur im Execution-Layer, nie im LLM-Context).
+4. **Lokales CLI** als Sonderform von „Web-Auth via Tool-Session" (z. B. `gh` für GitHub — schon genutzt).
+
+**Umsetzung:** eine gemeinsame `ProviderAuth`-Abstraktion (`mode: "mcp" | "oauth" |
+"token" | "cli"`) + ein Resolver, der pro Provider den besten verfügbaren Modus
+wählt. Provider-Code spricht gegen `ProviderAuth`, nicht gegen einen festen Modus —
+so kommt OAuth/MCP später ohne Umbau dazu. Sekret-Speicherung immer Keychain (P0),
+Egress immer GET-only-read bzw. broker-gegated bei Schreib/Write-back.
+
+> Day-one: GitHub-Forge nutzt `cli` (`gh`-Login). Jira startet mit `token`
+> (Keychain), `oauth`/`mcp` als nächste Modi hinter derselben `ProviderAuth`.
+
+---
+
 ## Phase 0 — Tickets + Forge real (Jira · Linear · GitHub) + Keychain-Primitive
 
 **Goal:** Die Ticket→Worktree→Review→Status-Schleife **lebt**; PR-Board „wessen
@@ -48,8 +70,8 @@ Tokens schon.
 - [x] **OS-Keychain real (Primitive):** `InMemorySecretStore` → macOS `security` /
       Windows DPAPI / Linux libsecret. Secrets überleben Neustart, **nie im
       LLM-Context**, nie ins Subprozess-env. (Wird von P1-Datasource mitgenutzt.) <!-- KeychainSecretStore (cache+write-through, 1 service `capisco`, -U idempotent, kein Garbage) + FileSecretStore (0600 fallback) + createSecretStore-Factory; in dev-bridge + unix-sidecar verdrahtet; gegen echte Keychain getestet; scripts/secret.mjs (stdin, kein argv-leak). Windows DPAPI/libsecret = Datei-Fallback bis nativ -->
-- [ ] **Task-Provider real** (Jira/Linear via MCP/API-Token, aus dem Keychain):
-      „meine Tickets", „nächstes aus dem Sprint ziehen".
+- [x] **Task-Provider real** (Jira/Linear via MCP/API-Token, aus dem Keychain):
+      „meine Tickets", „nächstes aus dem Sprint ziehen". <!-- RealTaskProvider (Jira, token-Modus via ProviderAuth, Token-by-reference aus Keychain); listTickets/myTickets/nextFromSprint über JQL; gegen echtes galawork-Jira getestet; dev-bridge Fixture→Real-Swap (env|store). Linear + OAuth/MCP-Modi offen -->
 - [ ] **Ticket-Lifecycle live:** Ticket ziehen → Worktree+Runtime (`real-runtime`-P0)
       → Status „In Progress"; fertig → Review → Status.
 - [x] **Forge-Provider real** (GitHub/GitLab): PR-Board, **„wessen Zug?"**-Filter,
