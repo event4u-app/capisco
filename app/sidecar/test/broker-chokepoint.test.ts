@@ -44,6 +44,10 @@ const EXECUTION_PRIMITIVES: Record<string, ReadonlyArray<SideEffect>> = {
   // supervisor above (the scan matches `supervisor.spawn(` by method name). Read-
   // only language intelligence (completion/hover/diagnostics); no fs/net edge.
   "lsp/lsp-host.ts": ["process"],
+  // Read-only docker introspection (road-to-real-runtime P0). execFile, no shell,
+  // discrete argv; a mutating-verb guard refuses run/rm/exec/kill so it stays
+  // read-only (`docker ps` / `docker stats --no-stream`). Same posture as detect-exec.ts.
+  "runtime/docker-exec.ts": ["process"],
   // The system-`git` exec primitive (B1). execFile, no shell.
   "git/git-exec.ts": ["process"],
   // The quality-tool runner (B5) shells out to eslint/tsc/vitest. execFile.
