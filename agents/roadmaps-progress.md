@@ -2,24 +2,25 @@
 
 > Auto-generated — do not edit. Regenerate with `task roadmap-progress` or by running the `update_roadmap_progress` script for your install; rewritten on every roadmap create / execute / completion change (timestamp lives in git history).
 >
-> 4 open roadmaps · [roadmaps/](roadmaps/) · [archive/](roadmaps/archive/) · [skipped/](roadmaps/skipped/) · [later/](roadmaps/later/)
+> 5 open roadmaps · [roadmaps/](roadmaps/) · [archive/](roadmaps/archive/) · [skipped/](roadmaps/skipped/) · [later/](roadmaps/later/)
 
 ## Overall
 
-**26 / 127 steps done · 20%**
+**31 / 144 steps done · 22%**
 
 ```text
-████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░   20%
+█████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░   22%
 ```
 
 ## Open roadmaps
 
 | # | Roadmap | Phases | Steps | Open | Done | Deferred | Cancelled | Progress |
 |---|---|---:|---:|---:|---:|---:|---:|---|
-| 1 | [road-to-actually-works.md](roadmaps/road-to-actually-works.md) | 9 | 54 | 28 | 26 | 0 | 0 | █████░░░░░ 48% |
-| 2 | [road-to-desktop-release.md](roadmaps/road-to-desktop-release.md) | 6 | 14 | 14 | 0 | 0 | 0 | ░░░░░░░░░░ 0% |
-| 3 | [road-to-real-breadth.md](roadmaps/road-to-real-breadth.md) | 5 | 30 | 30 | 0 | 0 | 0 | ░░░░░░░░░░ 0% |
-| 4 | [road-to-real-runtime.md](roadmaps/road-to-real-runtime.md) | 5 | 29 | 29 | 0 | 0 | 0 | ░░░░░░░░░░ 0% |
+| 1 | [road-to-actually-works.md](roadmaps/road-to-actually-works.md) | 9 | 54 | 27 | 27 | 0 | 0 | █████░░░░░ 50% |
+| 2 | [road-to-composer-intelligence.md](roadmaps/road-to-composer-intelligence.md) | 6 | 17 | 17 | 0 | 0 | 0 | ░░░░░░░░░░ 0% |
+| 3 | [road-to-desktop-release.md](roadmaps/road-to-desktop-release.md) | 6 | 14 | 14 | 0 | 0 | 0 | ░░░░░░░░░░ 0% |
+| 4 | [road-to-real-breadth.md](roadmaps/road-to-real-breadth.md) | 5 | 30 | 30 | 0 | 0 | 0 | ░░░░░░░░░░ 0% |
+| 5 | [road-to-real-runtime.md](roadmaps/road-to-real-runtime.md) | 5 | 29 | 25 | 4 | 0 | 0 | █░░░░░░░░░ 14% |
 
 ---
 
@@ -27,7 +28,7 @@
 
 ### [road-to-actually-works.md](roadmaps/road-to-actually-works.md)
 
-**Road to Actually Works — die Spine zur gefühlten IDE** — 26 / 54 done (48%)
+**Road to Actually Works — die Spine zur gefühlten IDE** — 27 / 54 done (50%)
 
 | # | Phase | State | Open | Done | Deferred | Cancelled | % |
 |---|---|---|---:|---:|---:|---:|---:|
@@ -36,10 +37,23 @@
 | 2 | Echter Agent end-to-end, IM BROWSER bewiesen (gefühlte Scheibe #1) | 🟡 in progress | 3 | 6 | 0 | 0 | 67% |
 | 3 | Minimal-Observability in der Spine (Council #5) | ⬜ not started | 4 | 0 | 0 | 0 | 0% |
 | 4 | Editor fertig (Grammatik · File-Watch · Folding — KEIN LSP) | 🟡 in progress | 1 | 3 | 0 | 0 | 75% |
-| 5 | LSP-Basis (Diagnostics · Hover · Autovervollständigung) | 🟡 in progress | 2 | 4 | 0 | 0 | 67% |
+| 5 | LSP-Basis (Diagnostics · Hover · Autovervollständigung) | 🟡 in progress | 1 | 5 | 0 | 0 | 83% |
 | 6 | Echtes Terminal (PTY) | ⬜ not started | 6 | 0 | 0 | 0 | 0% |
 | 7 | Tauri-Transport (gefühlte Scheibe #2: echte App) | ⬜ not started | 6 | 0 | 0 | 0 | 0% |
 | 8 | Fenster-Chrome + Config-Persistenz (Council #1 — W1b, floatbar) | ⬜ not started | 6 | 0 | 0 | 0 | 0% |
+
+### [road-to-composer-intelligence.md](roadmaps/road-to-composer-intelligence.md)
+
+**Road to Composer-Intelligence — der Input, der mitdenkt** — 0 / 17 done (0%)
+
+| # | Phase | State | Open | Done | Deferred | Cancelled | % |
+|---|---|---|---:|---:|---:|---:|---:|
+| 0 | Shared-Autocomplete-Overlay-Primitiv | ⬜ not started | 4 | 0 | 0 | 0 | 0% |
+| 1 | `/`-Slash-Command-Autocomplete | ⬜ not started | 2 | 0 | 0 | 0 | 0% |
+| 2 | Multi-Source-`@`-Mentions (Datei / Ordner / Symbol) | ⬜ not started | 4 | 0 | 0 | 0 | 0% |
+| 3 | Empty-State-Next-Task-Vorschläge | ⬜ not started | 2 | 0 | 0 | 0 | 0% |
+| 4 | Input-Reliability & -Qualität (History / Drafts / Smart-Paste) | ⬜ not started | 3 | 0 | 0 | 0 | 0% |
+| 5 | Agent-Cockpit-Control-Flow | ⬜ not started | 2 | 0 | 0 | 0 | 0% |
 
 ### [road-to-desktop-release.md](roadmaps/road-to-desktop-release.md)
 
@@ -68,11 +82,11 @@
 
 ### [road-to-real-runtime.md](roadmaps/road-to-real-runtime.md)
 
-**Road to Real Runtime — mächtiges Coden (Container · Debug · Quality · LSP · Recovery)** — 0 / 29 done (0%)
+**Road to Real Runtime — mächtiges Coden (Container · Debug · Quality · LSP · Recovery)** — 4 / 29 done (14%)
 
 | # | Phase | State | Open | Done | Deferred | Cancelled | % |
 |---|---|---|---:|---:|---:|---:|---:|
-| 0 | Worktree-Runtime + Container (Docker · Devcontainer · Traefik · ctop) | ⬜ not started | 9 | 0 | 0 | 0 | 0% |
+| 0 | Worktree-Runtime + Container (Docker · Devcontainer · Traefik · ctop) | 🟡 in progress | 5 | 4 | 0 | 0 | 44% |
 | 1 | Debugging (DAP / xdebug) | ⬜ not started | 6 | 0 | 0 | 0 | 0% |
 | 2 | Quality real (Grounding) + Model-Routing-Signal | ⬜ not started | 5 | 0 | 0 | 0 | 0% |
 | 3 | Advanced-LSP (Navigation jenseits Autocomplete) | ⬜ not started | 4 | 0 | 0 | 0 | 0% |

@@ -211,8 +211,8 @@ verifizieren), Autocomplete danach (expliziter Nutzer-Wunsch).
 - [x] **Sprach-Packs anbinden:** TS (`typescript-language-server`) zuerst, PHP
       (`intelephense`/`phpactor`) danach. <!-- lsp-manager.ts: ts/js→typescript-language-server, php→intelephense; degrade-leer wenn nicht installiert -->
 - [x] **Diagnostics (Squiggles) + Hover zuerst:** dienen dem Gate; aus dem echten LSP. <!-- LspHost.hover + publishDiagnostics; Hover gegen echten tsserver getestet -->
-- [ ] **Autovervollständigung:** CM6-`autocomplete()` an echte LSP-Completions
-      hängen (ersetzt das statische Mock-Popup; `CompletionItem`-Contract existiert). <!-- Datenpfad real+bewiesen (lsp.completion über Wire, toUpperCase vom echten Server); CM6-Popup-Bindung (@codemirror/autocomplete) = visuelle Restschicht -->
+- [x] **Autovervollständigung:** CM6-`autocomplete()` an echte LSP-Completions
+      hängen (ersetzt das statische Mock-Popup; `CompletionItem`-Contract existiert). <!-- cm-lsp.ts: @codemirror/autocomplete-Source an lsp.completion gebunden, guarded (editable+isDesktop), Mapping unit-getestet (13 Fälle); Popup erscheint live in dev:web, visuelle Abnahme bleibt deine -->
 - [ ] **Folding LSP-genau** (ersetzt die syntaktische Näherung aus P4). <!-- offen; syntaktisches Folding aus P4 deckt den Alltag -->
 - [x] **Conformance-Test:** echte LSP-Completion-Antwort vs. das Mock-Shape, gegen
       das die UI gebaut wurde (Overview §4.1). <!-- lsp-host.int.test.ts: echter typescript-language-server → echte Completions/Hover; skippt sauber ohne Server -->

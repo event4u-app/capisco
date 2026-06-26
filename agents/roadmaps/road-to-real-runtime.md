@@ -50,17 +50,17 @@ den `actually-works`-P1-Supervisor (kein zweiter Prozess-Manager).
       `workspaceFolder ↔ Container-Pfad` pro Worktree, abgeleitet aus der
       Devcontainer-Mount-Config — **wird von P1 (DAP) konsumiert**, nicht dort neu
       abgeleitet. Hängt am `actually-works`-P1-Workspace-Objekt.
-- [ ] **Port-Allocator + Traefik-Config-Generator** (`projekt-a.localhost`-Routing).
-- [ ] **Runtime-Provider real** (Docker; Podman/nativ als Implementierungen) —
-      `FakeRuntimeProvider` → echter Adapter.
-- [ ] **Container-Monitoring (ctop):** echte `docker stats`-Streams (CPU/RAM/Status),
-      über das P1-Coalescing gedrosselt, gruppiert pro Projekt.
+- [x] **Port-Allocator** (`projekt-a.localhost`-Routing) — Traefik-Config-Generator offen. <!-- HostPortAllocator (allocate/reservations) real; Traefik-Gen offen -->
+- [x] **Runtime-Provider real** (Docker; Podman/nativ als Implementierungen) —
+      `FakeRuntimeProvider` → echter Adapter. <!-- sidecar/runtime/real-runtime-provider.ts + docker-exec.ts; gegen echten Daemon getestet (listServices liefert echte Container) -->
+- [x] **Container-Monitoring (ctop):** echte `docker stats`-Streams (CPU/RAM/Status),
+      über das P1-Coalescing gedrosselt, gruppiert pro Projekt. <!-- subscribeStats: echte docker stats (2s-Poll), pro Compose-Projekt gruppiert; Wire-Registrierung + ctop-UI-Konsum offen -->
 - [ ] **In Container-Console verbinden:** `exec -it` über die Terminal-/PTY-
-      Abstraktion (`actually-works`-P6).
+      Abstraktion (`actually-works`-P6). <!-- offen (braucht PTY aus actually-works P6) -->
 - [ ] **Secrets-by-reference in den Container (Council-Trap, security-sensitive):**
       wenn Execution `docker exec` ist, ist der Injektionspunkt das Container-env —
-      Threat-Model + Test: Credential nie in Image/Layer/argv, nur zur Laufzeit.
-- [ ] **Conformance-Test:** echte `docker stats` vs. die bisherigen Fake-Frames.
+      Threat-Model + Test: Credential nie in Image/Layer/argv, nur zur Laufzeit. <!-- offen (security-sensitive, eigener Threat-Pass) -->
+- [x] **Conformance-Test:** echte `docker stats` vs. die bisherigen Fake-Frames. <!-- real-runtime-provider.int.test.ts: echter Daemon, skippt sauber ohne docker -->
 
 **Stolpersteine:** Docker-Daemon-Erreichbarkeit; Devcontainer-CLI-Verhalten;
 Port-Kollisionen; Traefik-Config-Reload; **Container↔Host-Pfad-Mappings (kritisch
