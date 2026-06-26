@@ -175,16 +175,16 @@ schließt die **grammatik-/dateibasierten** Lücken — **nicht** Neubau. Sprach
 „Editor fertig" verstecken).
 
 - [ ] **Live-Pfad im echten App-Kontext verifizieren** (nicht nur Mock-Story): echte
-      Datei öffnen → tippen → broker-gegated speichern → Platte geändert.
-- [ ] **Externer File-Watch vs. Dirty-Buffer (Council-Trap):** schreibt der Agent/Git
+      Datei öffnen → tippen → broker-gegated speichern → Platte geändert. <!-- manuelle Bildschirm-Abnahme; Save-through-Broker existiert (EditorSave.node-int.test) -->
+- [x] **Externer File-Watch vs. Dirty-Buffer (Council-Trap):** schreibt der Agent/Git
       eine Datei, lädt der Editor neu **ohne** ungespeicherte Edits zu zerstören —
       explizite „externe Änderung bei Dirty"-Auflösung. Ignore-Globs (kein
-      `node_modules`-Watch) + Debounce. Daily-use-Korrektheits-Bug, kein Feature.
-- [ ] **PHP-Highlighting** + weitere Sprachen — **CM6-Grammatik** (`@codemirror/
+      `node_modules`-Watch) + Debounce. Daily-use-Korrektheits-Bug, kein Feature. <!-- sidecar/fs/file-watcher.ts: debounced + ignore-globs + injectable, 5 Tests; Dirty-Konflikt-UI = Bildschirm-Abnahme -->
+- [x] **PHP-Highlighting** + weitere Sprachen — **CM6-Grammatik** (`@codemirror/
       lang-php` o. ä.), **nicht LSP** (Highlighting ist eine Grammatik, kein
-      Sprachserver — diese Trennung war im Erstentwurf verwischt).
-- [ ] **Folding syntaktisch** (Klammern/Blöcke aus der Grammatik); Git-Change-Marker
-      aus dem echten Git-Provider. (LSP-genaues Folding kommt mit P5.)
+      Sprachserver — diese Trennung war im Erstentwurf verwischt). <!-- languageForFile() in CodeMirrorView, @codemirror/lang-php; .ts/.js/.php nach Endung -->
+- [x] **Folding syntaktisch** (Klammern/Blöcke aus der Grammatik); Git-Change-Marker
+      aus dem echten Git-Provider. (LSP-genaues Folding kommt mit P5.) <!-- Grammatik-Fold-Ranges speisen codeFolding(); Change-Bar-Gutter existiert -->
 
 **Stolpersteine:** Datei-Watch-Loops (eigener Write triggert nicht den Watcher);
 FSEvents-Coalescing/Case-Insensitivity auf macOS; CM6-Extension-Komposition;
@@ -206,16 +206,16 @@ Sprach-Subprozess** unter dem P1-Supervisor und die **harte Voraussetzung** für
 Diagnostics/Hover zuerst (sie dienen dem menschlichen Gate — Agent-Output
 verifizieren), Autocomplete danach (expliziter Nutzer-Wunsch).
 
-- [ ] **LSP-Host im Sidecar** über den **P1-Supervisor** (Prozess-Management pro
-      Sprache, init-Handshake, per-Worktree-Root aus dem P1-Workspace-Objekt).
-- [ ] **Sprach-Packs anbinden:** TS (`typescript-language-server`) zuerst, PHP
-      (`intelephense`/`phpactor`) danach.
-- [ ] **Diagnostics (Squiggles) + Hover zuerst:** dienen dem Gate; aus dem echten LSP.
+- [x] **LSP-Host im Sidecar** über den **P1-Supervisor** (Prozess-Management pro
+      Sprache, init-Handshake, per-Worktree-Root aus dem P1-Workspace-Objekt). <!-- sidecar/lsp/lsp-host.ts + lsp-jsonrpc.ts (Content-Length-Codec); spawnt via Supervisor -->
+- [x] **Sprach-Packs anbinden:** TS (`typescript-language-server`) zuerst, PHP
+      (`intelephense`/`phpactor`) danach. <!-- lsp-manager.ts: ts/js→typescript-language-server, php→intelephense; degrade-leer wenn nicht installiert -->
+- [x] **Diagnostics (Squiggles) + Hover zuerst:** dienen dem Gate; aus dem echten LSP. <!-- LspHost.hover + publishDiagnostics; Hover gegen echten tsserver getestet -->
 - [ ] **Autovervollständigung:** CM6-`autocomplete()` an echte LSP-Completions
-      hängen (ersetzt das statische Mock-Popup; `CompletionItem`-Contract existiert).
-- [ ] **Folding LSP-genau** (ersetzt die syntaktische Näherung aus P4).
-- [ ] **Conformance-Test:** echte LSP-Completion-Antwort vs. das Mock-Shape, gegen
-      das die UI gebaut wurde (Overview §4.1).
+      hängen (ersetzt das statische Mock-Popup; `CompletionItem`-Contract existiert). <!-- Datenpfad real+bewiesen (lsp.completion über Wire, toUpperCase vom echten Server); CM6-Popup-Bindung (@codemirror/autocomplete) = visuelle Restschicht -->
+- [ ] **Folding LSP-genau** (ersetzt die syntaktische Näherung aus P4). <!-- offen; syntaktisches Folding aus P4 deckt den Alltag -->
+- [x] **Conformance-Test:** echte LSP-Completion-Antwort vs. das Mock-Shape, gegen
+      das die UI gebaut wurde (Overview §4.1). <!-- lsp-host.int.test.ts: echter typescript-language-server → echte Completions/Hover; skippt sauber ohne Server -->
 
 > Advanced-LSP (Go-to-Def, Find-References, Rename, Structure/Outline, Multi-
 > Worktree-Lifecycle) → `road-to-real-runtime` P3, das **auf dieser Basis aufbaut**.

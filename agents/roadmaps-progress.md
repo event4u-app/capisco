@@ -6,17 +6,17 @@
 
 ## Overall
 
-**19 / 127 steps done · 15%**
+**26 / 127 steps done · 20%**
 
 ```text
-██████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░   15%
+████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░   20%
 ```
 
 ## Open roadmaps
 
 | # | Roadmap | Phases | Steps | Open | Done | Deferred | Cancelled | Progress |
 |---|---|---:|---:|---:|---:|---:|---:|---|
-| 1 | [road-to-actually-works.md](roadmaps/road-to-actually-works.md) | 9 | 54 | 35 | 19 | 0 | 0 | ████░░░░░░ 35% |
+| 1 | [road-to-actually-works.md](roadmaps/road-to-actually-works.md) | 9 | 54 | 28 | 26 | 0 | 0 | █████░░░░░ 48% |
 | 2 | [road-to-desktop-release.md](roadmaps/road-to-desktop-release.md) | 6 | 14 | 14 | 0 | 0 | 0 | ░░░░░░░░░░ 0% |
 | 3 | [road-to-real-breadth.md](roadmaps/road-to-real-breadth.md) | 5 | 30 | 30 | 0 | 0 | 0 | ░░░░░░░░░░ 0% |
 | 4 | [road-to-real-runtime.md](roadmaps/road-to-real-runtime.md) | 5 | 29 | 29 | 0 | 0 | 0 | ░░░░░░░░░░ 0% |
@@ -27,7 +27,7 @@
 
 ### [road-to-actually-works.md](roadmaps/road-to-actually-works.md)
 
-**Road to Actually Works — die Spine zur gefühlten IDE** — 19 / 54 done (35%)
+**Road to Actually Works — die Spine zur gefühlten IDE** — 26 / 54 done (48%)
 
 | # | Phase | State | Open | Done | Deferred | Cancelled | % |
 |---|---|---|---:|---:|---:|---:|---:|
@@ -35,8 +35,8 @@
 | 1 | Fundament-Primitive + Test-Spine (einmal, trägt alles) | ✅ done | 0 | 6 | 0 | 0 | 100% |
 | 2 | Echter Agent end-to-end, IM BROWSER bewiesen (gefühlte Scheibe #1) | 🟡 in progress | 3 | 6 | 0 | 0 | 67% |
 | 3 | Minimal-Observability in der Spine (Council #5) | ⬜ not started | 4 | 0 | 0 | 0 | 0% |
-| 4 | Editor fertig (Grammatik · File-Watch · Folding — KEIN LSP) | ⬜ not started | 4 | 0 | 0 | 0 | 0% |
-| 5 | LSP-Basis (Diagnostics · Hover · Autovervollständigung) | ⬜ not started | 6 | 0 | 0 | 0 | 0% |
+| 4 | Editor fertig (Grammatik · File-Watch · Folding — KEIN LSP) | 🟡 in progress | 1 | 3 | 0 | 0 | 75% |
+| 5 | LSP-Basis (Diagnostics · Hover · Autovervollständigung) | 🟡 in progress | 2 | 4 | 0 | 0 | 67% |
 | 6 | Echtes Terminal (PTY) | ⬜ not started | 6 | 0 | 0 | 0 | 0% |
 | 7 | Tauri-Transport (gefühlte Scheibe #2: echte App) | ⬜ not started | 6 | 0 | 0 | 0 | 0% |
 | 8 | Fenster-Chrome + Config-Persistenz (Council #1 — W1b, floatbar) | ⬜ not started | 6 | 0 | 0 | 0 | 0% |
