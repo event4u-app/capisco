@@ -20,6 +20,14 @@ export function registerLsp(registry: ProviderRegistry): LspManager {
       manager.completion(root, languageId, uri, line, character),
     hover: (root: string, languageId: string, uri: string, line: number, character: number) =>
       manager.hover(root, languageId, uri, line, character),
+    definition: (root: string, languageId: string, uri: string, line: number, character: number) =>
+      manager.definition(root, languageId, uri, line, character),
+    references: (root: string, languageId: string, uri: string, line: number, character: number) =>
+      manager.references(root, languageId, uri, line, character),
+    rename: (root: string, languageId: string, uri: string, line: number, character: number, newName: string) =>
+      manager.rename(root, languageId, uri, line, character, newName),
+    documentSymbol: (root: string, languageId: string, uri: string) =>
+      manager.documentSymbol(root, languageId, uri),
   } as never);
   return manager;
 }

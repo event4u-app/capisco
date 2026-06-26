@@ -17,6 +17,8 @@ import { pathToFileURL } from "node:url";
 
 import { ProcessSupervisor, type SupervisedProcess } from "../supervisor/process-supervisor.ts";
 import { LspDecoder, encode, type JsonRpcMessage } from "./lsp-jsonrpc.ts";
+import { normalizeLocations, normalizeSymbols, normalizeWorkspaceEdit } from "./lsp-normalize.ts";
+import type { LspLocation, LspSymbol, LspWorkspaceEdit } from "@/contracts";
 
 export interface LspServerSpec {
   /** Stable id, e.g. `lsp:ts:/repo`. */
@@ -116,6 +118,10 @@ export class LspHost {
           completion: { completionItem: { snippetSupport: false } },
           hover: { contentFormat: ["plaintext", "markdown"] },
           publishDiagnostics: {},
+          definition: { dynamicRegistration: false, linkSupport: true },
+          references: { dynamicRegistration: false },
+          rename: { dynamicRegistration: false },
+          documentSymbol: { dynamicRegistration: false, hierarchicalDocumentSymbolSupport: true },
         },
       },
     });
@@ -158,6 +164,48 @@ export class LspHost {
     if (typeof c === "string") return c;
     if (Array.isArray(c)) return c.map((x) => (typeof x === "string" ? x : (x as { value?: string }).value ?? "")).join("\n");
     return (c as { value?: string }).value ?? null;
+  }
+
+  async definition(uri: string, line: number, character: number): Promise<LspLocation[]> {
+    await this.#ready;
+    return normalizeLocations(
+      await this.request("textDocument/definition", {
+        textDocument: { uri },
+        position: { line, character },
+      }),
+    );
+  }
+
+  async references(uri: string, line: number, character: number): Promise<LspLocation[]> {
+    await this.#ready;
+    return normalizeLocations(
+      await this.request("textDocument/references", {
+        textDocument: { uri },
+        position: { line, character },
+        context: { includeDeclaration: true },
+      }),
+    );
+  }
+
+  async rename(
+    uri: string,
+    line: number,
+    character: number,
+    newName: string,
+  ): Promise<LspWorkspaceEdit> {
+    await this.#ready;
+    return normalizeWorkspaceEdit(
+      await this.request("textDocument/rename", {
+        textDocument: { uri },
+        position: { line, character },
+        newName,
+      }),
+    );
+  }
+
+  async documentSymbol(uri: string): Promise<LspSymbol[]> {
+    await this.#ready;
+    return normalizeSymbols(await this.request("textDocument/documentSymbol", { textDocument: { uri } }));
   }
 
   diagnostics(uri: string): unknown[] {
