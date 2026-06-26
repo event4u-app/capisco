@@ -52,8 +52,8 @@ Tokens schon.
       „meine Tickets", „nächstes aus dem Sprint ziehen".
 - [ ] **Ticket-Lifecycle live:** Ticket ziehen → Worktree+Runtime (`real-runtime`-P0)
       → Status „In Progress"; fertig → Review → Status.
-- [ ] **Forge-Provider real** (GitHub/GitLab): PR-Board, **„wessen Zug?"**-Filter,
-      **Overdue 7 Tage konfigurierbar**, Stale-Alert.
+- [x] **Forge-Provider real** (GitHub/GitLab): PR-Board, **„wessen Zug?"**-Filter,
+      **Overdue 7 Tage konfigurierbar**, Stale-Alert. <!-- RealForgeProvider via gh-exec (gh-Login, kein Token); whoseTurn/stale (default 7d), gegen echtes Repo getestet; dev-bridge Fixture→Real-Swap. GitLab offen -->
 - [ ] **Awareness:** wer arbeitet wo, Branch-Überlappung, Konflikt-Vorhersage.
 - [ ] **Bidirektionaler Status-Sync** (eine Richtung zuerst; Webhooks/Rate-Limits).
 - [ ] **Lethal-Trifecta-Gate:** Ticket-Text ist untrusted Input — jeder Egress/Write
