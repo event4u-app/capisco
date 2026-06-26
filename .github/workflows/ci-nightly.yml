@@ -1,0 +1,43 @@
+name: CI Nightly (real-dependency)
+
+# The slow lane (road-to-actually-works P1, Overview §4.3). The fast lane
+# (ci.yml, every PR) runs fakes + conformance-SHAPE checks. This nightly lane
+# runs the REAL-dependency conformance (real `claude` stream-json, real docker
+# stats, real PTY) so envelope/format drift is caught within a day without
+# throttling PR velocity.
+#
+# CAPISCO_CONFORMANCE_REAL=1 enables the opt-in real legs. On a GitHub-hosted
+# runner that has no authenticated `claude` / no docker, those legs SKIP cleanly
+# (the tests gate on tool availability) — so this stays green there. Point a
+# self-hosted runner WITH authed claude + docker at this workflow to actually
+# exercise the real legs and catch drift.
+
+on:
+  schedule:
+    - cron: "0 5 * * *" # 05:00 UTC daily
+  workflow_dispatch: {}
+
+defaults:
+  run:
+    working-directory: app
+
+jobs:
+  real-conformance:
+    runs-on: ubuntu-latest
+    env:
+      CAPISCO_CONFORMANCE_REAL: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: app/package.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: app/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      # Real-dependency conformance. Real legs skip when the tool is absent
+      # (e.g. no authed claude on a hosted runner) — green there, real on a
+      # self-hosted runner that has the toolchain.
+      - run: pnpm exec vitest run sidecar/test/conformance

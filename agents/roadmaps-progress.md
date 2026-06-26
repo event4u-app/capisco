@@ -2,26 +2,44 @@
 
 > Auto-generated — do not edit. Regenerate with `task roadmap-progress` or by running the `update_roadmap_progress` script for your install; rewritten on every roadmap create / execute / completion change (timestamp lives in git history).
 >
-> 2 open roadmaps · [roadmaps/](roadmaps/) · [archive/](roadmaps/archive/) · [skipped/](roadmaps/skipped/) · [later/](roadmaps/later/)
+> 4 open roadmaps · [roadmaps/](roadmaps/) · [archive/](roadmaps/archive/) · [skipped/](roadmaps/skipped/) · [later/](roadmaps/later/)
 
 ## Overall
 
-**0 / 30 steps done · 0%**
+**26 / 127 steps done · 20%**
 
 ```text
-░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░   0%
+████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░   20%
 ```
 
 ## Open roadmaps
 
 | # | Roadmap | Phases | Steps | Open | Done | Deferred | Cancelled | Progress |
 |---|---|---:|---:|---:|---:|---:|---:|---|
-| 1 | [road-to-desktop-release.md](roadmaps/road-to-desktop-release.md) | 6 | 14 | 14 | 0 | 0 | 0 | ░░░░░░░░░░ 0% |
-| 2 | [road-to-tauri-desktop-shell.md](roadmaps/road-to-tauri-desktop-shell.md) | 5 | 16 | 16 | 0 | 0 | 0 | ░░░░░░░░░░ 0% |
+| 1 | [road-to-actually-works.md](roadmaps/road-to-actually-works.md) | 9 | 54 | 28 | 26 | 0 | 0 | █████░░░░░ 48% |
+| 2 | [road-to-desktop-release.md](roadmaps/road-to-desktop-release.md) | 6 | 14 | 14 | 0 | 0 | 0 | ░░░░░░░░░░ 0% |
+| 3 | [road-to-real-breadth.md](roadmaps/road-to-real-breadth.md) | 5 | 30 | 30 | 0 | 0 | 0 | ░░░░░░░░░░ 0% |
+| 4 | [road-to-real-runtime.md](roadmaps/road-to-real-runtime.md) | 5 | 29 | 29 | 0 | 0 | 0 | ░░░░░░░░░░ 0% |
 
 ---
 
 ## Per-roadmap phase breakdown
+
+### [road-to-actually-works.md](roadmaps/road-to-actually-works.md)
+
+**Road to Actually Works — die Spine zur gefühlten IDE** — 26 / 54 done (48%)
+
+| # | Phase | State | Open | Done | Deferred | Cancelled | % |
+|---|---|---|---:|---:|---:|---:|---:|
+| 0 | Reality-Gate als ausführbarer `doctor` | ✅ done | 0 | 7 | 0 | 0 | 100% |
+| 1 | Fundament-Primitive + Test-Spine (einmal, trägt alles) | ✅ done | 0 | 6 | 0 | 0 | 100% |
+| 2 | Echter Agent end-to-end, IM BROWSER bewiesen (gefühlte Scheibe #1) | 🟡 in progress | 3 | 6 | 0 | 0 | 67% |
+| 3 | Minimal-Observability in der Spine (Council #5) | ⬜ not started | 4 | 0 | 0 | 0 | 0% |
+| 4 | Editor fertig (Grammatik · File-Watch · Folding — KEIN LSP) | 🟡 in progress | 1 | 3 | 0 | 0 | 75% |
+| 5 | LSP-Basis (Diagnostics · Hover · Autovervollständigung) | 🟡 in progress | 2 | 4 | 0 | 0 | 67% |
+| 6 | Echtes Terminal (PTY) | ⬜ not started | 6 | 0 | 0 | 0 | 0% |
+| 7 | Tauri-Transport (gefühlte Scheibe #2: echte App) | ⬜ not started | 6 | 0 | 0 | 0 | 0% |
+| 8 | Fenster-Chrome + Config-Persistenz (Council #1 — W1b, floatbar) | ⬜ not started | 6 | 0 | 0 | 0 | 0% |
 
 ### [road-to-desktop-release.md](roadmaps/road-to-desktop-release.md)
 
@@ -36,15 +54,27 @@
 | 4 | Auto-Update (optional, Decision-Gate) | ⬜ not started | 2 | 0 | 0 | 0 | 0% |
 | 5 | Distribution | ⬜ not started | 1 | 0 | 0 | 0 | 0% |
 
-### [road-to-tauri-desktop-shell.md](roadmaps/road-to-tauri-desktop-shell.md)
+### [road-to-real-breadth.md](roadmaps/road-to-real-breadth.md)
 
-**Road to Tauri-Desktop-Shell — Capisco läuft als echte App (nicht im Browser)** — 0 / 16 done (0%)
+**Road to Real Breadth — die Breite (Tickets · Datasource · Secrets · Token · Observability · Browser)** — 0 / 30 done (0%)
 
 | # | Phase | State | Open | Done | Deferred | Cancelled | % |
 |---|---|---|---:|---:|---:|---:|---:|
-| 0 | Taskfile + Tauri-Scaffold (das „läuft als App"-Gerüst) | ⬜ not started | 4 | 0 | 0 | 0 | 0% |
-| 1 | Sidecar-Lifecycle (Rust spawnt + verwaltet den Prod-Sidecar) | ⬜ not started | 3 | 0 | 0 | 0 | 0% |
-| 2 | Webview↔Sidecar-Bridge (`__CAPISCO_SIDECAR__` über Tauri-IPC) | ⬜ not started | 4 | 0 | 0 | 0 | 0% |
-| 3 | `task dev` end-to-end + Native-Look (das eigentliche Ziel) | ⬜ not started | 3 | 0 | 0 | 0 | 0% |
-| 4 | `task build` (lokaler Dev-Build, nicht Release) | ⬜ not started | 2 | 0 | 0 | 0 | 0% |
+| 0 | Tickets + Forge real (Jira · Linear · GitHub) + Keychain-Primitive | ⬜ not started | 7 | 0 | 0 | 0 | 0% |
+| 1 | Datasource real (Redis · MySQL · Postgres · Tenant-Fan-out) | ⬜ not started | 11 | 0 | 0 | 0 | 0% |
+| 2 | Token-Ökonomie live (RTK · Caveman · Model-Routing-Kalibrierung) | ⬜ not started | 4 | 0 | 0 | 0 | 0% |
+| 3 | Observability-Provider (volle Fläche) | ⬜ not started | 3 | 0 | 0 | 0 | 0% |
+| 4 | Gemanagter Browser (SECURITY-SCOPED — eigener Threat-Model) | ⬜ not started | 5 | 0 | 0 | 0 | 0% |
+
+### [road-to-real-runtime.md](roadmaps/road-to-real-runtime.md)
+
+**Road to Real Runtime — mächtiges Coden (Container · Debug · Quality · LSP · Recovery)** — 0 / 29 done (0%)
+
+| # | Phase | State | Open | Done | Deferred | Cancelled | % |
+|---|---|---|---:|---:|---:|---:|---:|
+| 0 | Worktree-Runtime + Container (Docker · Devcontainer · Traefik · ctop) | ⬜ not started | 9 | 0 | 0 | 0 | 0% |
+| 1 | Debugging (DAP / xdebug) | ⬜ not started | 6 | 0 | 0 | 0 | 0% |
+| 2 | Quality real (Grounding) + Model-Routing-Signal | ⬜ not started | 5 | 0 | 0 | 0 | 0% |
+| 3 | Advanced-LSP (Navigation jenseits Autocomplete) | ⬜ not started | 4 | 0 | 0 | 0 | 0% |
+| 4 | Crash- & State-Recovery | ⬜ not started | 5 | 0 | 0 | 0 | 0% |
 

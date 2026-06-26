@@ -42,6 +42,7 @@ import { mockAgentProvider } from "@/mocks";
 import type { PendingPermissionRegistry } from "./pending-permission-registry.ts";
 import { AcpSession } from "./acp-session.ts";
 import { type RealAcpConfig } from "./real-acp-config.ts";
+import { type BackendSelection } from "./backend-selection.ts";
 
 /** Project a persisted session record onto the UI {@link Session} shape. */
 function toSession(s: StoredSession): Session {
@@ -58,12 +59,16 @@ export interface LiveAgentProviderOptions {
   broker: CapabilityBroker;
   /** Real ACP CLI config (env-sourced). Absent → the deterministic stub agent. */
   acp?: RealAcpConfig;
+  /** Runtime backend selection (P2). When present, the bar shows the REAL
+   *  selected backend (not the mock "API") and a chat run spawns per its
+   *  runConfig. Absent → the deterministic mock catalog + env-sourced acp. */
+  selection?: BackendSelection;
   /** Fallback worktree cwd when a session has none yet. */
   defaultCwd?: string;
 }
 
 export function createLiveAgentProvider(opts: LiveAgentProviderOptions): AgentProvider {
-  const { store, pending, broker, acp, defaultCwd } = opts;
+  const { store, pending, broker, acp, selection, defaultCwd } = opts;
 
   return {
     listSessions: async (): Promise<Session[]> => {
@@ -114,7 +119,10 @@ export function createLiveAgentProvider(opts: LiveAgentProviderOptions): AgentPr
 
     // --- catalog / static surface: borrowed from the deterministic mock (no
     //     live host source yet; identical data both sides) ---
-    getBackend: (): Promise<BackendConfig> => mockAgentProvider.getBackend(),
+    // The REAL selected backend (fixes "the bar always says API"); falls back to
+    // the deterministic mock only when no runtime selection is wired.
+    getBackend: (): Promise<BackendConfig> =>
+      selection ? Promise.resolve(selection.current()) : mockAgentProvider.getBackend(),
     listAgents: (): Promise<AgentOption[]> => mockAgentProvider.listAgents(),
     listEffortLevels: (): Promise<EffortLevel[]> => mockAgentProvider.listEffortLevels(),
     getPlanUsage: (): Promise<PlanUsageRow[]> => mockAgentProvider.getPlanUsage(),
@@ -141,6 +149,12 @@ export function createLiveAgentProvider(opts: LiveAgentProviderOptions): AgentPr
       // Nudge subscribers so the user's message renders immediately.
       pending.publish(sessionId, { type: "status", status: "running" });
 
+      // Resolve the spawn from the runtime selection when present (acp-bridge
+      // path drives a real `claude-code-acp`); else fall back to env-sourced acp
+      // (stub by default, native handled by the registerSession backend).
+      const rc = selection?.runConfig();
+      const command = rc?.driver === "acp-bridge" ? rc.command : acp?.cliCommand;
+      const args = rc?.driver === "acp-bridge" ? rc.args : acp?.cliArgs;
       const run = new AcpSession({
         broker,
         store,
@@ -148,9 +162,9 @@ export function createLiveAgentProvider(opts: LiveAgentProviderOptions): AgentPr
         model: session.model,
         existingSessionId: sessionId,
         resolvePermission: pending.resolver,
-        command: acp?.cliCommand,
-        args: acp?.cliArgs,
-        handshake: Boolean(acp?.cliCommand),
+        command,
+        args,
+        handshake: Boolean(command),
       });
       const unsub = run.subscribe((ev) => pending.publish(sessionId, ev));
       // Fire-and-forget: the forwarded stream drives the UI; tear the run down

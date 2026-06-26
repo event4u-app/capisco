@@ -22,9 +22,11 @@
  */
 
 import type {
+  AgentBackendProvider,
   AgentProvider,
   EditorProvider,
   GitProvider,
+  LspProvider,
   IngestProvider,
   ProjectFsProvider,
   RecentProjectsProvider,
@@ -43,6 +45,10 @@ import { createAgentProxy } from "./agent-proxy.ts";
 
 export interface ProviderBundle {
   agent: AgentProvider;
+  /** Runtime agent-backend selection (P2): real detect/select/current/cost. */
+  agentBackend: AgentBackendProvider;
+  /** Real language intelligence (P5): completion/hover, per root × language. */
+  lsp: LspProvider;
   workspace: WorkspaceProvider;
   editor: EditorProvider;
   git: GitProvider;
@@ -94,6 +100,8 @@ function rpcProxy<T extends object>(
 export function createIpcProviders(client: SidecarClient): ProviderBundle {
   return {
     agent: createAgentProxy(client),
+    agentBackend: rpcProxy<AgentBackendProvider>(client, "agent-backend"),
+    lsp: rpcProxy<LspProvider>(client, "lsp"),
     workspace: rpcProxy<WorkspaceProvider>(client, "workspace"),
     editor: rpcProxy<EditorProvider>(client, "editor"),
     git: rpcProxy<GitProvider>(client, "git", {
