@@ -34,6 +34,7 @@ import { ghAvailable, ghRepo } from "../task-forge/gh-exec.ts";
 import { createRealForgeProvider } from "../task-forge/real-forge-provider.ts";
 import { createRealTaskProvider } from "../task-forge/real-task-provider.ts";
 import { FORGE_PROVIDER_ID, TASK_PROVIDER_ID } from "../register-task-forge.ts";
+import { createRealSentryProvider } from "../observability/real-sentry-provider.ts";
 import { registerDevWorkspace } from "../register-dev-workspace.ts";
 import { isWebSocketUpgrade, WsServerTransport } from "./ws-server-transport.ts";
 
@@ -106,6 +107,23 @@ export async function buildDevRegistry(repo?: string): Promise<ProviderRegistry>
       );
     } catch {
       /* keep the fixture task provider on any Jira error */
+    }
+  }
+  // Real Sentry (SENTRY-BACKEND-SPEC): register the live observability provider
+  // when the org (env/store) + a sentry-token (keychain) are present.
+  const sentryOrg = process.env.SENTRY_ORG ?? cfg("sentry-org");
+  if (sentryOrg && secrets.has("sentry-token")) {
+    try {
+      registry.register(
+        "sentry",
+        createRealSentryProvider({
+          org: sentryOrg,
+          secrets,
+          baseUrl: process.env.SENTRY_BASE_URL ?? cfg("sentry-base-url"),
+        }) as never,
+      );
+    } catch {
+      /* no sentry provider on any error */
     }
   }
   return registry;

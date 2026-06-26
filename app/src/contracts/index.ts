@@ -19,6 +19,7 @@ export * from "./task-forge";
 export * from "./lifecycle";
 export * from "./provisioning";
 export * from "./lsp";
+export * from "./sentry";
 export * from "./rtk";
 export * from "./model-routing";
 export * from "./ingest";
