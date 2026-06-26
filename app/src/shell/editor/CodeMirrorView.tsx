@@ -15,6 +15,8 @@ import {
   indentGuides,
   indentGuideTheme,
 } from "./cm-extensions";
+import { lspAutocomplete, lspOpenDoc, type LspEditorContext } from "./cm-lsp";
+import { useOpenProject } from "@/shell/open-project-store";
 
 /** Git change-bar gutter marker (Modified amber / Added green / Deleted red). */
 /**
@@ -142,6 +144,15 @@ export function CodeMirrorView({
       },
     ]);
 
+    // P5 — real LSP autocomplete, only on an editable real-file doc with a live
+    // sidecar (browser/mock read-only path is untouched → goldens byte-stable).
+    const lspCtx: LspEditorContext = {
+      file: doc.file,
+      root: () => useOpenProject.getState().project?.path,
+    };
+    const lspExtensions: Extension[] = editable ? [lspAutocomplete(lspCtx)] : [];
+    if (editable) lspOpenDoc(lspCtx, doc.text);
+
     const state = EditorState.create({
       doc: doc.text,
       extensions: [
@@ -166,6 +177,7 @@ export function CodeMirrorView({
         rainbowBracketTheme,
         indentGuides,
         indentGuideTheme,
+        ...lspExtensions,
       ],
     });
     const view = new EditorView({ state, parent: host });
