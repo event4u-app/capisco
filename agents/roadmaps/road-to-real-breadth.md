@@ -181,7 +181,7 @@ Zusammenfassung** an; die gemessene Ersparnis ist dokumentiert (auch wenn klein)
 **Goal:** Über die Minimal-Spine-Observability (`actually-works`-P3) hinaus die
 externen Provider + die geteilte Signal-Schiene.
 
-- [ ] **Observability-Provider** (Sentry/Datadog/New Relic via MCP); Dev-Grafana-Embed.
+- [x] **Observability-Provider** (Sentry/Datadog/New Relic via MCP); Dev-Grafana-Embed. <!-- Sentry-Issues-Kern: RealSentryProvider (Bearer via ProviderAuth, secret-by-reference), listIssues → Spec-Shape + toSignals (source observability); gegen echtes galabau-workgroup-gmbh-Sentry live verifiziert; dev-bridge registriert wenn org+token. Crons/Performance/Alerts (Spec §4.2–4.4) + Datadog/NewRelic/Grafana = Folge-Slices -->
 - [ ] **IDE-Selbst-Telemetrie** strikt opt-in, gescrubbt, nie aus Tresor/Code.
 - [ ] **Geteilte Signal-Fläche** live (PR/Container/Observability auf *einer* Schiene).
 
