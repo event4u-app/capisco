@@ -78,8 +78,8 @@ Tokens schon.
       **Overdue 7 Tage konfigurierbar**, Stale-Alert. <!-- RealForgeProvider via gh-exec (gh-Login, kein Token); whoseTurn/stale (default 7d), gegen echtes Repo getestet; dev-bridge Fixture→Real-Swap. GitLab offen -->
 - [ ] **Awareness:** wer arbeitet wo, Branch-Überlappung, Konflikt-Vorhersage.
 - [ ] **Bidirektionaler Status-Sync** (eine Richtung zuerst; Webhooks/Rate-Limits).
-- [ ] **Lethal-Trifecta-Gate:** Ticket-Text ist untrusted Input — jeder Egress/Write
-      daraus geht durch den harten Human-Gate (nie auto-gefeuert).
+- [x] **Lethal-Trifecta-Gate:** Ticket-Text ist untrusted Input — jeder Egress/Write
+      daraus geht durch den harten Human-Gate (nie auto-gefeuert). <!-- Policy-Engine: fromUntrusted + EGRESS_KINDS → harter `ask` (kein Allowlist/Session-Grant pre-cleared), clamp-to-once in resolve(), per-Target consumable grant. ticket-lifecycle.ts setzt fromUntrusted:true auf Status-Writes. Adversarial bewiesen: broker.test.ts (kein Laundering in Standing-Grant, single-use, per-Target-Bindung) + ticket-lifecycle.test.ts (fail-closed gated, ASK vor Execution auditiert, human-SESSION launders zu fromUntrusted:false, DENY/ONCE bleiben gated) — 63 Tests grün -->
 
 **Stolpersteine:** API-Tokens (Du); Webhook-Setup; Rate-Limits; Jira-vs-Linear-
 Status-Semantik; Forge-Heterogenität; Keychain-Plattform-APIs.
