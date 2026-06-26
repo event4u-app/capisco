@@ -6,10 +6,10 @@
 
 ## Overall
 
-**31 / 144 steps done · 22%**
+**33 / 159 steps done · 21%**
 
 ```text
-█████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░   22%
+████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░   21%
 ```
 
 ## Open roadmaps
@@ -17,9 +17,9 @@
 | # | Roadmap | Phases | Steps | Open | Done | Deferred | Cancelled | Progress |
 |---|---|---:|---:|---:|---:|---:|---:|---|
 | 1 | [road-to-actually-works.md](roadmaps/road-to-actually-works.md) | 9 | 54 | 27 | 27 | 0 | 0 | █████░░░░░ 50% |
-| 2 | [road-to-composer-intelligence.md](roadmaps/road-to-composer-intelligence.md) | 6 | 17 | 17 | 0 | 0 | 0 | ░░░░░░░░░░ 0% |
+| 2 | [road-to-composer-intelligence.md](roadmaps/road-to-composer-intelligence.md) | 7 | 32 | 32 | 0 | 0 | 0 | ░░░░░░░░░░ 0% |
 | 3 | [road-to-desktop-release.md](roadmaps/road-to-desktop-release.md) | 6 | 14 | 14 | 0 | 0 | 0 | ░░░░░░░░░░ 0% |
-| 4 | [road-to-real-breadth.md](roadmaps/road-to-real-breadth.md) | 5 | 30 | 30 | 0 | 0 | 0 | ░░░░░░░░░░ 0% |
+| 4 | [road-to-real-breadth.md](roadmaps/road-to-real-breadth.md) | 5 | 30 | 28 | 2 | 0 | 0 | █░░░░░░░░░ 7% |
 | 5 | [road-to-real-runtime.md](roadmaps/road-to-real-runtime.md) | 5 | 29 | 25 | 4 | 0 | 0 | █░░░░░░░░░ 14% |
 
 ---
@@ -44,16 +44,17 @@
 
 ### [road-to-composer-intelligence.md](roadmaps/road-to-composer-intelligence.md)
 
-**Road to Composer-Intelligence — der Input, der mitdenkt** — 0 / 17 done (0%)
+**Road to Composer-Intelligence — der Input, der mitdenkt** — 0 / 32 done (0%)
 
 | # | Phase | State | Open | Done | Deferred | Cancelled | % |
 |---|---|---|---:|---:|---:|---:|---:|
-| 0 | Shared-Autocomplete-Overlay-Primitiv | ⬜ not started | 4 | 0 | 0 | 0 | 0% |
-| 1 | `/`-Slash-Command-Autocomplete | ⬜ not started | 2 | 0 | 0 | 0 | 0% |
+| 0 | Shared-Autocomplete-Overlay-Primitiv | ⬜ not started | 6 | 0 | 0 | 0 | 0% |
+| 1 | `/`-Slash-Commands (+ Arg-Hints, Saved Prompts) | ⬜ not started | 4 | 0 | 0 | 0 | 0% |
 | 2 | Multi-Source-`@`-Mentions (Datei / Ordner / Symbol) | ⬜ not started | 4 | 0 | 0 | 0 | 0% |
-| 3 | Empty-State-Next-Task-Vorschläge | ⬜ not started | 2 | 0 | 0 | 0 | 0% |
-| 4 | Input-Reliability & -Qualität (History / Drafts / Smart-Paste) | ⬜ not started | 3 | 0 | 0 | 0 | 0% |
-| 5 | Agent-Cockpit-Control-Flow | ⬜ not started | 2 | 0 | 0 | 0 | 0% |
+| 3 | Empty-State-Next-Task-Vorschläge (deterministisch) | ⬜ not started | 2 | 0 | 0 | 0 | 0% |
+| 4 | Input-Reliability & -Qualität (History / Drafts / Paste / Diktat + Heuristik-Assists) | ⬜ not started | 6 | 0 | 0 | 0 | 0% |
+| 5 | Agent-Cockpit-Control-Flow | ⬜ not started | 6 | 0 | 0 | 0 | 0% |
+| 6 | Aktive ML-Input-Intelligenz (per Setting, token-bewusst) | ⬜ not started | 4 | 0 | 0 | 0 | 0% |
 
 ### [road-to-desktop-release.md](roadmaps/road-to-desktop-release.md)
 
@@ -70,11 +71,11 @@
 
 ### [road-to-real-breadth.md](roadmaps/road-to-real-breadth.md)
 
-**Road to Real Breadth — die Breite (Tickets · Datasource · Secrets · Token · Observability · Browser)** — 0 / 30 done (0%)
+**Road to Real Breadth — die Breite (Tickets · Datasource · Secrets · Token · Observability · Browser)** — 2 / 30 done (7%)
 
 | # | Phase | State | Open | Done | Deferred | Cancelled | % |
 |---|---|---|---:|---:|---:|---:|---:|
-| 0 | Tickets + Forge real (Jira · Linear · GitHub) + Keychain-Primitive | ⬜ not started | 7 | 0 | 0 | 0 | 0% |
+| 0 | Tickets + Forge real (Jira · Linear · GitHub) + Keychain-Primitive | 🟡 in progress | 5 | 2 | 0 | 0 | 29% |
 | 1 | Datasource real (Redis · MySQL · Postgres · Tenant-Fan-out) | ⬜ not started | 11 | 0 | 0 | 0 | 0% |
 | 2 | Token-Ökonomie live (RTK · Caveman · Model-Routing-Kalibrierung) | ⬜ not started | 4 | 0 | 0 | 0 | 0% |
 | 3 | Observability-Provider (volle Fläche) | ⬜ not started | 3 | 0 | 0 | 0 | 0% |

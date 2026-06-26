@@ -7,7 +7,7 @@
  * purpose, so the ACP stub can never act around it.
  */
 
-import type { GrantConfig } from "@/contracts";
+import type { GrantConfig, SecretStore } from "@/contracts";
 import type { ProviderRegistry } from "./registry/registry.ts";
 import { Broker } from "./broker/capability-broker.ts";
 import { BrokerProvider } from "./broker/broker-provider.ts";
@@ -20,6 +20,8 @@ export interface RegisterBrokerOptions {
   projectKey?: string;
   /** Human-confirmed production datasource names (read-only invariant §3.3). */
   productionDatasources?: ReadonlySet<string>;
+  /** Persistent secret vault (P0). Defaults to InMemorySecretStore when omitted. */
+  secrets?: SecretStore;
 }
 
 export function registerBroker(
@@ -30,6 +32,7 @@ export function registerBroker(
     config: opts.config,
     projectKey: opts.projectKey,
     productionDatasources: opts.productionDatasources,
+    secrets: opts.secrets,
   });
   registry.register(BROKER_PROVIDER_ID, new BrokerProvider(broker) as never);
   return broker;

@@ -27,6 +27,8 @@ import { registerTaskForge } from "./register-task-forge.ts";
 import { registerProvision } from "./register-provision.ts";
 import { BackendSelection } from "./acp/backend-selection.ts";
 import { registerLsp } from "./register-lsp.ts";
+import { createSecretStore } from "./broker/create-secret-store.ts";
+import type { SecretStore } from "@/contracts";
 import { createFileRecentProjects } from "./recent/recent-projects.ts";
 
 export function resolveSocketPath(argv: string[] = process.argv.slice(2)): string {
@@ -65,6 +67,12 @@ export interface RegisterAllProvidersOptions {
    * regress (mirrors how the real git/fs swap is dev-bridge-only).
    */
   liveAgent?: boolean;
+  /**
+   * Persistent secret vault (road-to-real-breadth P0). The caller builds it
+   * async (`createSecretStore()` → keychain on macOS, else 0600 file) and passes
+   * it here so tokens survive restarts. Omitted → InMemorySecretStore (tests).
+   */
+  secrets?: SecretStore;
 }
 
 export function registerAllProviders(
@@ -77,7 +85,7 @@ export function registerAllProviders(
   // with the conservative human-authored default allowlist and NO production
   // datasources (production is human-confirmed config, never inferred). B3 (ACP)
   // wires behind this so the agent can never act around it.
-  const broker = registerBroker(registry);
+  const broker = registerBroker(registry, { secrets: opts.secrets });
   // B3 — the persistent session store + ToDo→Agent micro-north-star, wired
   // BEHIND the broker so every agent capability still flows through the
   // chokepoint. The LIVE pending-permission registry is the UI human-in-the-loop
@@ -156,15 +164,18 @@ export function registerAllProviders(
 /**
  * Construct a sidecar with all providers registered (not yet listening).
  */
-export function createSidecar(socketPath: string): Sidecar {
+export function createSidecar(socketPath: string, opts: RegisterAllProvidersOptions = {}): Sidecar {
   const sidecar = new Sidecar({ socketPath });
-  registerAllProviders(sidecar.registry);
+  registerAllProviders(sidecar.registry, opts);
   return sidecar;
 }
 
 export async function main(): Promise<Sidecar> {
   const socketPath = resolveSocketPath();
-  const sidecar = createSidecar(socketPath);
+  // Persistent secret vault (P0): keychain on macOS, else 0600 file. Built async,
+  // then injected so tokens survive restarts.
+  const secrets = await createSecretStore();
+  const sidecar = createSidecar(socketPath, { secrets });
   await sidecar.listen();
   console.error(`[capisco-sidecar] listening on ${sidecar.address()}`);
   const shutdown = (): void => {
