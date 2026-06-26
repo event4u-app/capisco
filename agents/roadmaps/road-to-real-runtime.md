@@ -135,9 +135,9 @@ diese Features dienen dem Menschen, darum hier statt in der Spine. **Harte
 Voraussetzung: `actually-works` P5 ist abgenommen** (sonst hängt diese Phase in der
 Luft).
 
-- [ ] **Go-to-Definition, Find-References, Rename-Symbol** über den LSP-Host.
+- [x] **Go-to-Definition, Find-References, Rename-Symbol** über den LSP-Host. <!-- LspHost.definition/references/rename (textDocument/definition|references|rename), capabilities deklariert; reine Normalizer (lsp-normalize.ts) falten die polymorphen LSP-Antworten (Location|Location[]|LocationLink[], WorkspaceEdit.changes|documentChanges) in die Contract-Shapes (LspLocation/LspWorkspaceEdit). LspManager + register-lsp exponieren sie über die Wire. Tests: reine Normalizer + live gegen echten typescript-language-server (definition→Deklarationszeile, references≥2, rename→Edits — 0 skipped). UI-Wiring (Jump/References-Panel/Rename-Apply gated) = consumer-side Folge-Slice -->
 - [ ] **Inlay-Hints** (Parameter-Namen), **Blame-Line** inline (aus echtem Git).
-- [ ] **Structure/Outline** (linke Bar) aus echten LSP-Symbolen.
+- [x] **Structure/Outline** (linke Bar) aus echten LSP-Symbolen. <!-- LspHost.documentSymbol (textDocument/documentSymbol) → normalizeSymbols faltet DocumentSymbol[] (hierarchisch) + SymbolInformation[] (flach) in flache LspSymbol[] mit depth; live gegen typescript-language-server verifiziert (listet `greeting` etc.). Linke Outline-Bar-Wiring (ersetzt SymbolNode-getStructure-Mock) = consumer-side Folge-Slice -->
 - [ ] **Per-Worktree-LSP-Lifecycle (Council-Trap):** N Worktrees × M Sprachen =
       viele Prozesse; Crash-Restart / didOpen-didChange-Sync / Idle-Reaping — **über
       den `actually-works`-P1-Supervisor**, nicht neu gebaut.
