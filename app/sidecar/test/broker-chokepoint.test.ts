@@ -60,6 +60,10 @@ const EXECUTION_PRIMITIVES: Record<string, ReadonlyArray<SideEffect>> = {
   // mutating-verb guard refuses pr create/merge/close + `api -X`. Reads PRs under
   // the user's existing gh login (no token in this process). Backs RealForgeProvider.
   "task-forge/gh-exec.ts": ["process"],
+  // Read-only Jira REST client (road-to-real-breadth P0) — the first `fetch`
+  // egress primitive (explicit review). GET-only, fixed Jira base URL, token
+  // injected via ProviderAuth at the execution layer (secret-by-reference).
+  "task-forge/jira-http.ts": ["fetch"],
   // The system-`git` exec primitive (B1). execFile, no shell.
   "git/git-exec.ts": ["process"],
   // The quality-tool runner (B5) shells out to eslint/tsc/vitest. execFile.

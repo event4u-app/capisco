@@ -32,7 +32,8 @@ import { registerAllProviders } from "../main.ts";
 import { createSecretStore } from "../broker/create-secret-store.ts";
 import { ghAvailable, ghRepo } from "../task-forge/gh-exec.ts";
 import { createRealForgeProvider } from "../task-forge/real-forge-provider.ts";
-import { FORGE_PROVIDER_ID } from "../register-task-forge.ts";
+import { createRealTaskProvider } from "../task-forge/real-task-provider.ts";
+import { FORGE_PROVIDER_ID, TASK_PROVIDER_ID } from "../register-task-forge.ts";
 import { registerDevWorkspace } from "../register-dev-workspace.ts";
 import { isWebSocketUpgrade, WsServerTransport } from "./ws-server-transport.ts";
 
@@ -86,6 +87,25 @@ export async function buildDevRegistry(repo?: string): Promise<ProviderRegistry>
       } catch {
         /* keep the fixture forge on any gh error */
       }
+    }
+  }
+  // Real Jira tasks (P0): when the base URL + email are configured (env) and a
+  // `jira-token` is in the keychain, swap the fixture task provider for the live
+  // one (token mode; secret-by-reference). Any error keeps the fixture.
+  // Base URL + email are non-secret config: env first, else the persistent store
+  // (so `task dev:web` auto-wires Jira without re-exporting env each run).
+  const cfg = (k: string): string | undefined =>
+    secrets.has(k) ? secrets.inject(k, (v) => v) : undefined;
+  const jiraUrl = process.env.JIRA_BASE_URL ?? cfg("jira-base-url");
+  const jiraEmail = process.env.JIRA_EMAIL ?? cfg("jira-email");
+  if (jiraUrl && jiraEmail && secrets.has("jira-token")) {
+    try {
+      registry.replace(
+        TASK_PROVIDER_ID,
+        (await createRealTaskProvider({ baseUrl: jiraUrl, email: jiraEmail, secrets })) as never,
+      );
+    } catch {
+      /* keep the fixture task provider on any Jira error */
     }
   }
   return registry;
