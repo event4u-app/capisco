@@ -54,6 +54,14 @@ export function bearerTokenAuth(secrets: SecretStore, tokenRef: string): Provide
   };
 }
 
+/** Raw-token auth — the key IS the header value (e.g. a Linear personal API key). */
+export function rawTokenAuth(secrets: SecretStore, tokenRef: string): ProviderAuth {
+  return {
+    mode: "token",
+    withAuthHeader: (use) => secrets.inject(tokenRef, (token) => use(token)),
+  };
+}
+
 /** CLI / MCP transports authenticate themselves — no header at the HTTP layer. */
 export function selfAuth(mode: "cli" | "mcp"): ProviderAuth {
   return { mode, withAuthHeader: (use) => use(undefined) };

@@ -33,6 +33,7 @@ import { createSecretStore } from "../broker/create-secret-store.ts";
 import { ghAvailable, ghRepo } from "../task-forge/gh-exec.ts";
 import { createRealForgeProvider } from "../task-forge/real-forge-provider.ts";
 import { createRealTaskProvider } from "../task-forge/real-task-provider.ts";
+import { createRealLinearProvider } from "../task-forge/real-linear-provider.ts";
 import { FORGE_PROVIDER_ID, TASK_PROVIDER_ID } from "../register-task-forge.ts";
 import { createRealSentryProvider } from "../observability/real-sentry-provider.ts";
 import { registerDevWorkspace } from "../register-dev-workspace.ts";
@@ -97,9 +98,20 @@ export async function buildDevRegistry(repo?: string): Promise<ProviderRegistry>
   // (so `task dev:web` auto-wires Jira without re-exporting env each run).
   const cfg = (k: string): string | undefined =>
     secrets.has(k) ? secrets.inject(k, (v) => v) : undefined;
+  // Two TaskProvider backends share TASK_PROVIDER_ID: Jira (default) and Linear.
+  // `task-backend` (env/store: "jira" | "linear") picks which one wins when both
+  // are configured; absent → Jira, the original behaviour. Linear needs only a
+  // `linear-token` (single SaaS endpoint, personal key — no URL/email).
+  const taskBackend = (process.env.TASK_BACKEND ?? cfg("task-backend"))?.toLowerCase();
   const jiraUrl = process.env.JIRA_BASE_URL ?? cfg("jira-base-url");
   const jiraEmail = process.env.JIRA_EMAIL ?? cfg("jira-email");
-  if (jiraUrl && jiraEmail && secrets.has("jira-token")) {
+  if (taskBackend === "linear" && secrets.has("linear-token")) {
+    try {
+      registry.replace(TASK_PROVIDER_ID, (await createRealLinearProvider({ secrets })) as never);
+    } catch {
+      /* keep the fixture task provider on any Linear error */
+    }
+  } else if (jiraUrl && jiraEmail && secrets.has("jira-token")) {
     try {
       registry.replace(
         TASK_PROVIDER_ID,

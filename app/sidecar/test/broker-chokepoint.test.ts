@@ -67,6 +67,11 @@ const EXECUTION_PRIMITIVES: Record<string, ReadonlyArray<SideEffect>> = {
   // Read-only Sentry Web API client (SENTRY-BACKEND-SPEC §2). GET-only, Bearer
   // token via ProviderAuth (secret-by-reference). `fetch` egress (explicit review).
   "observability/sentry-http.ts": ["fetch"],
+  // Read-only Linear GraphQL client (road-to-real-breadth P0, second task
+  // backend). GraphQL is POST even for reads, so this is a `fetch` egress
+  // primitive (explicit review) — but it REFUSES any `mutation` document, so it
+  // can only query. Token injected via ProviderAuth (secret-by-reference).
+  "task-forge/linear-http.ts": ["fetch"],
   // The system-`git` exec primitive (B1). execFile, no shell.
   "git/git-exec.ts": ["process"],
   // The quality-tool runner (B5) shells out to eslint/tsc/vitest. execFile.
