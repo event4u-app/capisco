@@ -23,8 +23,16 @@ import {
   mockWorkspaceProvider,
   mockWorktreeProvider,
 } from "@/mocks";
-import type { AgentBackendProvider } from "@/contracts";
+import type { AgentBackendProvider, LspProvider } from "@/contracts";
 import type { ProviderBundle } from "./providers.ts";
+
+/** Browser-mode LSP mock — no language server in the browser; empty + deterministic. */
+const mockLsp: LspProvider = {
+  available: () => Promise.resolve(false),
+  open: () => Promise.resolve(),
+  completion: () => Promise.resolve([]),
+  hover: () => Promise.resolve(null),
+};
 
 /**
  * Deterministic browser-mode agent-backend mock. `current()` reuses the existing
@@ -53,6 +61,7 @@ export function createMockProviders(): ProviderBundle {
   return {
     agent: mockAgentProvider,
     agentBackend: mockAgentBackend,
+    lsp: mockLsp,
     workspace: mockWorkspaceProvider,
     editor: mockEditorProvider,
     git: mockGitProvider,

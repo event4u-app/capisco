@@ -26,6 +26,7 @@ import { registerQuality } from "./register-quality.ts";
 import { registerTaskForge } from "./register-task-forge.ts";
 import { registerProvision } from "./register-provision.ts";
 import { BackendSelection } from "./acp/backend-selection.ts";
+import { registerLsp } from "./register-lsp.ts";
 import { createFileRecentProjects } from "./recent/recent-projects.ts";
 
 export function resolveSocketPath(argv: string[] = process.argv.slice(2)): string {
@@ -130,6 +131,10 @@ export function registerAllProviders(
   // Grounds the AI in real, parsed tool facts; folds diagnostics onto the
   // shared signal rail. No external dependency (binaries are first-party).
   registerQuality(registry);
+  // P5 — real language intelligence (completion/hover/diagnostics) per
+  // (root × language). Lazy spawn via the P1 supervisor; degrades to empty when
+  // the language server is not installed.
+  registerLsp(registry);
   // B6 — read-only Task (Jira/Linear) + Forge (GitHub/GitLab) providers from
   // recorded fixtures: "my tickets / next from sprint / whose turn". The
   // ticket→worktree→status lifecycle is constructed in-process by the consumer

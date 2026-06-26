@@ -18,6 +18,7 @@ export * from "./ai-review";
 export * from "./task-forge";
 export * from "./lifecycle";
 export * from "./provisioning";
+export * from "./lsp";
 export * from "./rtk";
 export * from "./model-routing";
 export * from "./ingest";
