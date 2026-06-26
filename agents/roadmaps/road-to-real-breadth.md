@@ -45,9 +45,9 @@ OS-Keychain-Primitive (Council #+):** erster echter persistierter Credential —
 Agent-Pfad braucht sie nicht (`claude`-CLI managt eigene Auth), Ticket-/Egress-
 Tokens schon.
 
-- [ ] **OS-Keychain real (Primitive):** `InMemorySecretStore` → macOS `security` /
+- [x] **OS-Keychain real (Primitive):** `InMemorySecretStore` → macOS `security` /
       Windows DPAPI / Linux libsecret. Secrets überleben Neustart, **nie im
-      LLM-Context**, nie ins Subprozess-env. (Wird von P1-Datasource mitgenutzt.)
+      LLM-Context**, nie ins Subprozess-env. (Wird von P1-Datasource mitgenutzt.) <!-- KeychainSecretStore (cache+write-through, 1 service `capisco`, -U idempotent, kein Garbage) + FileSecretStore (0600 fallback) + createSecretStore-Factory; in dev-bridge + unix-sidecar verdrahtet; gegen echte Keychain getestet; scripts/secret.mjs (stdin, kein argv-leak). Windows DPAPI/libsecret = Datei-Fallback bis nativ -->
 - [ ] **Task-Provider real** (Jira/Linear via MCP/API-Token, aus dem Keychain):
       „meine Tickets", „nächstes aus dem Sprint ziehen".
 - [ ] **Ticket-Lifecycle live:** Ticket ziehen → Worktree+Runtime (`real-runtime`-P0)
