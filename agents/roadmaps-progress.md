@@ -2,14 +2,14 @@
 
 > Auto-generated — do not edit. Regenerate with `task roadmap-progress` or by running the `update_roadmap_progress` script for your install; rewritten on every roadmap create / execute / completion change (timestamp lives in git history).
 >
-> 5 open roadmaps · [roadmaps/](roadmaps/) · [archive/](roadmaps/archive/) · [skipped/](roadmaps/skipped/) · [later/](roadmaps/later/)
+> 6 open roadmaps · [roadmaps/](roadmaps/) · [archive/](roadmaps/archive/) · [skipped/](roadmaps/skipped/) · [later/](roadmaps/later/)
 
 ## Overall
 
-**34 / 159 steps done · 21%**
+**35 / 188 steps done · 19%**
 
 ```text
-████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░   21%
+████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░   19%
 ```
 
 ## Open roadmaps
@@ -19,8 +19,9 @@
 | 1 | [road-to-actually-works.md](roadmaps/road-to-actually-works.md) | 9 | 54 | 27 | 27 | 0 | 0 | █████░░░░░ 50% |
 | 2 | [road-to-composer-intelligence.md](roadmaps/road-to-composer-intelligence.md) | 7 | 32 | 32 | 0 | 0 | 0 | ░░░░░░░░░░ 0% |
 | 3 | [road-to-desktop-release.md](roadmaps/road-to-desktop-release.md) | 6 | 14 | 14 | 0 | 0 | 0 | ░░░░░░░░░░ 0% |
-| 4 | [road-to-real-breadth.md](roadmaps/road-to-real-breadth.md) | 5 | 30 | 27 | 3 | 0 | 0 | █░░░░░░░░░ 10% |
+| 4 | [road-to-real-breadth.md](roadmaps/road-to-real-breadth.md) | 5 | 30 | 26 | 4 | 0 | 0 | █░░░░░░░░░ 13% |
 | 5 | [road-to-real-runtime.md](roadmaps/road-to-real-runtime.md) | 5 | 29 | 25 | 4 | 0 | 0 | █░░░░░░░░░ 14% |
+| 6 | [road-to-sentry-observability.md](roadmaps/road-to-sentry-observability.md) | 5 | 29 | 29 | 0 | 0 | 0 | ░░░░░░░░░░ 0% |
 
 ---
 
@@ -71,14 +72,14 @@
 
 ### [road-to-real-breadth.md](roadmaps/road-to-real-breadth.md)
 
-**Road to Real Breadth — die Breite (Tickets · Datasource · Secrets · Token · Observability · Browser)** — 3 / 30 done (10%)
+**Road to Real Breadth — die Breite (Tickets · Datasource · Secrets · Token · Observability · Browser)** — 4 / 30 done (13%)
 
 | # | Phase | State | Open | Done | Deferred | Cancelled | % |
 |---|---|---|---:|---:|---:|---:|---:|
 | 0 | Tickets + Forge real (Jira · Linear · GitHub) + Keychain-Primitive | 🟡 in progress | 4 | 3 | 0 | 0 | 43% |
 | 1 | Datasource real (Redis · MySQL · Postgres · Tenant-Fan-out) | ⬜ not started | 11 | 0 | 0 | 0 | 0% |
 | 2 | Token-Ökonomie live (RTK · Caveman · Model-Routing-Kalibrierung) | ⬜ not started | 4 | 0 | 0 | 0 | 0% |
-| 3 | Observability-Provider (volle Fläche) | ⬜ not started | 3 | 0 | 0 | 0 | 0% |
+| 3 | Observability-Provider (volle Fläche) | 🟡 in progress | 2 | 1 | 0 | 0 | 33% |
 | 4 | Gemanagter Browser (SECURITY-SCOPED — eigener Threat-Model) | ⬜ not started | 5 | 0 | 0 | 0 | 0% |
 
 ### [road-to-real-runtime.md](roadmaps/road-to-real-runtime.md)
@@ -92,4 +93,16 @@
 | 2 | Quality real (Grounding) + Model-Routing-Signal | ⬜ not started | 5 | 0 | 0 | 0 | 0% |
 | 3 | Advanced-LSP (Navigation jenseits Autocomplete) | ⬜ not started | 4 | 0 | 0 | 0 | 0% |
 | 4 | Crash- & State-Recovery | ⬜ not started | 5 | 0 | 0 | 0 | 0% |
+
+### [road-to-sentry-observability.md](roadmaps/road-to-sentry-observability.md)
+
+**Road to Sentry Observability — die Sentry-Ansicht (4 Tabs, 1:1 ans Design)** — 0 / 29 done (0%)
+
+| # | Phase | State | Open | Done | Deferred | Cancelled | % |
+|---|---|---|---:|---:|---:|---:|---:|
+| 0 | Contract + Fixture + Design 1:1 portiert (autonom-grün) | ⬜ not started | 8 | 0 | 0 | 0 | 0% |
+| 1 | ProviderAuth + Real-Read (Token-first) + Kill-Switch | ⬜ not started | 7 | 0 | 0 | 0 | 0% |
+| 2 | Broker-gegatete Writes (anti-injection) | ⬜ not started | 6 | 0 | 0 | 0 | 0% |
+| 3 | Cron Monitors + Performance + Alerts + IDE-Notification | ⬜ not started | 5 | 0 | 0 | 0 | 0% |
+| 4 | Realtime (Webhooks) — optional, deferred | ⬜ not started | 3 | 0 | 0 | 0 | 0% |
 

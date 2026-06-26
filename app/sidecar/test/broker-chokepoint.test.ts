@@ -64,6 +64,9 @@ const EXECUTION_PRIMITIVES: Record<string, ReadonlyArray<SideEffect>> = {
   // egress primitive (explicit review). GET-only, fixed Jira base URL, token
   // injected via ProviderAuth at the execution layer (secret-by-reference).
   "task-forge/jira-http.ts": ["fetch"],
+  // Read-only Sentry Web API client (SENTRY-BACKEND-SPEC §2). GET-only, Bearer
+  // token via ProviderAuth (secret-by-reference). `fetch` egress (explicit review).
+  "observability/sentry-http.ts": ["fetch"],
   // The system-`git` exec primitive (B1). execFile, no shell.
   "git/git-exec.ts": ["process"],
   // The quality-tool runner (B5) shells out to eslint/tsc/vitest. execFile.
