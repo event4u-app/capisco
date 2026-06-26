@@ -98,3 +98,20 @@ export interface BackendProvisioner {
    */
   detect(): Promise<AgentBackend[]>;
 }
+
+/**
+ * Runtime agent-backend selection (road-to-actually-works P2). The picker UI
+ * drives `detect` → `select`; the composer bar reads `current()` (the REAL
+ * selected backend, never the mock "API"); `cost()` turns real token telemetry
+ * into USD. Backed by {@link BackendSelection} in the sidecar; a deterministic
+ * mock fallback serves the browser-only path.
+ */
+export interface AgentBackendProvider {
+  detect(): Promise<AgentBackend[]>;
+  /** Select the active backend by id; returns its config. Rejects if not ready. */
+  select(id: string): Promise<import("./agents").BackendConfig>;
+  /** The active backend as a BackendConfig — the composer bar's real label. */
+  current(): Promise<import("./agents").BackendConfig>;
+  /** USD cost from cumulative token telemetry for a model. */
+  cost(model: string, telemetry: import("./agents").Telemetry): Promise<number>;
+}

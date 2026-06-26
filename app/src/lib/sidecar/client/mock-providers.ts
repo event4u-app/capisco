@@ -23,11 +23,36 @@ import {
   mockWorkspaceProvider,
   mockWorktreeProvider,
 } from "@/mocks";
+import type { AgentBackendProvider } from "@/contracts";
 import type { ProviderBundle } from "./providers.ts";
+
+/**
+ * Deterministic browser-mode agent-backend mock. `current()` reuses the existing
+ * mockAgentProvider.getBackend() and `cost()` returns the long-standing mock
+ * "$0.04" so the browser path + pixel goldens stay byte-identical; the REAL
+ * detect/select/current/cost live in the sidecar (BackendSelection).
+ */
+const mockAgentBackend: AgentBackendProvider = {
+  detect: () =>
+    Promise.resolve([
+      {
+        id: "claude-native",
+        label: "Claude Code (native)",
+        driver: "native-stream-json",
+        status: "ready",
+        detail: "/usr/local/bin/claude",
+        version: "1.4.2",
+      },
+    ]),
+  select: () => mockAgentProvider.getBackend(),
+  current: () => mockAgentProvider.getBackend(),
+  cost: () => Promise.resolve(0.04),
+};
 
 export function createMockProviders(): ProviderBundle {
   return {
     agent: mockAgentProvider,
+    agentBackend: mockAgentBackend,
     workspace: mockWorkspaceProvider,
     editor: mockEditorProvider,
     git: mockGitProvider,

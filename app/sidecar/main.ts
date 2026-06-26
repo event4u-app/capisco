@@ -25,6 +25,7 @@ import { PROVIDER_IDS } from "./register-mocks.ts";
 import { registerQuality } from "./register-quality.ts";
 import { registerTaskForge } from "./register-task-forge.ts";
 import { registerProvision } from "./register-provision.ts";
+import { BackendSelection } from "./acp/backend-selection.ts";
 import { createFileRecentProjects } from "./recent/recent-projects.ts";
 
 export function resolveSocketPath(argv: string[] = process.argv.slice(2)): string {
@@ -92,13 +93,37 @@ export function registerAllProviders(
   // same `backend` is what Phase 2's interactive chat run reuses.
   const backend = process.env.CAPISCO_AGENT_BACKEND === "native" ? ("native" as const) : undefined;
   const { store } = registerSession(registry, broker, { pending, backend });
+
+  // B8 — backend detection (moved up so the runtime selection can read it). The
+  // install action is broker-gated; detection is read-only on the host.
+  const { provider: provision } = registerProvision(registry, { broker });
+
+  // P2 — runtime agent-backend selection. The UI's picker drives this (detect →
+  // select), the composer bar shows `current()` (the REAL backend, not the mock
+  // "API"), and `cost()` turns real token telemetry into USD.
+  const selection = new BackendSelection(
+    { detect: () => provision.detect() },
+    backend === "native" ? "claude-native" : undefined,
+  );
+  registry.register("agent-backend", {
+    detect: () => selection.detect(),
+    select: async (id: string) => {
+      selection.select(id);
+      return selection.current();
+    },
+    current: () => Promise.resolve(selection.current()),
+    cost: (model: string, telemetry: import("@/contracts").Telemetry) =>
+      Promise.resolve(selection.cost(model, telemetry)),
+  } as never);
+
   if (opts.liveAgent) {
     // P2 — the interactive chat run. The broker is the side-effect chokepoint;
-    // `acp` (env-sourced) selects the real claude-code-acp bridge CLI when set,
-    // else the deterministic stub. Permission asks park for the UI (`pending`).
+    // the runtime `selection` resolves the spawn (acp-bridge → real
+    // claude-code-acp); `acp` env is the fallback (stub by default). Permission
+    // asks park for the UI (`pending`).
     registry.replace(
       PROVIDER_IDS.agent,
-      createLiveAgentProvider({ store, pending, broker, acp: readRealAcpEnv() }) as never,
+      createLiveAgentProvider({ store, pending, broker, acp: readRealAcpEnv(), selection }) as never,
     );
   }
   // B5 — the quality-tool runner (eslint/tsc/vitest) + deferred AI-review fake.
@@ -117,7 +142,7 @@ export function registerAllProviders(
   // action flows through the broker chokepoint; the default human gate is
   // fail-closed (deny-all) — a real UI swaps in a confirm-the-exact-command
   // prompt. Detection is real on the host; nothing auto-installs.
-  registerProvision(registry, { broker });
+  // (registerProvision moved up — the runtime backend selection reads it.)
   // The broker is returned so the dev-workspace swap can wire the broker-gated
   // editor-save adapter (P2) behind the same `projectFs` id.
   return broker;

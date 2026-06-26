@@ -121,6 +121,34 @@ export function AgentWorkspace({ kind = "agents" }: { kind?: WorkspaceKind } = {
   const cur = sessions.find((s) => s.id === activeId) ?? sessions[0];
   const backend = agentSnapshot.backend;
 
+  // P2 — the REAL selected backend + USD cost over the live sidecar. In the
+  // browser (mock) path these stay null and the deterministic labels below are
+  // used unchanged (pixel goldens byte-identical). On desktop the composer bar
+  // shows the actual backend (no longer "API") and real cost from telemetry.
+  const [liveBackendLabel, setLiveBackendLabel] = React.useState<string | null>(null);
+  const [liveCostUsd, setLiveCostUsd] = React.useState<number | null>(null);
+  React.useEffect(() => {
+    if (!isDesktop() || !cur) return;
+    const p = getProviders();
+    if (!p.agentBackend) return; // partial bundle (some tests) — keep mock labels
+    let cancelled = false;
+    void p.agentBackend
+      .current()
+      .then((cfg) => {
+        if (!cancelled) setLiveBackendLabel(cfg.kind === "api" ? cfg.provider : `CLI · ${cfg.provider}`);
+      })
+      .catch(() => {});
+    void p.agentBackend
+      .cost(cur.model, cur.telemetry)
+      .then((usd) => {
+        if (!cancelled) setLiveCostUsd(usd);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [cur?.id, cur?.model, cur?.telemetry]);
+
   const openFile = React.useCallback(() => {
     // Tool actions deep-link into the diff view (R1) — the shell remembers the
     // mode to return to on close.
@@ -174,11 +202,13 @@ export function AgentWorkspace({ kind = "agents" }: { kind?: WorkspaceKind } = {
   // Seed text for THIS session if it was created by a handoff (the empty
   // transcript renders it so the fresh session is not a blank restart).
   const handoffSeed = handoffSeeds[cur.id];
-  const backendLabel = backend.kind === "api" ? "API" : "CLI · claude 1.4.2";
+  const backendLabel =
+    liveBackendLabel ?? (backend.kind === "api" ? "API" : "CLI · claude 1.4.2");
+  const costStr = liveCostUsd !== null ? `$${liveCostUsd.toFixed(2)}` : "$0.04";
   // Chat is a quick assistant chat (no tools); Agents shows live run telemetry.
   const statusText = isChat
     ? `${backendLabel} · quick chat · no tools`
-    : `${backendLabel} · 6.5k tokens · $0.04 · running 2m49s`;
+    : `${backendLabel} · 6.5k tokens · ${costStr} · running 2m49s`;
 
   return (
     <div
