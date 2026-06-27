@@ -107,8 +107,8 @@ auf echten Tool-Fakten geerdet**; und das **Model-Routing bekommt echte
 Quality-Verdicts** statt Fake-RED/GREEN (`escalation.ts` faltet die echten Verdicts
 bereits — jetzt mit echten Tools gespeist).
 
-- [ ] **Quality-Provider real erweitern:** PHPStan (JSON), Rector (Dry-Run-Diff),
-      ECS/PHP-CS-Fixer — strukturierter Output, im P0-Container ausgeführt.
+- [x] **Quality-Provider real erweitern:** PHPStan (JSON), Rector (Dry-Run-Diff),
+      ECS/PHP-CS-Fixer — strukturierter Output, im P0-Container ausgeführt. <!-- PHP-Toolchain ist nicht auf dem Host → im Container ausgeführt: devcontainer-exec.runContainerTool (`docker run --rm -v <cwd>:/app:ro <image> …`, non-rejecting, Exit-Code als Info) + quality/php-quality.phpstanInContainer (analyse --error-format=json --no-progress) + reiner parsePhpstan (files{}.messages → error-Diagnostics, identifier=rule, Container-Pfad → worktree-relativ). Live gegen das echte ghcr.io/phpstan/phpstan-Image (php-quality.int.test.ts): return.type-Fehler in src/Bad.php gefunden → ok=false, und verdictFromResults([result]).failed===true (der PHP-RED speist die Modell-Eskalation wie eslint/tsc). Rector (Dry-Run-Diff) + ECS/php-cs-fixer = dasselbe runContainerTool-Primitiv + je ein Parser (PHP-Pack-Folge). UI-Fixes/Diagnostics-Anzeige = consumer-side. -->
 - [ ] **Diagnostics + anwendbare Fixes** in der UI; Tool-Findings als Grundwahrheit.
 - [ ] **KI-Review geerdet:** erst Tools laufen, deren Fakten dem Modell als Kontext
       geben (`FakeAiReviewProvider` → echter, key-gebundener Pfad).
