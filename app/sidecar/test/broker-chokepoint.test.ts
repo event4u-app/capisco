@@ -48,6 +48,12 @@ const EXECUTION_PRIMITIVES: Record<string, ReadonlyArray<SideEffect>> = {
   // discrete argv; a mutating-verb guard refuses run/rm/exec/kill so it stays
   // read-only (`docker ps` / `docker stats --no-stream`). Same posture as detect-exec.ts.
   "runtime/docker-exec.ts": ["process"],
+  // The MUTATING devcontainer lifecycle primitive (road-to-real-runtime P0) —
+  // `devcontainer up` / `docker exec` / `docker rm -f`. execFile, no shell,
+  // discrete argv. The mutating counterpart to docker-exec.ts; the capability
+  // decision to start/stop a container is broker-gated at the calling layer
+  // (same posture as install-exec.ts). It changes container state on purpose.
+  "runtime/devcontainer-exec.ts": ["process"],
   // macOS keychain access (road-to-real-breadth P0). execFile `security`, no shell,
   // discrete argv. The one place secret VALUES touch a subprocess — single `capisco`
   // service namespace, `-U` idempotent (no duplicate items). Backs KeychainSecretStore.
