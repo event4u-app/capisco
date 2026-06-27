@@ -12,6 +12,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { LspHost, fileUri } from "../lsp/lsp-host.ts";
 import {
+  normalizeFoldingRanges,
   normalizeInlayHints,
   normalizeLocations,
   normalizeSymbols,
@@ -58,6 +59,22 @@ describe("normalizeSymbols", () => {
   it("maps flat SymbolInformation[] (range from location)", () => {
     expect(normalizeSymbols([{ name: "g", kind: 13, location: { uri: "file:///a", range: R } }])).toEqual([
       { name: "g", kind: 13, range: R, depth: 0 },
+    ]);
+  });
+});
+
+describe("normalizeFoldingRanges", () => {
+  it("keeps line-based folds with their kind, drops malformed entries", () => {
+    expect(normalizeFoldingRanges(null)).toEqual([]);
+    expect(
+      normalizeFoldingRanges([
+        { startLine: 0, endLine: 4, kind: "imports" },
+        { startLine: 6, endLine: 9 },
+        { startLine: 2 }, // no endLine → dropped
+      ]),
+    ).toEqual([
+      { startLine: 0, endLine: 4, kind: "imports" },
+      { startLine: 6, endLine: 9 },
     ]);
   });
 });
@@ -147,6 +164,25 @@ describe("LspHost navigation ↔ real typescript-language-server", () => {
     const syms = await retry(() => host!.documentSymbol(uri));
     expect(syms.length).toBeGreaterThan(0);
     expect(syms.map((s) => s.name)).toContain("greeting");
+  }, 30_000);
+
+  run("foldingRanges returns a fold for a multi-line block", async () => {
+    const fnText = [
+      "function compute(a: number, b: number): number {",
+      "  const sum = a + b;",
+      "  const doubled = sum * 2;",
+      "  return doubled;",
+      "}",
+      "",
+    ].join("\n");
+    host = new LspHost({ id: "lsp:ts:fold", command: "typescript-language-server", args: ["--stdio"], rootPath: dir });
+    await host.ready();
+    const uri = fileUri(join(dir, "fold.ts"));
+    await host.openDoc(uri, "typescript", fnText);
+    const folds = await retry(() => host!.foldingRanges(uri));
+    expect(folds.length).toBeGreaterThan(0);
+    // The function body spans from its first line to a later line.
+    expect(folds.some((f) => f.startLine === 0 && f.endLine >= 3)).toBe(true);
   }, 30_000);
 
   run("inlayHints returns variable-type hints when the server is configured for them", async () => {

@@ -58,6 +58,16 @@ export interface LspInlayHint {
   kind?: number;
 }
 
+/** One foldable region (LSP-accurate folding, replacing the syntactic approximation). */
+export interface LspFoldingRange {
+  /** 0-based first line of the fold. */
+  startLine: number;
+  /** 0-based last line of the fold. */
+  endLine: number;
+  /** LSP FoldingRangeKind ("comment" | "imports" | "region") — optional. */
+  kind?: string;
+}
+
 export interface LspProvider {
   /** True when a language server is installed for this LSP languageId. */
   available(languageId: string): Promise<boolean>;
@@ -114,4 +124,6 @@ export interface LspProvider {
     startLine: number,
     endLine: number,
   ): Promise<LspInlayHint[]>;
+  /** LSP-accurate foldable regions for a document. Empty when no server. */
+  foldingRanges(root: string, languageId: string, uri: string): Promise<LspFoldingRange[]>;
 }

@@ -30,6 +30,8 @@ export function registerLsp(registry: ProviderRegistry): LspManager {
       manager.documentSymbol(root, languageId, uri),
     inlayHints: (root: string, languageId: string, uri: string, startLine: number, endLine: number) =>
       manager.inlayHints(root, languageId, uri, startLine, endLine),
+    foldingRanges: (root: string, languageId: string, uri: string) =>
+      manager.foldingRanges(root, languageId, uri),
   } as never);
   return manager;
 }

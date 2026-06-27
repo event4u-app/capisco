@@ -26,12 +26,19 @@ import {
 } from "../supervisor/process-supervisor.ts";
 import { LspDecoder, encode, type JsonRpcMessage } from "./lsp-jsonrpc.ts";
 import {
+  normalizeFoldingRanges,
   normalizeInlayHints,
   normalizeLocations,
   normalizeSymbols,
   normalizeWorkspaceEdit,
 } from "./lsp-normalize.ts";
-import type { LspInlayHint, LspLocation, LspSymbol, LspWorkspaceEdit } from "@/contracts";
+import type {
+  LspFoldingRange,
+  LspInlayHint,
+  LspLocation,
+  LspSymbol,
+  LspWorkspaceEdit,
+} from "@/contracts";
 
 export interface LspServerSpec {
   /** Stable id, e.g. `lsp:ts:/repo`. */
@@ -212,6 +219,7 @@ export class LspHost {
           rename: { dynamicRegistration: false },
           documentSymbol: { dynamicRegistration: false, hierarchicalDocumentSymbolSupport: true },
           inlayHint: { dynamicRegistration: false },
+          foldingRange: { dynamicRegistration: false, lineFoldingOnly: true },
         },
       },
     });
@@ -303,6 +311,13 @@ export class LspHost {
   async documentSymbol(uri: string): Promise<LspSymbol[]> {
     await this.#ready;
     return normalizeSymbols(await this.request("textDocument/documentSymbol", { textDocument: { uri } }));
+  }
+
+  async foldingRanges(uri: string): Promise<LspFoldingRange[]> {
+    await this.#ready;
+    return normalizeFoldingRanges(
+      await this.request("textDocument/foldingRange", { textDocument: { uri } }),
+    );
   }
 
   async inlayHints(uri: string, startLine: number, endLine: number): Promise<LspInlayHint[]> {

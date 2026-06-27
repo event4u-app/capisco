@@ -8,6 +8,7 @@
  */
 
 import type {
+  LspFoldingRange,
   LspInlayHint,
   LspLocation,
   LspPosition,
@@ -96,6 +97,20 @@ export function normalizeInlayHints(raw: unknown): LspInlayHint[] {
     };
     if (typeof o.kind === "number") hint.kind = o.kind;
     out.push(hint);
+  }
+  return out;
+}
+
+/** textDocument/foldingRange: FoldingRange[] → LspFoldingRange[] (line-based, kind kept). */
+export function normalizeFoldingRanges(raw: unknown): LspFoldingRange[] {
+  if (!Array.isArray(raw)) return [];
+  const out: LspFoldingRange[] = [];
+  for (const r of raw) {
+    const o = r as Record<string, unknown>;
+    if (typeof o.startLine !== "number" || typeof o.endLine !== "number") continue;
+    const fold: LspFoldingRange = { startLine: o.startLine, endLine: o.endLine };
+    if (typeof o.kind === "string") fold.kind = o.kind;
+    out.push(fold);
   }
   return out;
 }
