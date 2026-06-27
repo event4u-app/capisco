@@ -213,7 +213,7 @@ verifizieren), Autocomplete danach (expliziter Nutzer-Wunsch).
 - [x] **Diagnostics (Squiggles) + Hover zuerst:** dienen dem Gate; aus dem echten LSP. <!-- LspHost.hover + publishDiagnostics; Hover gegen echten tsserver getestet -->
 - [x] **Autovervollständigung:** CM6-`autocomplete()` an echte LSP-Completions
       hängen (ersetzt das statische Mock-Popup; `CompletionItem`-Contract existiert). <!-- cm-lsp.ts: @codemirror/autocomplete-Source an lsp.completion gebunden, guarded (editable+isDesktop), Mapping unit-getestet (13 Fälle); Popup erscheint live in dev:web, visuelle Abnahme bleibt deine -->
-- [ ] **Folding LSP-genau** (ersetzt die syntaktische Näherung aus P4). <!-- offen; syntaktisches Folding aus P4 deckt den Alltag -->
+- [x] **Folding LSP-genau** (ersetzt die syntaktische Näherung aus P4). <!-- LspHost.foldingRanges (textDocument/foldingRange) + normalizeFoldingRanges (line-based, kind comment/imports/region behalten, malformed gedroppt); foldingRange-Capability (lineFoldingOnly) deklariert; LspManager + register-lsp Passthrough. Test (lsp-navigation.int.test.ts): reiner Normalizer + live gegen echten typescript-language-server (Funktions-Body-Fold startLine 0 → endLine ≥ 3, 0 skipped). CM6-Fold-Dekorations-Wiring (ersetzt die syntaktische P4-Näherung im Editor) = consumer-side Folge-Slice. -->
 - [x] **Conformance-Test:** echte LSP-Completion-Antwort vs. das Mock-Shape, gegen
       das die UI gebaut wurde (Overview §4.1). <!-- lsp-host.int.test.ts: echter typescript-language-server → echte Completions/Hover; skippt sauber ohne Server -->
 
