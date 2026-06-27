@@ -100,6 +100,11 @@ export async function execInContainer(containerId: string, argv: readonly string
   return run("docker", ["exec", containerId, ...argv], SHORT_TIMEOUT_MS);
 }
 
+/** Start a stopped/killed container again (the recovery action after a crash). */
+export async function startContainer(containerId: string): Promise<void> {
+  await run("docker", ["start", containerId], SHORT_TIMEOUT_MS);
+}
+
 /** Tear a container down (force-remove). Idempotent enough for cleanup. */
 export async function removeContainer(containerId: string): Promise<void> {
   await run("docker", ["rm", "-f", containerId], SHORT_TIMEOUT_MS);
