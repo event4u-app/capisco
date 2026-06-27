@@ -284,8 +284,21 @@ export interface SupervisorOptions {
   readonly spawnFn?: SpawnFn;
 }
 
+/**
+ * A health snapshot of one supervised process (road-to-actually-works P3,
+ * minimal-observability). Carries no secret/output — just the lifecycle facts
+ * the "what's running, restarts, idle" view needs.
+ */
+export interface ProcessHealth {
+  readonly id: string;
+  readonly state: ProcessState;
+  readonly pid: number | undefined;
+  readonly restarts: number;
+}
+
 export class ProcessSupervisor {
   readonly #procs = new Map<string, Supervised>();
+  readonly #healthObservers = new Set<(health: ProcessHealth[]) => void>();
   readonly #max: number;
   readonly #spawnFn: SpawnFn;
 
@@ -303,11 +316,56 @@ export class ProcessSupervisor {
         `process supervisor at capacity (${this.#max}); reap before spawning ${spec.id}`,
       );
     }
-    const proc = new Supervised(spec, this.#spawnFn, events, (id) => {
+    // Wrap the caller's events so every state transition (and reap) also pushes
+    // a fresh health snapshot to subscribers — the observability surface.
+    const wrapped: ProcessEvents = {
+      ...events,
+      onState: (state, info) => {
+        events.onState?.(state, info);
+        this.#notifyHealth();
+      },
+    };
+    const proc = new Supervised(spec, this.#spawnFn, wrapped, (id) => {
       this.#procs.delete(id);
+      this.#notifyHealth();
     });
     this.#procs.set(spec.id, proc);
+    this.#notifyHealth();
     return proc;
+  }
+
+  /**
+   * A health snapshot of every supervised process (lifecycle facts only — no
+   * output, no secrets). The "what's running, restarts" observability surface.
+   */
+  health(): ProcessHealth[] {
+    return this.list().map((p) => ({ id: p.id, state: p.state, pid: p.pid, restarts: p.restarts }));
+  }
+
+  /**
+   * Subscribe to health changes: the listener fires with a fresh {@link health}
+   * snapshot on every spawn, state transition, and reap. Out-of-band like
+   * {@link RuntimeProvider.subscribeStats} (not RPC-wired). Returns an
+   * unsubscribe handle; a throwing observer is isolated and never breaks the
+   * supervisor.
+   */
+  subscribe(listener: (health: ProcessHealth[]) => void): () => void {
+    this.#healthObservers.add(listener);
+    return () => {
+      this.#healthObservers.delete(listener);
+    };
+  }
+
+  #notifyHealth(): void {
+    if (this.#healthObservers.size === 0) return;
+    const snapshot = this.health();
+    for (const observer of this.#healthObservers) {
+      try {
+        observer(snapshot);
+      } catch {
+        /* an observer's failure is its own — never breaks the supervisor */
+      }
+    }
   }
 
   get(id: string): SupervisedProcess | undefined {
