@@ -46,10 +46,10 @@ den `actually-works`-P1-Supervisor (kein zweiter Prozess-Manager).
 - [ ] **Echte Worktrees** am echten Repo verifizieren (anlegen/wechseln/zerstören).
 - [ ] **Devcontainer pro Workspace** (`devcontainer`-CLI-Lifecycle up/down), Prozess
       über den Supervisor.
-- [ ] **Kanonisches Mount-Mapping als First-Class-Datenstruktur (Council-Trap):**
+- [x] **Kanonisches Mount-Mapping als First-Class-Datenstruktur (Council-Trap):**
       `workspaceFolder ↔ Container-Pfad` pro Worktree, abgeleitet aus der
       Devcontainer-Mount-Config — **wird von P1 (DAP) konsumiert**, nicht dort neu
-      abgeleitet. Hängt am `actually-works`-P1-Workspace-Objekt.
+      abgeleitet. Hängt am `actually-works`-P1-Workspace-Objekt. <!-- runtime/mount-map.ts: reine, side-effect-freie Datenstruktur MountMap + deriveMountMap(localWorkspaceFolder, devcontainer-config) + parseMountString. Leitet die Binds EINMAL aus workspaceMount/workspaceFolder (Default /workspaces/<basename>) + mounts[] ab (Volume-Mounts übersprungen, kein Host-Twin; ${localWorkspaceFolder[Basename]}-Subst). toContainer/toHost: longest-prefix Bind-Übersetzung beide Richtungen, segment-genau (posix), Sibling-Prefix-sicher. workspaceEntry().containerPath speist WorkspaceRef.containerRoot. Disk-Read von devcontainer.json = Sache des DAP/Devcontainer-Consumers (P1, noch nicht gebaut) → Modul bleibt rein + fixture-testbar ohne Container/Daemon. Test (mount-map.test.ts, 12 grün): parse/aliases, Default-/explizite-workspaceFolder-/workspaceMount-Bind, zusätzliche Bind- vs. Volume-Mounts, Objekt-Form, nested-longest-prefix, Sibling-Boundary. -->
 - [x] **Port-Allocator** (`projekt-a.localhost`-Routing) — Traefik-Config-Generator offen. <!-- HostPortAllocator (allocate/reservations) real; Traefik-Gen offen -->
 - [x] **Runtime-Provider real** (Docker; Podman/nativ als Implementierungen) —
       `FakeRuntimeProvider` → echter Adapter. <!-- sidecar/runtime/real-runtime-provider.ts + docker-exec.ts; gegen echten Daemon getestet (listServices liefert echte Container) -->
