@@ -15,7 +15,7 @@
  * against at runtime.
  */
 
-import type { GrantAxis, PermissionDecision, PermissionRequest } from "./agents.ts";
+import type { GrantAxis, PermissionDecision, PermissionRequest, Unsubscribe } from "./agents.ts";
 import type { WriteEscape } from "./tooling.ts";
 
 /**
@@ -240,6 +240,18 @@ export interface AuditEntry {
 export interface AuditStore {
   record(entry: Omit<AuditEntry, "seq">): AuditEntry;
   list(): readonly AuditEntry[];
+  /**
+   * Subscribe to live appends — the listener fires once per `record`, in `seq`
+   * order, with the SAME frozen entry `list` returns (credentialRef names only,
+   * never a value). Because the broker records every decision
+   * (authorize allow/deny/gate · execute · vault-write-proposed) BEFORE it acts,
+   * this append stream IS the live broker-decision stream the observability
+   * surface consumes (out-of-band, like `RuntimeProvider.subscribeStats`).
+   * Returns an unsubscribe handle. An observer MUST NOT call `record` (it would
+   * re-enter); a throwing observer is isolated and never breaks the append or
+   * the broker.
+   */
+  subscribe(listener: (entry: AuditEntry) => void): Unsubscribe;
 }
 
 /**
