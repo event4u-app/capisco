@@ -140,6 +140,48 @@ export async function removeContainer(containerId: string): Promise<void> {
   await run("docker", ["rm", "-f", containerId], SHORT_TIMEOUT_MS);
 }
 
+/** The result of a one-shot containerized tool run. */
+export interface ContainerToolRun {
+  stdout: string;
+  /** The tool's exit code (non-zero often just means "found problems" — data). */
+  exitCode: number | null;
+}
+
+/**
+ * Run a one-shot tool in an EPHEMERAL container (`docker run --rm`), mounting a
+ * host dir read-only at `containerDir` (default `/app`). For quality tools whose
+ * toolchain is not on the host (PHPStan/Rector/ECS run from a PHP image, real-
+ * runtime P2): the worktree is read-only-mounted, the tool analyses it, the
+ * container is discarded. Never rejects on a non-zero exit — a tool that finds
+ * problems exits non-zero, and the parser, not the exit code, is the truth.
+ */
+export function runContainerTool(input: {
+  image: string;
+  args: readonly string[];
+  hostDir: string;
+  containerDir?: string;
+  timeoutMs?: number;
+}): Promise<ContainerToolRun> {
+  const containerDir = input.containerDir ?? "/app";
+  const dockerArgs = ["run", "--rm", "-v", `${input.hostDir}:${containerDir}:ro`, input.image, ...input.args];
+  return new Promise((resolve) => {
+    execFile(
+      "docker",
+      dockerArgs,
+      { maxBuffer: MAX_BUFFER, timeout: input.timeoutMs ?? UP_TIMEOUT_MS, encoding: "utf8" },
+      (err, stdout) => {
+        const exitCode =
+          err && typeof (err as { code?: unknown }).code === "number"
+            ? (err as { code: number }).code
+            : err
+              ? null
+              : 0;
+        resolve({ stdout, exitCode });
+      },
+    );
+  });
+}
+
 /** Remove every container carrying an id-label (cleanup of a labelled test run). */
 export async function removeContainersByLabel(label: string): Promise<void> {
   const ids = (await run("docker", ["ps", "-aq", "--filter", `label=${label}`], SHORT_TIMEOUT_MS))

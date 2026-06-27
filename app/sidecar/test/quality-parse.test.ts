@@ -1,7 +1,46 @@
 import { describe, expect, it } from "vitest";
-import { parseEslint, parseTsc, parseVitest } from "../quality/quality-parse.ts";
+import { parseEslint, parsePhpstan, parseTsc, parseVitest } from "../quality/quality-parse.ts";
 
 const CWD = "/work/repo";
+
+describe("parsePhpstan", () => {
+  // The exact shape the phpstan image emits with --error-format=json.
+  const json = JSON.stringify({
+    totals: { errors: 0, file_errors: 1 },
+    files: {
+      "/app/src/Bad.php": {
+        errors: 1,
+        messages: [
+          { message: "Function add() should return string but returns int.", line: 3, ignorable: true, identifier: "return.type" },
+        ],
+      },
+    },
+    errors: [],
+  });
+
+  it("relativises container paths and maps messages to error diagnostics", () => {
+    expect(parsePhpstan("/app", json)).toEqual([
+      {
+        tool: "phpstan",
+        file: "src/Bad.php",
+        line: 3,
+        severity: "error",
+        rule: "return.type",
+        message: "Function add() should return string but returns int.",
+      },
+    ]);
+  });
+
+  it("keeps non-file-specific errors attached to no file", () => {
+    const out = parsePhpstan("/app", JSON.stringify({ files: {}, errors: ["Config invalid"] }));
+    expect(out).toEqual([{ tool: "phpstan", file: "", severity: "error", message: "Config invalid" }]);
+  });
+
+  it("returns [] for empty or junk output", () => {
+    expect(parsePhpstan("/app", "")).toEqual([]);
+    expect(parsePhpstan("/app", "{not json")).toEqual([]);
+  });
+});
 
 describe("parseEslint", () => {
   const stdout = JSON.stringify([

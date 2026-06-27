@@ -10,7 +10,7 @@
  */
 
 import { realpathSync } from "node:fs";
-import { relative } from "node:path";
+import { posix, relative } from "node:path";
 import type { Diagnostic, QualityFix } from "@/contracts";
 
 /** Canonical (symlink-resolved) form of a path. Tools report the real path —
@@ -113,6 +113,59 @@ export function parseTsc(cwd: string, stdout: string): Diagnostic[] {
       rule: m[5],
       message: m[6],
     });
+  }
+  return out;
+}
+
+// --- PHPStan (--error-format=json, run in a container) ----------------------
+
+interface PhpstanMessage {
+  message: string;
+  line?: number | null;
+  identifier?: string;
+  ignorable?: boolean;
+}
+interface PhpstanFile {
+  messages?: PhpstanMessage[];
+}
+interface PhpstanJson {
+  files?: Record<string, PhpstanFile>;
+  /** Non-file-specific errors (config, parse) — kept honest, attached to no file. */
+  errors?: string[];
+}
+
+/**
+ * Parse PHPStan `--error-format=json` stdout into diagnostics. PHPStan runs
+ * INSIDE the container (the PHP toolchain is not on the host), so its file paths
+ * are container paths under the mount root (e.g. `/app/src/X.php`); pass that
+ * `containerRoot` to relativise them back to worktree-relative. Every PHPStan
+ * message is error-severity; the `identifier` (e.g. `return.type`) is the rule.
+ */
+export function parsePhpstan(containerRoot: string, stdout: string): Diagnostic[] {
+  const text = stdout.trim();
+  if (!text) return [];
+  let parsed: PhpstanJson;
+  try {
+    parsed = JSON.parse(text) as PhpstanJson;
+  } catch {
+    return [];
+  }
+  const out: Diagnostic[] = [];
+  for (const [path, file] of Object.entries(parsed.files ?? {})) {
+    const relPath = path.startsWith("/") ? posix.relative(containerRoot, path) : path;
+    for (const m of file.messages ?? []) {
+      out.push({
+        tool: "phpstan",
+        file: relPath.startsWith("..") ? path : relPath,
+        line: typeof m.line === "number" ? m.line : undefined,
+        severity: "error",
+        rule: m.identifier,
+        message: m.message,
+      });
+    }
+  }
+  for (const e of parsed.errors ?? []) {
+    out.push({ tool: "phpstan", file: "", severity: "error", message: e });
   }
   return out;
 }
