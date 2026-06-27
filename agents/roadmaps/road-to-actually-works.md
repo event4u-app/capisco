@@ -154,8 +154,8 @@ hoch. Ein Mehr-Datei-Lauf fragt **einmal scoped**, nicht pro Datei.
 
 - [ ] **Audit-Log-Viewer:** der append-only Audit-Strom (Akteur + Capability +
       credentialRef, nie Wert) sichtbar in der UI.
-- [ ] **Broker-Entscheidungs-Stream:** live, welche Capability gerade
-      authorisiert/gegated/ausgeführt wird.
+- [x] **Broker-Entscheidungs-Stream:** live, welche Capability gerade
+      authorisiert/gegated/ausgeführt wird. <!-- InMemoryAuditStore.subscribe(listener)→Unsubscribe (Contract AuditStore + Impl): feuert pro record() in seq-Order mit der eingefrorenen AuditEntry. Da der Broker JEDE Entscheidung (authorize allow/deny/gate · execute · vault-write-proposed) VOR dem Handeln über audit.record schreibt, IST dieser Append-Stream der Live-Decision-Stream. Secret-safe by construction (record weist secret-/RTK-förmige Felder vor dem Append ab → ein refused record erreicht nie einen Observer); per-Listener try/catch isoliert einen werfenden Observer vom Append/Broker. Test (audit-stream.test.ts, 6 grün): seq-Order/frozen/unsubscribe/Throw-Isolation/refused-not-streamed + live über den echten Broker (allow→executed, deny/gate live, kein Secret-Value im Stream). Out-of-band wie RuntimeProvider.subscribeStats; IPC-Streaming-Bridge + UI-Viewer = consumer-side Folge-Slice. -->
 - [ ] **Echtes Token-/Kosten-Meter** (aus P2) als dauerhafte Ampel.
 - [ ] **Subprozess-Health** (aus dem P1-Supervisor): welche PTY/LSP/Agent-Prozesse
       laufen, Restarts, Idle.
