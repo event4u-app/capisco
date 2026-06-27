@@ -57,9 +57,9 @@ den `actually-works`-P1-Supervisor (kein zweiter Prozess-Manager).
       über das P1-Coalescing gedrosselt, gruppiert pro Projekt. <!-- subscribeStats: echte docker stats (2s-Poll), pro Compose-Projekt gruppiert; Wire-Registrierung + ctop-UI-Konsum offen -->
 - [ ] **In Container-Console verbinden:** `exec -it` über die Terminal-/PTY-
       Abstraktion (`actually-works`-P6). <!-- offen (braucht PTY aus actually-works P6) -->
-- [ ] **Secrets-by-reference in den Container (Council-Trap, security-sensitive):**
+- [x] **Secrets-by-reference in den Container (Council-Trap, security-sensitive):**
       wenn Execution `docker exec` ist, ist der Injektionspunkt das Container-env —
-      Threat-Model + Test: Credential nie in Image/Layer/argv, nur zur Laufzeit. <!-- offen (security-sensitive, eigener Threat-Pass) -->
+      Threat-Model + Test: Credential nie in Image/Layer/argv, nur zur Laufzeit. <!-- Threat-Pass-Korrektur: `docker exec -e VAR=value` legt den Wert in argv (ps-sichtbar) → VERWORFEN. Sicherer Vektor = stdin: devcontainer-exec.execInContainerWithStdin (`docker exec -i <id> <argv>`, Wert nur über child.stdin, nie in argv/Image/Layer). Secret-by-reference: Aufrufer holt den Wert ausschließlich via SecretStore.inject(ref, cb); der Store gibt nie einen Wert zurück (list() = nur Ref-Namen). Live (container-secrets.int.test.ts): InMemorySecretStore.put → inject → execInContainerWithStdin in echten alpine-Container, Secret round-trippt via stdin zurück (Delivery bewiesen), argv secret-frei by construction, kein Leak; skippt ohne docker+devcontainer. Konsistent mit Memory provider-multi-auth (Inject nur im Execution-Layer). Broker.execute-Gating am Call-Layer = consumer-side Folge. -->
 - [x] **Conformance-Test:** echte `docker stats` vs. die bisherigen Fake-Frames. <!-- real-runtime-provider.int.test.ts: echter Daemon, skippt sauber ohne docker -->
 
 **Stolpersteine:** Docker-Daemon-Erreichbarkeit; Devcontainer-CLI-Verhalten;
