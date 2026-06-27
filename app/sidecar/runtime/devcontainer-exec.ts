@@ -100,6 +100,36 @@ export async function execInContainer(containerId: string, argv: readonly string
   return run("docker", ["exec", containerId, ...argv], SHORT_TIMEOUT_MS);
 }
 
+/**
+ * Run a one-shot command in a container, feeding `stdin` to it over a pipe
+ * (`docker exec -i`). This is the SECRET-SAFE injection edge (road-to-real-runtime
+ * P0, Council-Trap, security-sensitive): a credential is delivered ONLY through
+ * the process's stdin, so it never lands in `argv` (visible in `ps`), the image,
+ * or a layer — unlike `docker exec -e VAR=value`, which leaks the value into the
+ * command line. The caller obtains the value solely via `SecretStore.inject(ref,
+ * cb)` (secret-by-reference); `stdin` is the value inside that callback and the
+ * argv passed here carries none of it.
+ */
+export function execInContainerWithStdin(
+  containerId: string,
+  argv: readonly string[],
+  stdin: string,
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const child = execFile(
+      "docker",
+      ["exec", "-i", containerId, ...argv],
+      { maxBuffer: MAX_BUFFER, timeout: SHORT_TIMEOUT_MS, encoding: "utf8" },
+      (err, stdout, stderr) => {
+        if (err) reject(new DevcontainerError(`docker exec -i ${containerId} failed: ${stderr || err.message}`));
+        else resolve(stdout);
+      },
+    );
+    // The secret value crosses ONLY here — the pipe — never the argv above.
+    child.stdin?.end(stdin);
+  });
+}
+
 /** Start a stopped/killed container again (the recovery action after a crash). */
 export async function startContainer(containerId: string): Promise<void> {
   await run("docker", ["start", containerId], SHORT_TIMEOUT_MS);
