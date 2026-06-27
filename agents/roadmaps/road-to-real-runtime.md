@@ -44,8 +44,8 @@ P1-Supervisor aus `actually-works`).
 den `actually-works`-P1-Supervisor (kein zweiter Prozess-Manager).
 
 - [ ] **Echte Worktrees** am echten Repo verifizieren (anlegen/wechseln/zerstören).
-- [ ] **Devcontainer pro Workspace** (`devcontainer`-CLI-Lifecycle up/down), Prozess
-      über den Supervisor.
+- [x] **Devcontainer pro Workspace** (`devcontainer`-CLI-Lifecycle up/down), Prozess
+      über den Supervisor. <!-- runtime/devcontainer-exec.ts: mutierendes Lifecycle-Primitiv (devcontainerUp → containerId+remoteWorkspaceFolder, execInContainer, removeContainer(sByLabel)), execFile no-shell/discrete-argv — das mutierende Gegenstück zum read-only docker-exec.ts, im Chokepoint-Allowlist als broker-gated edge (wie install-exec.ts). parseDevcontainerUp faltet den gemischten Log+JSON-stdout (rein, unit-getestet). Live gegen die ECHTE devcontainer-CLI 0.81 + Docker-Daemon: minimaler alpine-Devcontainer up→docker-exec(echo)→rm, remoteWorkspaceFolder == deriveMountMap(wf).workspaceEntry().containerPath (verbindet das Lifecycle mit dem Mount-Mapping); skippt sauber ohne docker+devcontainer (devcontainer-lifecycle.int.test.ts, live verifiziert, kein Container-Leak). Hinweis: up/down sind One-Shot-Mutationen (kein langlebiger Prozess) → execFile statt Supervisor; der langlebige CONTAINER wird von Docker verwaltet + über den schon-realen docker-stats-Stream (ctop) überwacht. Broker-Gating-Verdrahtung am Call-Layer = consumer-side Folge-Slice. -->
 - [x] **Kanonisches Mount-Mapping als First-Class-Datenstruktur (Council-Trap):**
       `workspaceFolder ↔ Container-Pfad` pro Worktree, abgeleitet aus der
       Devcontainer-Mount-Config — **wird von P1 (DAP) konsumiert**, nicht dort neu
