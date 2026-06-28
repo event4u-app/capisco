@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, render } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 
 import type { TerminalEvent } from "@/contracts";
 
@@ -109,6 +109,19 @@ describe("Terminal — xterm ↔ provider wiring", () => {
     render(<Terminal />);
     listeners.get("local")!({ id: "local", kind: "exit", exitCode: 0, signal: null });
     expect(FakeXterm.instances[0].written.join("")).toContain("process exited");
+  });
+
+  it("split opens a second side-by-side PTY in the active tab", () => {
+    render(<Terminal />);
+    expect(FakeXterm.instances).toHaveLength(TAB_IDS.length);
+    // Active tab is "evidence" — split spawns a second pane PTY.
+    fireEvent.click(screen.getByTestId("term-split"));
+    expect(openSpy).toHaveBeenCalledWith(expect.objectContaining({ id: "evidence:split" }));
+    expect(subSpy).toHaveBeenCalledWith("evidence:split", expect.any(Function));
+    expect(FakeXterm.instances).toHaveLength(TAB_IDS.length + 1);
+    // Toggle split off → the second pane PTY is reaped.
+    fireEvent.click(screen.getByTestId("term-split"));
+    expect(closeSpy).toHaveBeenCalledWith("evidence:split");
   });
 
   it("reaps every PTY (provider.close + xterm.dispose) on unmount", () => {

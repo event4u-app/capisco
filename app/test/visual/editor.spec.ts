@@ -177,6 +177,18 @@ test.describe("terminal — Phase 2", () => {
     await expect(out).toContainText("3 passed");
   });
 
+  test("split shows two side-by-side terminals in the active tab", async ({ page }) => {
+    await openTerminal(page);
+    await page.getByTestId("term-split").click();
+    // The visible (active) tabview now hosts two xterm panes.
+    const activeView = page.locator('[data-testid^="term-tabview-"]:visible');
+    await expect(activeView).toHaveAttribute("data-split", "true");
+    await expect(activeView.locator(".xterm")).toHaveCount(2);
+    // Toggle split off → back to one pane.
+    await page.getByTestId("term-split").click();
+    await expect(activeView.locator(".xterm")).toHaveCount(1);
+  });
+
   // P6: the hand-rolled `.t-caret` blink was replaced by xterm's `cursorBlink`
   // (Terminal.tsx reads useReducedMotion). The old data-reduced CSS-animation
   // assertion no longer applies — re-author against the xterm cursor in a browser.

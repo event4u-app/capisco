@@ -13,12 +13,14 @@ import { useLayout } from "./store";
 interface TermTab {
   id: string;
   label: string;
+  /** PTY ids shown side-by-side in this tab (1 normally, 2 when split). */
+  panes: string[];
 }
 
 const INITIAL_TABS: TermTab[] = [
-  { id: "local", label: "Local" },
-  { id: "py2ts", label: "Py2Ts" },
-  { id: "evidence", label: "Evidence" },
+  { id: "local", label: "Local", panes: ["local"] },
+  { id: "py2ts", label: "Py2Ts", panes: ["py2ts"] },
+  { id: "evidence", label: "Evidence", panes: ["evidence"] },
 ];
 
 /** Read an xterm theme from the design-system CSS vars so it tracks light/dark. */
@@ -175,8 +177,20 @@ export function Terminal() {
   const addTab = () => {
     const id = `term-${counter}`;
     setCounter((c) => c + 1);
-    setTabs((ts) => [...ts, { id, label: t("terminal.session", { n: counter }) }]);
+    setTabs((ts) => [...ts, { id, label: t("terminal.session", { n: counter }), panes: [id] }]);
     setActive(id);
+  };
+
+  // Split the active tab into two side-by-side PTYs (toggle). The second pane is
+  // a distinct PTY id; mounting/unmounting its TerminalView spawns/reaps it.
+  const splitActive = () => {
+    setTabs((ts) =>
+      ts.map((x) =>
+        x.id === active
+          ? { ...x, panes: x.panes.length < 2 ? [...x.panes, `${x.id}:split`] : [x.panes[0]] }
+          : x,
+      ),
+    );
   };
 
   const startRename = (tab: TermTab) => {
@@ -202,6 +216,7 @@ export function Terminal() {
             aria-label={t("terminal.split")}
             title={t("terminal.split")}
             data-testid="term-split"
+            onClick={() => active && splitActive()}
             className="ph-act focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           >
             <Icon icon={SplitSquareHorizontal} size={13} />
@@ -283,9 +298,27 @@ export function Terminal() {
         </div>
       </div>
       <div data-testid="terminal-output" className="term-body">
-        {tabs.map((tab) => (
-          <TerminalView key={tab.id} id={tab.id} active={tab.id === active} reduced={reduced} />
-        ))}
+        {tabs.map((tab) => {
+          const isActive = tab.id === active;
+          const split = tab.panes.length > 1;
+          return (
+            <div
+              key={tab.id}
+              data-testid={`term-tabview-${tab.id}`}
+              data-split={split || undefined}
+              className={"flex h-full w-full" + (isActive ? "" : " hidden")}
+            >
+              {tab.panes.map((paneId, i) => (
+                <div
+                  key={paneId}
+                  className={"min-w-0 flex-1" + (i > 0 ? " border-l border-border" : "")}
+                >
+                  <TerminalView id={paneId} active={isActive} reduced={reduced} />
+                </div>
+              ))}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
