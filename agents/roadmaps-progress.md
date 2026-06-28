@@ -6,17 +6,17 @@
 
 ## Overall
 
-**59 / 188 steps done · 31%**
+**60 / 188 steps done · 32%**
 
 ```text
-████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░   31%
+█████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░   32%
 ```
 
 ## Open roadmaps
 
 | # | Roadmap | Phases | Steps | Open | Done | Deferred | Cancelled | Progress |
 |---|---|---:|---:|---:|---:|---:|---:|---|
-| 1 | [road-to-actually-works.md](roadmaps/road-to-actually-works.md) | 9 | 54 | 19 | 35 | 0 | 0 | ██████░░░░ 65% |
+| 1 | [road-to-actually-works.md](roadmaps/road-to-actually-works.md) | 9 | 54 | 18 | 36 | 0 | 0 | ███████░░░ 67% |
 | 2 | [road-to-composer-intelligence.md](roadmaps/road-to-composer-intelligence.md) | 7 | 32 | 32 | 0 | 0 | 0 | ░░░░░░░░░░ 0% |
 | 3 | [road-to-desktop-release.md](roadmaps/road-to-desktop-release.md) | 6 | 14 | 14 | 0 | 0 | 0 | ░░░░░░░░░░ 0% |
 | 4 | [road-to-real-breadth.md](roadmaps/road-to-real-breadth.md) | 5 | 30 | 22 | 8 | 0 | 0 | ███░░░░░░░ 27% |
@@ -29,7 +29,7 @@
 
 ### [road-to-actually-works.md](roadmaps/road-to-actually-works.md)
 
-**Road to Actually Works — die Spine zur gefühlten IDE** — 35 / 54 done (65%)
+**Road to Actually Works — die Spine zur gefühlten IDE** — 36 / 54 done (67%)
 
 | # | Phase | State | Open | Done | Deferred | Cancelled | % |
 |---|---|---|---:|---:|---:|---:|---:|
@@ -39,7 +39,7 @@
 | 3 | Minimal-Observability in der Spine (Council #5) | 🟡 in progress | 2 | 2 | 0 | 0 | 50% |
 | 4 | Editor fertig (Grammatik · File-Watch · Folding — KEIN LSP) | 🟡 in progress | 1 | 3 | 0 | 0 | 75% |
 | 5 | LSP-Basis (Diagnostics · Hover · Autovervollständigung) | ✅ done | 0 | 6 | 0 | 0 | 100% |
-| 6 | Echtes Terminal (PTY) | 🟡 in progress | 1 | 5 | 0 | 0 | 83% |
+| 6 | Echtes Terminal (PTY) | ✅ done | 0 | 6 | 0 | 0 | 100% |
 | 7 | Tauri-Transport (gefühlte Scheibe #2: echte App) | ⬜ not started | 6 | 0 | 0 | 0 | 0% |
 | 8 | Fenster-Chrome + Config-Persistenz (Council #1 — W1b, floatbar) | ⬜ not started | 6 | 0 | 0 | 0 | 0% |
 
