@@ -82,9 +82,9 @@ DAP-Contract, gar nichts.
       Debug-Adapter pro Sprach-Pack.
 - [ ] **xdebug (DBGp) Bridge:** Container connectet auf den IDE-Listener;
       **per-Worktree-Listener-Ports**.
-- [ ] **Pfad-Mappings Container↔Host** aus der **P0-Mount-Datenstruktur** (nicht neu
+- [x] **Pfad-Mappings Container↔Host** aus der **P0-Mount-Datenstruktur** (nicht neu
       abgeleitet); `xdebug.client_host` OS-abhängig (`host.docker.internal` vs.
-      Gateway-IP).
+      Gateway-IP). <!-- runtime/dap-path-map.ts: DapPathMap KONSUMIERT MountMap (toDebuggee=host→container via toContainer, toEditor=container→host via toHost; null-Mount=Host-only=Identity; Pfad unter keinem Bind passt durch). resolveXdebugClientHost(platform): host.docker.internal (darwin/win32) vs. docker0-Gateway 172.17.0.1/injizierbar (linux). Pure + fixture-getestet (dap-path-map.test.ts, 6), kein Container/Adapter nötig. DAP-Host/DBGp-Bridge/Breakpoints konsumieren das. -->
 - [ ] **Breakpoints / Step over-into-out / Call-Stack / Variablen-Inspektion / Watch**.
 - [ ] **Tests im Debugger** (Pest/PHPUnit/Vitest/Jest) — DAP-Reuse.
 - [ ] **JS-Debug** (Node) für den TS-Pfad.
