@@ -44,7 +44,8 @@ export class PtyHost implements TerminalProvider {
   readonly #defaultShell: string | undefined;
   /** Open terminals by id (the supervised process handle). */
   readonly #procs = new Map<string, SupervisedProcess>();
-  readonly #listeners = new Set<(event: TerminalEvent) => void>();
+  /** Per-terminal event listeners, keyed by terminal id (channel `terminal:<id>`). */
+  readonly #listeners = new Map<string, Set<(event: TerminalEvent) => void>>();
 
   constructor(opts: PtyHostOptions = {}) {
     this.#sup = opts.supervisor ?? new ProcessSupervisor({ spawnFn: spawnPty });
@@ -98,10 +99,17 @@ export class PtyHost implements TerminalProvider {
     return Promise.resolve(infos);
   }
 
-  subscribe(listener: (event: TerminalEvent) => void): () => void {
-    this.#listeners.add(listener);
+  subscribe(id: string, listener: (event: TerminalEvent) => void): () => void {
+    let set = this.#listeners.get(id);
+    if (!set) {
+      set = new Set();
+      this.#listeners.set(id, set);
+    }
+    set.add(listener);
     return () => {
-      this.#listeners.delete(listener);
+      const s = this.#listeners.get(id);
+      s?.delete(listener);
+      if (s && s.size === 0) this.#listeners.delete(id);
     };
   }
 
@@ -112,7 +120,9 @@ export class PtyHost implements TerminalProvider {
   }
 
   #emit(event: TerminalEvent): void {
-    for (const listener of this.#listeners) {
+    const set = this.#listeners.get(event.id);
+    if (!set) return;
+    for (const listener of set) {
       try {
         listener(event);
       } catch {

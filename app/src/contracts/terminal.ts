@@ -70,8 +70,10 @@ export interface TerminalProvider {
   /** Every currently-open terminal (the tab bar's source of truth). */
   list(): Promise<TerminalInfo[]>;
   /**
-   * Subscribe to live events from ALL terminals (data + exit). The consumer
-   * routes each event to the matching xterm by `id`. Returns an unsubscribe.
+   * Subscribe to one terminal's live events (data + exit). Per-terminal so it
+   * maps onto the IPC stream channel `terminal:<id>` (mirrors the agent's
+   * per-session subscribe). Subscribe BEFORE `open` to catch the shell's first
+   * output (the prompt). Returns an unsubscribe handle.
    */
-  subscribe(listener: (event: TerminalEvent) => void): Unsubscribe;
+  subscribe(id: string, listener: (event: TerminalEvent) => void): Unsubscribe;
 }

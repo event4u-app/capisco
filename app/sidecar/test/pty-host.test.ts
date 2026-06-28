@@ -74,7 +74,7 @@ describe("PtyHost (P6 terminal provider)", () => {
   it("streams merged output to subscribers as data events", async () => {
     const { host, ptys } = hostWithFakes();
     const events: TerminalEvent[] = [];
-    host.subscribe((e) => events.push(e));
+    host.subscribe("term-1", (e) => events.push(e));
     await host.open({ id: "term-1", cwd: "/repo" });
 
     ptys[0].emitData("$ ls\r\n");
@@ -95,7 +95,7 @@ describe("PtyHost (P6 terminal provider)", () => {
   it("emits an exit event when the shell exits", async () => {
     const { host, ptys } = hostWithFakes();
     const events: TerminalEvent[] = [];
-    host.subscribe((e) => events.push(e));
+    host.subscribe("term-1", (e) => events.push(e));
     await host.open({ id: "term-1", cwd: "/repo" });
 
     ptys[0].exit(0);
@@ -114,7 +114,8 @@ describe("PtyHost (P6 terminal provider)", () => {
   it("routes multiple terminals independently by id", async () => {
     const { host, ptys } = hostWithFakes();
     const events: TerminalEvent[] = [];
-    host.subscribe((e) => events.push(e));
+    host.subscribe("a", (e) => events.push(e));
+    host.subscribe("b", (e) => events.push(e));
     await host.open({ id: "a", cwd: "/repo" });
     await host.open({ id: "b", cwd: "/repo" });
 
@@ -129,10 +130,10 @@ describe("PtyHost (P6 terminal provider)", () => {
   it("unsubscribe stops delivery; a throwing subscriber is isolated", async () => {
     const { host, ptys } = hostWithFakes();
     const got: string[] = [];
-    host.subscribe(() => {
+    host.subscribe("a", () => {
       throw new Error("boom");
     });
-    const off = host.subscribe((e) => {
+    const off = host.subscribe("a", (e) => {
       if (e.kind === "data") got.push(e.data);
     });
     await host.open({ id: "a", cwd: "/repo" });

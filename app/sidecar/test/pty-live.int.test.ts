@@ -30,8 +30,8 @@ function waitForMarker(
 ): Promise<string> {
   return new Promise((resolve, reject) => {
     let buf = "";
-    const off = host.subscribe((e) => {
-      if (e.id !== opts.id || e.kind !== "data") return;
+    const off = host.subscribe(opts.id, (e) => {
+      if (e.kind !== "data") return;
       buf += e.data;
       if (buf.includes(opts.marker)) {
         cleanup();

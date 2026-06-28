@@ -19,7 +19,7 @@ export function registerTerminal(registry: ProviderRegistry): PtyHost {
     resize: (id: string, cols: number, rows: number) => host.resize(id, cols, rows),
     close: (id: string) => host.close(id),
     list: () => host.list(),
-    subscribe: (listener: (event: TerminalEvent) => void) => host.subscribe(listener),
+    subscribe: (id: string, listener: (event: TerminalEvent) => void) => host.subscribe(id, listener),
   } as never);
   return host;
 }
