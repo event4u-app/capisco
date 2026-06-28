@@ -169,9 +169,10 @@ test.describe("terminal — Phase 2", () => {
   test("renders the real terminal (xterm) with the streamed shell output", async ({ page }) => {
     await openTerminal(page);
     const out = page.getByTestId("terminal-output");
-    // P6: xterm.js mounts inside terminal-output; browser-mode streams the shell
-    // transcript into it via the mock terminal provider (DOM renderer → queryable).
-    await expect(out.locator(".xterm")).toBeVisible();
+    // P6: one xterm.js instance per tab mounts inside terminal-output (inactive
+    // tabs are hidden); assert the visible (active) one. Browser-mode streams the
+    // shell transcript into it via the mock terminal provider (DOM renderer).
+    await expect(out.locator(".xterm:visible")).toBeVisible();
     await expect(out).toContainText("pnpm test core/broker");
     await expect(out).toContainText("3 passed");
   });
@@ -211,14 +212,16 @@ test.describe("editor — fidelity goldens", () => {
     await expect(page).toHaveScreenshot("editor-dark.png");
   });
 
-  // P6: xterm.js replaced the static transcript, so editor-terminal-dark.png must
-  // be regenerated with `pnpm verify:visual:update` in a browser env before this
-  // re-enables. The DOM/structure assertions above are the autonomous gate.
-  test.fixme("terminal open matches the dark golden (regen after xterm landing)", async ({ page }) => {
+  // P6: xterm.js replaced the static transcript — editor-terminal-dark.png is
+  // regenerated via `pnpm verify:visual:update` (reduced-motion is forced in the
+  // config, so the cursor is static and the shot deterministic).
+  test("terminal open matches the dark golden", async ({ page }) => {
     await page.goto("/");
     await page.getByTestId("mode-editor").click();
     await page.getByTestId("rail-item-__terminal__").click();
     await expect(page.getByTestId("terminal-panel")).toBeVisible();
+    // Wait for the streamed transcript to render before the screenshot.
+    await expect(page.getByTestId("terminal-output")).toContainText("3 passed");
     await page.evaluate(() => document.fonts.ready);
     await expect(page).toHaveScreenshot("editor-terminal-dark.png");
   });
