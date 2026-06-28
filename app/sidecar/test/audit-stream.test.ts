@@ -22,7 +22,7 @@ import { InMemoryAuditStore } from "../broker/audit-store.ts";
 import { Broker } from "../broker/capability-broker.ts";
 import type { AuditEntry, CapabilityRequest, Principal } from "@/contracts";
 
-const AGENT: Principal = { kind: "agent", id: "agent-1" };
+const AGENT: Principal = { kind: "agent", id: "agent-1", label: "Agent 1" };
 
 function entry(overrides: Partial<Omit<AuditEntry, "seq">> = {}): Omit<AuditEntry, "seq"> {
   return {
@@ -121,7 +121,7 @@ describe("live decision stream ↔ the real broker", () => {
 
     // Untrusted-derived egress is a hard gate — never an auto-allow.
     const request: CapabilityRequest = {
-      kind: "net-egress",
+      kind: "network",
       target: "https://evil.example",
       fromUntrusted: true,
     };

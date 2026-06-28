@@ -33,6 +33,12 @@ const mockLsp: LspProvider = {
   open: () => Promise.resolve(),
   completion: () => Promise.resolve([]),
   hover: () => Promise.resolve(null),
+  definition: () => Promise.resolve([]),
+  references: () => Promise.resolve([]),
+  rename: () => Promise.resolve({ changes: [] }),
+  documentSymbol: () => Promise.resolve([]),
+  inlayHints: () => Promise.resolve([]),
+  foldingRanges: () => Promise.resolve([]),
 };
 
 /**
