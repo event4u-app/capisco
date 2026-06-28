@@ -44,10 +44,22 @@ const EXECUTION_PRIMITIVES: Record<string, ReadonlyArray<SideEffect>> = {
   // supervisor above (the scan matches `supervisor.spawn(` by method name). Read-
   // only language intelligence (completion/hover/diagnostics); no fs/net edge.
   "lsp/lsp-host.ts": ["process"],
+  // The PTY host (road-to-actually-works P6). Like lsp-host.ts it does NOT touch
+  // child_process — it opens terminals ONLY through the allowlisted supervisor
+  // (the scan matches `supervisor.spawn(` by method name). The real node-pty
+  // spawn lives in the allowlisted runtime/pty-exec.ts; this file just wires the
+  // terminal lifecycle (open/write/resize/close) + the data/exit fan-out.
+  "runtime/pty-host.ts": ["process"],
   // Read-only docker introspection (road-to-real-runtime P0). execFile, no shell,
   // discrete argv; a mutating-verb guard refuses run/rm/exec/kill so it stays
   // read-only (`docker ps` / `docker stats --no-stream`). Same posture as detect-exec.ts.
   "runtime/docker-exec.ts": ["process"],
+  // The PTY spawn primitive (road-to-actually-works P6) — node-pty's `spawn`
+  // opens a real pseudo-terminal subprocess. SEALED env (allowlist, no secrets),
+  // discrete argv (no shell string); the capability decision to open a terminal
+  // is broker-gated at the calling layer (PtyHost / terminal provider), the same
+  // posture as the LSP/container spawns. One merged tty stream, no stderr.
+  "runtime/pty-exec.ts": ["process"],
   // The MUTATING devcontainer lifecycle primitive (road-to-real-runtime P0) —
   // `devcontainer up` / `docker exec` / `docker rm -f`. execFile, no shell,
   // discrete argv. The mutating counterpart to docker-exec.ts; the capability

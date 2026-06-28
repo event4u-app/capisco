@@ -164,6 +164,36 @@ describe("SupervisedHandle — PTY-shaped backend (P6 Phase 1 conformance)", () 
     ptys[0].resize(120, 40);
     expect(ptys[0].resized).toEqual([{ cols: 120, rows: 40 }]);
   });
+
+  it("SupervisedProcess.resize() forwards to the PTY handle", () => {
+    const { spawnFn, ptys } = ptyTracker();
+    const sup = new ProcessSupervisor({ spawnFn });
+    const proc = sup.spawn({ id: "pty:term-1", command: "bash" });
+
+    proc.resize(132, 43);
+    expect(ptys[0].resized).toEqual([{ cols: 132, rows: 43 }]);
+  });
+});
+
+describe("SupervisedProcess.resize — stdio backend is a no-op", () => {
+  it("does not throw when the handle has no resize (ChildProcess backend)", () => {
+    // A ChildProcess-shaped fake (no resize) — resize must be silently ignored.
+    class StdioFake {
+      pid: number | undefined = 7;
+      exitCode: number | null = null;
+      signalCode: NodeJS.Signals | null = null;
+      stdin = { write: () => {} };
+      stdout = { setEncoding: () => {}, on: () => {} };
+      stderr = { setEncoding: () => {}, on: () => {} };
+      on(): void {}
+      kill(): boolean {
+        return true;
+      }
+    }
+    const sup = new ProcessSupervisor({ spawnFn: (() => new StdioFake()) as unknown as SpawnFn });
+    const proc = sup.spawn({ id: "lsp:ts", command: "tsserver", restart: "never" });
+    expect(() => proc.resize(80, 24)).not.toThrow();
+  });
 });
 
 describe("wrapChildProcess — child-process handle has no resize", () => {

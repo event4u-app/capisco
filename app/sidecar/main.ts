@@ -28,6 +28,7 @@ import { registerTaskForge } from "./register-task-forge.ts";
 import { registerProvision } from "./register-provision.ts";
 import { BackendSelection } from "./acp/backend-selection.ts";
 import { registerLsp } from "./register-lsp.ts";
+import { registerTerminal } from "./register-terminal.ts";
 import { createSecretStore } from "./broker/create-secret-store.ts";
 import type { SecretStore } from "@/contracts";
 import { createFileRecentProjects } from "./recent/recent-projects.ts";
@@ -148,6 +149,9 @@ export function registerAllProviders(
   // (root × language). Lazy spawn via the P1 supervisor; degrades to empty when
   // the language server is not installed.
   registerLsp(registry);
+  // P6 — real terminal: a shell PTY per tab (node-pty) through the P1 supervisor.
+  // open/write/resize/close + a data/exit subscription; working dir = worktree.
+  registerTerminal(registry);
   // B6 — read-only Task (Jira/Linear) + Forge (GitHub/GitLab) providers from
   // recorded fixtures: "my tickets / next from sprint / whose turn". The
   // ticket→worktree→status lifecycle is constructed in-process by the consumer

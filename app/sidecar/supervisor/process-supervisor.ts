@@ -66,6 +66,12 @@ export interface SupervisedSpec {
   readonly idleTimeoutMs?: number;
   /** Cap captured stdout/stderr ring per stream (bytes). Default 1 MiB. */
   readonly maxOutputBytes?: number;
+  /** PTY-only initial window columns (ignored by stdio backends). Default 80. */
+  readonly cols?: number;
+  /** PTY-only initial window rows (ignored by stdio backends). Default 24. */
+  readonly rows?: number;
+  /** PTY-only TERM name (ignored by stdio backends). Default `xterm-256color`. */
+  readonly term?: string;
 }
 
 export interface ProcessEvents {
@@ -167,6 +173,8 @@ export interface SupervisedProcess {
   write(chunk: string): void;
   /** Reset the idle timer without writing (consumer saw activity, e.g. a read). */
   touch(): void;
+  /** Resize the backend's window — PTY backends only; a no-op for stdio. */
+  resize(cols: number, rows: number): void;
   /** Stop supervising: kill, cancel restarts, cancel idle timer. Idempotent. */
   kill(signal?: NodeJS.Signals): void;
 }
@@ -335,6 +343,11 @@ class Supervised implements SupervisedProcess {
 
   touch(): void {
     if (this.#idleMs > 0 && this.#state === "running") this.#armIdle();
+  }
+
+  resize(cols: number, rows: number): void {
+    // Only a PTY backend carries `resize`; stdio backends silently ignore it.
+    this.#child?.resize?.(cols, rows);
   }
 
   kill(signal: NodeJS.Signals = "SIGTERM"): void {
