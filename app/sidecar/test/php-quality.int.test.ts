@@ -11,7 +11,7 @@ import { tmpdir } from "node:os";
 import { delimiter, join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { phpstanInContainer } from "../quality/php-quality.ts";
+import { ecsInContainer, phpstanInContainer, rectorInContainer } from "../quality/php-quality.ts";
 import { verdictFromResults } from "../model-routing/escalation.ts";
 
 function which(cmd: string): boolean {
@@ -60,6 +60,74 @@ describe("phpstanInContainer ↔ real phpstan Docker image", () => {
       const verdict = verdictFromResults([result]);
       expect(verdict.failed).toBe(true);
       expect(verdict.diagnostics.some((x) => x.tool === "phpstan")).toBe(true);
+    },
+    300_000,
+  );
+});
+
+describe("rectorInContainer / ecsInContainer ↔ real jakzal/phpqa image", () => {
+  let dir: string;
+
+  beforeAll(() => {
+    if (!live) return;
+    dir = mkdtempSync(join(tmpdir(), "capisco-phpqa-"));
+    mkdirSync(join(dir, "src"), { recursive: true });
+    // rector.php + ecs.php at the worktree root (auto-discovered, cwd = mount).
+    writeFileSync(
+      join(dir, "rector.php"),
+      "<?php\nuse Rector\\Config\\RectorConfig;\nreturn RectorConfig::configure()\n" +
+        "    ->withPaths([__DIR__ . '/src'])\n" +
+        "    ->withPreparedSets(deadCode: true, codeQuality: true);\n",
+      "utf8",
+    );
+    writeFileSync(
+      join(dir, "ecs.php"),
+      "<?php\nuse Symplify\\EasyCodingStandard\\Config\\ECSConfig;\nreturn ECSConfig::configure()\n" +
+        "    ->withPaths([__DIR__ . '/src'])\n" +
+        "    ->withPreparedSets(psr12: true);\n",
+      "utf8",
+    );
+    // Messy file: an unused var (Rector dead-code) + bad formatting (ECS).
+    writeFileSync(
+      join(dir, "src", "Bad.php"),
+      "<?php\nclass Bad {\n    public function run($x) {\n        $unused = 1;\n" +
+        "        if ($x === true) { return true; } else { return false; }\n    }\n}\n",
+      "utf8",
+    );
+  });
+
+  afterAll(() => {
+    if (live && dir) rmSync(dir, { recursive: true, force: true });
+  });
+
+  runLive(
+    "Rector reports advisory (warning) suggestions, worktree-relative, never a RED",
+    async () => {
+      const result = await rectorInContainer(dir, { files: ["src"] });
+      expect(result.tool).toBe("rector");
+      expect(result.diagnostics.length).toBeGreaterThan(0);
+      const d = result.diagnostics[0];
+      expect(d.file).toBe("src/Bad.php");
+      expect(d.severity).toBe("warning");
+      expect(d.rule).toMatch(/^Rector\\/);
+      // Advisory: no error-severity → ok stays true, gate is not RED.
+      expect(result.ok).toBe(true);
+      expect(verdictFromResults([result]).failed).toBe(false);
+    },
+    300_000,
+  );
+
+  runLive(
+    "ECS reports advisory (warning) coding-standard fixes, worktree-relative",
+    async () => {
+      const result = await ecsInContainer(dir, { files: ["src"] });
+      expect(result.tool).toBe("ecs");
+      expect(result.diagnostics.length).toBeGreaterThan(0);
+      const d = result.diagnostics[0];
+      expect(d.file).toBe("src/Bad.php");
+      expect(d.severity).toBe("warning");
+      expect(result.ok).toBe(true);
+      expect(verdictFromResults([result]).failed).toBe(false);
     },
     300_000,
   );

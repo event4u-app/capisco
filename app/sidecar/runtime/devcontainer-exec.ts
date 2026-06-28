@@ -160,10 +160,21 @@ export function runContainerTool(input: {
   args: readonly string[];
   hostDir: string;
   containerDir?: string;
+  /** Working directory inside the container (`-w`). Tools that report paths
+   * relative to cwd (Rector/ECS) set this to `containerDir` for clean paths. */
+  workdir?: string;
   timeoutMs?: number;
 }): Promise<ContainerToolRun> {
   const containerDir = input.containerDir ?? "/app";
-  const dockerArgs = ["run", "--rm", "-v", `${input.hostDir}:${containerDir}:ro`, input.image, ...input.args];
+  const dockerArgs = [
+    "run",
+    "--rm",
+    "-v",
+    `${input.hostDir}:${containerDir}:ro`,
+    ...(input.workdir ? ["-w", input.workdir] : []),
+    input.image,
+    ...input.args,
+  ];
   return new Promise((resolve) => {
     execFile(
       "docker",

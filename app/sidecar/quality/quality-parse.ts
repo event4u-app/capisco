@@ -228,3 +228,119 @@ export function parseVitest(cwd: string, stdout: string): Diagnostic[] {
   }
   return out;
 }
+
+// --- rector (process --dry-run --output-format=json) ------------------------
+
+interface RectorFileDiff {
+  file: string;
+  diff?: string;
+  applied_rectors?: string[];
+}
+interface RectorJson {
+  totals?: { changed_files?: number; errors?: number };
+  file_diffs?: RectorFileDiff[];
+}
+
+/** Short Rector rule name from the FQCN (`Rector\DeadCode\…\FooRector` → `FooRector`). */
+function shortRule(fqcn: string): string {
+  const parts = fqcn.split("\\");
+  return parts[parts.length - 1] || fqcn;
+}
+
+/**
+ * Parse Rector `--output-format=json` (dry-run) into diagnostics — one per
+ * applied rector per file (advisory `warning`: a dry-run diff is a suggested
+ * modernization, never a hard error). Paths are already worktree-relative when
+ * Rector runs with cwd = the mount root (`-w`). Verified against Rector 2.5.
+ */
+export function parseRector(stdout: string): Diagnostic[] {
+  const text = stdout.trim();
+  if (!text) return [];
+  let parsed: RectorJson;
+  try {
+    parsed = JSON.parse(text) as RectorJson;
+  } catch {
+    return [];
+  }
+  const out: Diagnostic[] = [];
+  for (const fd of parsed.file_diffs ?? []) {
+    const rectors = fd.applied_rectors?.length ? fd.applied_rectors : ["Rector"];
+    for (const r of rectors) {
+      out.push({
+        tool: "rector",
+        file: fd.file,
+        severity: "warning",
+        rule: r,
+        message: `Rector: ${shortRule(r)} suggests a change`,
+        fix: { description: `Apply ${shortRule(r)}`, autoApplicable: true },
+      });
+    }
+  }
+  return out;
+}
+
+// --- ecs (check --output-format=json) ---------------------------------------
+
+interface EcsDiff {
+  diff?: string;
+  applied_checkers?: string[];
+}
+interface EcsError {
+  line?: number;
+  message?: string;
+  source_class?: string;
+}
+interface EcsFile {
+  errors?: EcsError[];
+  diffs?: EcsDiff[];
+}
+interface EcsJson {
+  totals?: { errors?: number; diffs?: number };
+  files?: Record<string, EcsFile>;
+}
+
+/**
+ * Parse ECS `--output-format=json` into diagnostics: non-fixable violations
+ * (`files[].errors[]`, with line + source_class) and auto-fixable reformats
+ * (`files[].diffs[].applied_checkers[]`). All `warning` severity — coding-style,
+ * not a logic error — so they inform the rail without forcing a routing RED.
+ * Paths are worktree-relative when ECS runs with cwd = the mount root (`-w`).
+ * Verified against EasyCodingStandard 13.2.
+ */
+export function parseEcs(stdout: string): Diagnostic[] {
+  const text = stdout.trim();
+  if (!text) return [];
+  let parsed: EcsJson;
+  try {
+    parsed = JSON.parse(text) as EcsJson;
+  } catch {
+    return [];
+  }
+  const out: Diagnostic[] = [];
+  for (const [file, entry] of Object.entries(parsed.files ?? {})) {
+    for (const e of entry.errors ?? []) {
+      out.push({
+        tool: "ecs",
+        file,
+        line: typeof e.line === "number" ? e.line : undefined,
+        severity: "warning",
+        rule: e.source_class,
+        message: e.message ?? "Coding-standard violation",
+      });
+    }
+    for (const d of entry.diffs ?? []) {
+      const checkers = d.applied_checkers?.length ? d.applied_checkers : ["ECS"];
+      for (const c of checkers) {
+        out.push({
+          tool: "ecs",
+          file,
+          severity: "warning",
+          rule: c,
+          message: `ECS: ${shortRule(c)} would reformat`,
+          fix: { description: `Apply ${shortRule(c)}`, autoApplicable: true },
+        });
+      }
+    }
+  }
+  return out;
+}
