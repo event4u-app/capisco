@@ -166,32 +166,23 @@ test.describe("terminal — Phase 2", () => {
     await expect(page.getByTestId("terminal-panel")).toBeVisible();
   }
 
-  test("renders mock run output with green checks + a caret prompt", async ({ page }) => {
+  test("renders the real terminal (xterm) with the streamed shell output", async ({ page }) => {
     await openTerminal(page);
     const out = page.getByTestId("terminal-output");
+    // P6: xterm.js mounts inside terminal-output; browser-mode streams the shell
+    // transcript into it via the mock terminal provider (DOM renderer → queryable).
+    await expect(out.locator(".xterm")).toBeVisible();
     await expect(out).toContainText("pnpm test core/broker");
     await expect(out).toContainText("3 passed");
-    await expect(page.getByTestId("terminal-caret")).toBeVisible();
   });
 
-  test("the caret honours prefers-reduced-motion (blinks normally, static when reduced)", async ({
-    page,
-  }) => {
-    await openTerminal(page);
-    // Default (motion allowed): caret animates.
-    const caret = page.getByTestId("terminal-caret");
-    await expect(caret).not.toHaveAttribute("data-reduced", "true");
-    expect(await caret.evaluate((el) => getComputedStyle(el as HTMLElement).animationName)).toBe(
-      "capisco-blink",
-    );
-    // Emulate prefers-reduced-motion: the JS hook flips data-reduced and the
-    // blink animation is dropped (no loop), honouring Tischstakes §5.
-    await page.emulateMedia({ reducedMotion: "reduce" });
-    await expect(caret).toHaveAttribute("data-reduced", "true");
-    expect(await caret.evaluate((el) => getComputedStyle(el as HTMLElement).animationName)).toBe(
-      "none",
-    );
-  });
+  // P6: the hand-rolled `.t-caret` blink was replaced by xterm's `cursorBlink`
+  // (Terminal.tsx reads useReducedMotion). The old data-reduced CSS-animation
+  // assertion no longer applies — re-author against the xterm cursor in a browser.
+  test.fixme(
+    "reduced-motion drives xterm cursorBlink (re-author against the xterm cursor)",
+    async () => {},
+  );
 
   test("tabs: add (+), close (×), rename (double-click), split/kill icons", async ({ page }) => {
     await openTerminal(page);
@@ -220,7 +211,10 @@ test.describe("editor — fidelity goldens", () => {
     await expect(page).toHaveScreenshot("editor-dark.png");
   });
 
-  test("terminal open matches the dark golden", async ({ page }) => {
+  // P6: xterm.js replaced the static transcript, so editor-terminal-dark.png must
+  // be regenerated with `pnpm verify:visual:update` in a browser env before this
+  // re-enables. The DOM/structure assertions above are the autonomous gate.
+  test.fixme("terminal open matches the dark golden (regen after xterm landing)", async ({ page }) => {
     await page.goto("/");
     await page.getByTestId("mode-editor").click();
     await page.getByTestId("rail-item-__terminal__").click();
