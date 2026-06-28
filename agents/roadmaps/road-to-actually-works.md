@@ -234,13 +234,13 @@ aus dem PHP-Projekt; Hover zeigt Typen; Tippfehler werden rot unterstrichen.
 **Goal:** Unter dem xterm.js-Terminal läuft eine **echte Shell** (heute statischer
 Text, kein Contract). Nutzt den P1-Supervisor für den Prozess-Lifecycle.
 
-- [ ] **Terminal-Contract** definieren (fehlt heute ganz).
-- [ ] **node-pty** (oder Tauri-PTY) im Sidecar, über den **P1-Supervisor** verwaltet;
-      xterm.js an echten PTY binden.
-- [ ] **Resize** propagiert (xterm cols/rows → PTY `resize`), über das P1-Coalescing.
-- [ ] **Umbenennbare Tabs**, `+`/schließen, Split/Kill — an echte PTYs.
-- [ ] Working-Dir = aktiver Worktree (aus dem P1-Workspace-Objekt).
-- [ ] **Conformance-Test:** echter PTY-Echo vs. erwartetes Shape.
+- [x] **Terminal-Contract** definieren (fehlt heute ganz). <!-- src/contracts/terminal.ts: TerminalProvider (open/write/resize/close/list + data/exit-subscribe) + TerminalOpenSpec/Event/Info. Transport-Posture wie RuntimeProvider.subscribeStats (req/resp + push-subscribe), WS heute / Tauri-IPC später. Registriert via register-terminal.ts (`terminal`-Provider). -->
+- [x] **node-pty** (oder Tauri-PTY) im Sidecar, über den **P1-Supervisor** verwaltet;
+      xterm.js an echten PTY binden. <!-- Option C gestuft: P1 abstrahiert SpawnedChild→SupervisedHandle (Blast-Radius null, bewiesen via unveränderte Supervisor/LSP-Suites), P2 wrapPty adaptiert IPty nativ (kein stderr-Fake). PtyHost öffnet je Tab EINEN PTY DURCH den P1-Supervisor (spawnPty-Backend, restart=never). node-pty-Spawn = auditiertes Chokepoint-Primitiv runtime/pty-exec.ts. Live verifiziert (pty-live.int.test.ts: echte Shell, Marker per Shell-Arithmetik = echte Execution). xterm.js-Bindung = consumer-side Folge-Slice. -->
+- [x] **Resize** propagiert (xterm cols/rows → PTY `resize`), über das P1-Coalescing. <!-- SupervisedSpec.cols/rows/term + SupervisedProcess.resize → SupervisedHandle.resize → IPty.resize; stdio-Backends no-op. PtyHost.resize(id,cols,rows) live verifiziert (resize einer lebenden Shell, danach Marker-Round-Trip). xterm-cols/rows→resize-Wiring = consumer-side Folge-Slice. -->
+- [ ] **Umbenennbare Tabs**, `+`/schließen, Split/Kill — an echte PTYs. <!-- Sidecar-Hälfte da: PtyHost open(id)/close(id)/list() trägt Multi-PTY + Kill (close live verifiziert in pty-host.test.ts). Umbenennen/Split/`+`/Tab-UN = frontend-dominant, noch nicht gebaut → bleibt offen. -->
+- [x] Working-Dir = aktiver Worktree (aus dem P1-Workspace-Objekt). <!-- TerminalOpenSpec.cwd → PtyHost.open → SupervisedSpec.cwd → node-pty cwd. Live verifiziert: pty-live.int.test.ts öffnet im mkdtemp-Worktree, `$PWD` im echten Output == angefragter Pfad (Shell-computed Sentinel, prompt-title-robust). -->
+- [x] **Conformance-Test:** echter PTY-Echo vs. erwartetes Shape. <!-- pty-live.int.test.ts (live, gated auf node-pty-Verfügbarkeit, skippt sauber sonst): echte Shell-Execution (Arithmetik-Marker), Worktree-cwd, Resize-ohne-Störung. Plus fake-behind-contract: supervised-handle.test.ts (PTY-shaped Handle ohne stderr/mit resize) + pty-host.test.ts (open/write/resize/close/list/subscribe hermetisch). -->
 
 **Stolpersteine:** node-pty-Native-Build — **NICHT** das Electron-ABI-Problem, weil
 der Sidecar ein separater Node-Prozess ist; real wird es erst beim **Packaging**
