@@ -5,6 +5,12 @@ export interface LineChartProps {
   labels: string[];
   /** CSS chart-palette var name (e.g. "--chart-1"). Resolved as hsl(var(...)). */
   colorVar?: string;
+  /**
+   * Explicit stroke color (any CSS color, e.g. `var(--ds-warning)`). Overrides
+   * `colorVar` when set — used by the Sentry performance charts whose colors are
+   * bound to the design-system level tokens (spec §9).
+   */
+  color?: string;
   height?: number;
   /** Tick-value formatter (e.g. (v) => `${v}k`). */
   fmt?: (v: number) => string;
@@ -26,13 +32,14 @@ export function LineChart({
   data,
   labels,
   colorVar = "--chart-line",
+  color: colorOverride,
   height = 150,
   fmt = (v) => String(v),
   testid = "line-chart",
   "aria-label": ariaLabel,
 }: LineChartProps) {
   const { t } = useTranslation();
-  const color = `hsl(var(${colorVar}))`;
+  const color = colorOverride ?? `hsl(var(${colorVar}))`;
 
   if (!data.length) {
     return (

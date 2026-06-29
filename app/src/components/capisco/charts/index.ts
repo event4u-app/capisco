@@ -1,10 +1,12 @@
 export { LineChart } from "./LineChart";
+export { Sparkline } from "./Sparkline";
 export { BurndownChart } from "./BurndownChart";
 export { Donut } from "./Donut";
 export { Heatmap } from "./Heatmap";
 export { MetricCard } from "./MetricCard";
 export { ChartCard } from "./ChartCard";
 export type { LineChartProps } from "./LineChart";
+export type { SparklineProps } from "./Sparkline";
 export type { BurndownChartProps } from "./BurndownChart";
 export type { DonutProps } from "./Donut";
 export type { HeatmapProps } from "./Heatmap";
