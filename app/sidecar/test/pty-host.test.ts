@@ -102,6 +102,34 @@ describe("PtyHost (P6 terminal provider)", () => {
     expect(events).toContainEqual({ id: "term-1", kind: "exit", exitCode: 0, signal: null });
   });
 
+  it("opens a host login shell by default", async () => {
+    const specs: { command: string; args?: readonly string[] }[] = [];
+    const sup = new ProcessSupervisor({
+      spawnFn: (spec) => {
+        specs.push({ command: spec.command, args: spec.args });
+        return new FakePty();
+      },
+    });
+    const host = new PtyHost({ supervisor: sup });
+    await host.open({ id: "t1", cwd: "/repo" });
+    expect(specs[0].args).toEqual(["-l"]);
+    expect(specs[0].command).not.toBe("docker");
+  });
+
+  it("opens a container console via `docker exec -it` when `container` is set", async () => {
+    const specs: { command: string; args?: readonly string[] }[] = [];
+    const sup = new ProcessSupervisor({
+      spawnFn: (spec) => {
+        specs.push({ command: spec.command, args: spec.args });
+        return new FakePty();
+      },
+    });
+    const host = new PtyHost({ supervisor: sup });
+    await host.open({ id: "ctr-1", cwd: "/repo", container: "myproj-app", shell: "/bin/sh" });
+    expect(specs[0].command).toBe("docker");
+    expect(specs[0].args).toEqual(["exec", "-it", "myproj-app", "/bin/sh"]);
+  });
+
   it("close() reaps the terminal and drops it from list()", async () => {
     const { host, ptys } = hostWithFakes();
     await host.open({ id: "term-1", cwd: "/repo" });

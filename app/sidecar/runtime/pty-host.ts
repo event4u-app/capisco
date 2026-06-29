@@ -53,14 +53,20 @@ export class PtyHost implements TerminalProvider {
   }
 
   open(spec: TerminalOpenSpec): Promise<TerminalInfo> {
-    const shell = resolveShell(spec.shell ?? this.#defaultShell, process.env);
+    // Container console (`docker exec -it`) vs. a host login shell. Both run over
+    // the PTY (node-pty), so `-it` gets a real tty and the session is interactive.
+    const container = spec.container;
+    const command = container ? "docker" : resolveShell(spec.shell ?? this.#defaultShell, process.env);
+    const args = container
+      ? ["exec", "-it", container, spec.shell ?? "/bin/sh"]
+      : ["-l"]; // host login shell — discrete argv, no shell-string injection
     const proc = this.#sup.spawn(
       {
         id: spec.id,
-        command: shell,
-        // A login shell — discrete argv, no shell-string injection.
-        args: ["-l"],
-        cwd: spec.cwd,
+        command,
+        args,
+        // docker runs on the host; the exec's cwd is the container's own workdir.
+        cwd: container ? undefined : spec.cwd,
         cols: spec.cols ?? 80,
         rows: spec.rows ?? 24,
         restart: "never",

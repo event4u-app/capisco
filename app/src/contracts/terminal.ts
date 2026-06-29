@@ -30,6 +30,13 @@ export interface TerminalOpenSpec {
    * No arbitrary command injection — this is a login shell, argv is fixed.
    */
   shell?: string;
+  /**
+   * When set, the terminal is an interactive console INSIDE this running
+   * container — `docker exec -it <container> <shell>` over the PTY (real-runtime
+   * P0). The shell then defaults to `/bin/sh` (containers rarely have bash);
+   * `cwd` is the host context, not the in-container dir.
+   */
+  container?: string;
 }
 
 /** Lifecycle state of a terminal, surfaced to the tab UI. */
