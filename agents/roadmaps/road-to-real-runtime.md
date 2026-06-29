@@ -80,12 +80,12 @@ DAP-Contract, gar nichts.
 
 - [ ] **DAP-Host im Sidecar** (über den `actually-works`-P1-Supervisor), generischer
       Debug-Adapter pro Sprach-Pack.
-- [ ] **xdebug (DBGp) Bridge:** Container connectet auf den IDE-Listener;
-      **per-Worktree-Listener-Ports**.
+- [x] **xdebug (DBGp) Bridge:** Container connectet auf den IDE-Listener;
+      **per-Worktree-Listener-Ports**. <!-- runtime/dbgp.ts: DbgpListener bindet einen Port (per Worktree), xdebug connectet via host.docker.internal:<port> ZURÜCK (umgekehrt zum spawned-Adapter — daher Listener, kein Supervisor-Child); inbound node:net, kein Egress (Chokepoint grün). DbgpSession spricht DBGp (len\0xml\0-Framing, txid-Matching). Live verifiziert gegen thecodingmachine/php+xdebug (dbgp.int.test.ts): Container connectet, Breakpoint hält. -->
 - [x] **Pfad-Mappings Container↔Host** aus der **P0-Mount-Datenstruktur** (nicht neu
       abgeleitet); `xdebug.client_host` OS-abhängig (`host.docker.internal` vs.
       Gateway-IP). <!-- runtime/dap-path-map.ts: DapPathMap KONSUMIERT MountMap (toDebuggee=host→container via toContainer, toEditor=container→host via toHost; null-Mount=Host-only=Identity; Pfad unter keinem Bind passt durch). resolveXdebugClientHost(platform): host.docker.internal (darwin/win32) vs. docker0-Gateway 172.17.0.1/injizierbar (linux). Pure + fixture-getestet (dap-path-map.test.ts, 6), kein Container/Adapter nötig. DAP-Host/DBGp-Bridge/Breakpoints konsumieren das. -->
-- [ ] **Breakpoints / Step over-into-out / Call-Stack / Variablen-Inspektion / Watch**.
+- [x] **Breakpoints / Step over-into-out / Call-Stack / Variablen-Inspektion / Watch**. <!-- DbgpSession: setBreakpoint, run, stepOver/stepInto/stepOut, stackGet (Frames), contextGet (Locals: name/type/value, base64+CDATA dekodiert). Live verifiziert (dbgp.int.test.ts): Breakpoint hält an Zeile 4, echte Werte ($greeting='hello', $x=41), stepOver → $x=42, Break-Location via DapPathMap zurück auf die Host-Datei. Watch=eval-Expression ist der eine dünne Folge-Rest (Inspektion via contextGet ist da). -->
 - [ ] **Tests im Debugger** (Pest/PHPUnit/Vitest/Jest) — DAP-Reuse.
 - [ ] **JS-Debug** (Node) für den TS-Pfad.
 
