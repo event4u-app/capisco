@@ -49,6 +49,12 @@ const EXECUTION_PRIMITIVES: Record<string, ReadonlyArray<SideEffect>> = {
   // supervisor (the scan matches `supervisor.spawn(` by method name). DBGp/xdebug
   // (dbgp.ts) is a node:net listener, not a spawn, so it needs no entry here.
   "runtime/dap.ts": ["process"],
+  // The Node V8-inspector debug host (road-to-real-runtime P1, JS-Debug). Like
+  // lsp-host.ts it spawns the debuggee (`node --inspect-brk`) ONLY through the
+  // allowlisted supervisor (the scan matches `supervisor.spawn(`). It then talks
+  // CDP over a loopback WebSocket to the debuggee's own inspector — not network
+  // egress (the inspector is the spawned child's port), so no fetch concern.
+  "runtime/cdp.ts": ["process"],
   // The PTY host (road-to-actually-works P6). Like lsp-host.ts it does NOT touch
   // child_process — it opens terminals ONLY through the allowlisted supervisor
   // (the scan matches `supervisor.spawn(` by method name). The real node-pty
