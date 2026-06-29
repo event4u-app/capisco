@@ -107,7 +107,9 @@ describe("DBGp/xdebug ↔ a real PHPUnit run (test-debug, DAP-reuse)", () => {
         "phpunit.phar", "--no-configuration", "--do-not-cache-result", "tests/CalcTest.php",
       ]);
 
-      const session: DbgpSession = await listener.accept(30_000);
+      // Generous accept window: PHPUnit's container is slow to boot and, under
+      // full-suite parallelism, xdebug's connect-back can lag further.
+      const session: DbgpSession = await listener.accept(60_000);
       await session.init;
       await session.setBreakpoint(calcUri, BP_LINE);
 

@@ -84,7 +84,9 @@ describe("DBGp/xdebug live debugging ↔ real container", () => {
       ]);
 
       // 4. Accept xdebug's connection, drive the debug session.
-      const session: DbgpSession = await listener.accept(25_000);
+      // Generous accept window: under full-suite parallelism several debug
+      // containers start at once, so xdebug's connect-back can lag.
+      const session: DbgpSession = await listener.accept(60_000);
       await session.init;
 
       await session.setBreakpoint(fileUri, BP_LINE);
