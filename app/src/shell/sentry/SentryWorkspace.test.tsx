@@ -29,7 +29,9 @@ describe("SentryWorkspace", () => {
   it("shows the stats header and a status breadcrumb", () => {
     renderWorkspace();
     expect(screen.getByTestId("sentry-stats")).toBeInTheDocument();
-    expect(screen.getByTestId("sentry-crumb")).toHaveTextContent("sentry › issues · production");
+    expect(screen.getByTestId("sentry-crumb")).toHaveTextContent(
+      "sentry › issues · production",
+    );
   });
 
   it("lists production/unresolved issues with a level bar and sparkline", () => {

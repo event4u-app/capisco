@@ -22,7 +22,9 @@ export function Sparkline({
   testid = "sparkline",
 }: SparklineProps) {
   if (data.length < 2) {
-    return <svg data-testid={`${testid}-empty`} width={width} height={height} className="spark" />;
+    return (
+      <svg data-testid={`${testid}-empty`} width={width} height={height} className="spark" />
+    );
   }
   const max = Math.max(...data, 1);
   const pts = data

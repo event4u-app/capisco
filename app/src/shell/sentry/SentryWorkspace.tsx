@@ -76,7 +76,7 @@ export function SentryWorkspace() {
     ["alerts", t("sentry.tabs.alerts"), alerts.filter((a) => a.on).length],
   ];
 
-  const crumbTab = detailId ? activeIssue?.id ?? tab : tab;
+  const crumbTab = detailId ? (activeIssue?.id ?? tab) : tab;
 
   return (
     <div data-testid="sentry-workspace" className="git-workspace">
@@ -92,7 +92,9 @@ export function SentryWorkspace() {
               <b>{sanitizeTag(stats.crashFree)}</b> {t("sentry.stats.crashFree")}
             </span>
             <span className="sst">
-              <b style={{ color: stats.failingCrons ? "var(--ds-error)" : "var(--ds-success)" }}>
+              <b
+                style={{ color: stats.failingCrons ? "var(--ds-error)" : "var(--ds-success)" }}
+              >
                 {stats.failingCrons}
               </b>{" "}
               {t("sentry.stats.cronsFailing")}
@@ -103,7 +105,10 @@ export function SentryWorkspace() {
           </div>
         </div>
 
-        <div className="mb-3 font-mono text-micro lowercase text-muted-foreground" data-testid="sentry-crumb">
+        <div
+          className="mb-3 font-mono text-micro lowercase text-muted-foreground"
+          data-testid="sentry-crumb"
+        >
           sentry › {crumbTab} · {env}
         </div>
 
@@ -354,7 +359,12 @@ function IssueDetail({ issue, onBack }: { issue: SentryIssue; onBack: () => void
   return (
     <div className="sentry-detail" data-testid="sentry-detail">
       <div className="sd-head">
-        <button type="button" className="sd-back" onClick={onBack} data-testid="sentry-detail-back">
+        <button
+          type="button"
+          className="sd-back"
+          onClick={onBack}
+          data-testid="sentry-detail-back"
+        >
           <ChevronLeft size={14} />
           {t("sentry.detail.back")}
         </button>
