@@ -15,6 +15,7 @@ import {
   mockProjectFsProvider,
   mockRecentProjects,
   mockRevertProvider,
+  mockSentryProvider,
   mockSessionStore,
   mockShadowStore,
   mockSignalProvider,
@@ -75,5 +76,6 @@ export function createMockProviders(): ProviderBundle {
     todo: mockTodoProvider,
     ingest: mockIngestProvider,
     revert: mockRevertProvider,
+    sentry: mockSentryProvider,
   };
 }
