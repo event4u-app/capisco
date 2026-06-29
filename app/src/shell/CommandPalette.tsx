@@ -2,6 +2,7 @@ import * as React from "react";
 import { useTranslation } from "react-i18next";
 import {
   Bot,
+  Bug,
   Eye,
   EyeOff,
   FileCode2,
@@ -34,6 +35,7 @@ const MODE_ICONS: Record<Exclude<WorkspaceMode, "diff">, typeof Bot> = {
   editor: FileCode2,
   git: GitBranch,
   tasks: SquareKanban,
+  sentry: Bug,
 };
 
 export function CommandPalette() {
