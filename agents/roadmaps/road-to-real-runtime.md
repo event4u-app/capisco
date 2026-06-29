@@ -78,15 +78,15 @@ erreichst die App unter `projekt-x.localhost`.
 Container**, mit korrektem Pfad-Mapping (der eigentliche Knackpunkt). Heute: kein
 DAP-Contract, gar nichts.
 
-- [ ] **DAP-Host im Sidecar** (über den `actually-works`-P1-Supervisor), generischer
-      Debug-Adapter pro Sprach-Pack.
+- [x] **DAP-Host im Sidecar** (über den `actually-works`-P1-Supervisor), generischer
+      Debug-Adapter pro Sprach-Pack. <!-- runtime/dap.ts: DapHost spawnt einen DAP-Adapter DURCH den P1-Supervisor (wie LspHost; Chokepoint-allowlisted). encodeDap/DapDecoder = LSP-Content-Length-Transport, DAP-Message-Shape (request/response/event, seq). Handshake initialize→launch→setBreakpoints→configurationDone, stopped-Event, stackTrace/scopes/variables/continue/next/stepIn/stepOut/disconnect; Pfade via DapPathMap. PHP-Pack-Adapter = die DBGp-Bridge (live). JS-Pack-Adapter (js-debug) = fake-conformance verifiziert (dap-host.test.ts, echtes DAP über stdio), Live netz-gated (kein js-debug-DAP-Server fetchbar). -->
 - [x] **xdebug (DBGp) Bridge:** Container connectet auf den IDE-Listener;
       **per-Worktree-Listener-Ports**. <!-- runtime/dbgp.ts: DbgpListener bindet einen Port (per Worktree), xdebug connectet via host.docker.internal:<port> ZURÜCK (umgekehrt zum spawned-Adapter — daher Listener, kein Supervisor-Child); inbound node:net, kein Egress (Chokepoint grün). DbgpSession spricht DBGp (len\0xml\0-Framing, txid-Matching). Live verifiziert gegen thecodingmachine/php+xdebug (dbgp.int.test.ts): Container connectet, Breakpoint hält. -->
 - [x] **Pfad-Mappings Container↔Host** aus der **P0-Mount-Datenstruktur** (nicht neu
       abgeleitet); `xdebug.client_host` OS-abhängig (`host.docker.internal` vs.
       Gateway-IP). <!-- runtime/dap-path-map.ts: DapPathMap KONSUMIERT MountMap (toDebuggee=host→container via toContainer, toEditor=container→host via toHost; null-Mount=Host-only=Identity; Pfad unter keinem Bind passt durch). resolveXdebugClientHost(platform): host.docker.internal (darwin/win32) vs. docker0-Gateway 172.17.0.1/injizierbar (linux). Pure + fixture-getestet (dap-path-map.test.ts, 6), kein Container/Adapter nötig. DAP-Host/DBGp-Bridge/Breakpoints konsumieren das. -->
 - [x] **Breakpoints / Step over-into-out / Call-Stack / Variablen-Inspektion / Watch**. <!-- DbgpSession: setBreakpoint, run, stepOver/stepInto/stepOut, stackGet (Frames), contextGet (Locals: name/type/value, base64+CDATA dekodiert). Live verifiziert (dbgp.int.test.ts): Breakpoint hält an Zeile 4, echte Werte ($greeting='hello', $x=41), stepOver → $x=42, Break-Location via DapPathMap zurück auf die Host-Datei. Watch=eval-Expression ist der eine dünne Folge-Rest (Inspektion via contextGet ist da). -->
-- [ ] **Tests im Debugger** (Pest/PHPUnit/Vitest/Jest) — DAP-Reuse.
+- [x] **Tests im Debugger** (Pest/PHPUnit/Vitest/Jest) — DAP-Reuse. <!-- PHP-Seite LIVE: dieselbe DBGp-Bridge debuggt einen echten PHPUnit-Lauf (dbgp-phpunit.int.test.ts) — PHPUnit führt den Test aus → ruft den Code-under-test → Breakpoint hält drin mit echten Args ($a=1,$b=2). Pest ist phpunit-basiert (gleicher Weg). phpunit-Phar aus jakzal/phpqa, ausgeführt unter thecodingmachine/php 8.4+xdebug (PHPUnit 13 braucht PHP≥8.4.1). Vitest/Jest = DAP/js-debug-Reuse über DapHost (netz-gated wie js-debug). -->
 - [ ] **JS-Debug** (Node) für den TS-Pfad.
 
 **Stolpersteine:** DBGp-Protokoll-Details; Pfad-Mapping bei verschachtelten Mounts;
