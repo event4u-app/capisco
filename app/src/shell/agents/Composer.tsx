@@ -18,6 +18,11 @@ import { agentSnapshot } from "@/mocks";
 import { pickFiles } from "@/lib/pick-files";
 import { getProviders } from "@/lib/desktop-shell";
 import { usePalette } from "@/shell/command-registry";
+import {
+  ALL_GROUPS,
+  CHAT_GROUPS,
+  makeCommandProvider,
+} from "@/lib/autocomplete/providers/command-provider";
 import { MentionAutocomplete, type MentionFieldElement } from "./MentionAutocomplete";
 import { budgetTone } from "./store";
 
@@ -178,6 +183,7 @@ export function Composer({
         group: "tools",
         icon: Plus,
         label: t("agents.composer.contextAdd"),
+        description: t("agents.composer.contextAddDesc"),
         run: addFilesViaPicker,
       }),
     [register, t, addFilesViaPicker],
@@ -203,6 +209,19 @@ export function Composer({
       run: onStop,
     });
   }, [register, t, running, onStop]);
+
+  // `/`-command provider — same catalog as Cmd-K (registered commands), filtered
+  // by mode. Memoized on `isChat` so the engine does not re-query each render.
+  const commandProvider = React.useMemo(
+    () =>
+      makeCommandProvider({
+        getRegistered: () => usePalette.getState().registered,
+        groupFilter: isChat ? CHAT_GROUPS : ALL_GROUPS,
+        onRun: () => setPanel(null), // a command runs → close any open composer panel
+      }),
+    [isChat],
+  );
+  const extraProviders = React.useMemo(() => [commandProvider], [commandProvider]);
 
   const ratio = budget > 0 ? used / budget : 0;
   const tone = budgetTone(used, budget); // ok | warn | crit
@@ -309,6 +328,7 @@ export function Composer({
           data-testid="composer-input"
           currentProject={currentProject}
           onOpenReference={onOpenReference}
+          extraProviders={extraProviders}
           placeholder={t("agents.composer.placeholder")}
           aria-label={t("agents.composer.placeholder")}
           onKeyDown={(e) => {
