@@ -44,6 +44,11 @@ const EXECUTION_PRIMITIVES: Record<string, ReadonlyArray<SideEffect>> = {
   // supervisor above (the scan matches `supervisor.spawn(` by method name). Read-
   // only language intelligence (completion/hover/diagnostics); no fs/net edge.
   "lsp/lsp-host.ts": ["process"],
+  // The DAP debug host (road-to-real-runtime P1). Like lsp-host.ts it does NOT
+  // touch child_process — it spawns the debug adapter ONLY through the allowlisted
+  // supervisor (the scan matches `supervisor.spawn(` by method name). DBGp/xdebug
+  // (dbgp.ts) is a node:net listener, not a spawn, so it needs no entry here.
+  "runtime/dap.ts": ["process"],
   // The PTY host (road-to-actually-works P6). Like lsp-host.ts it does NOT touch
   // child_process — it opens terminals ONLY through the allowlisted supervisor
   // (the scan matches `supervisor.spawn(` by method name). The real node-pty
