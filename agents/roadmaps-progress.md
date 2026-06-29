@@ -6,10 +6,10 @@
 
 ## Overall
 
-**66 / 188 steps done · 35%**
+**67 / 188 steps done · 36%**
 
 ```text
-██████████████░░░░░░░░░░░░░░░░░░░░░░░░░░   35%
+██████████████░░░░░░░░░░░░░░░░░░░░░░░░░░   36%
 ```
 
 ## Open roadmaps
@@ -20,7 +20,7 @@
 | 2 | [road-to-composer-intelligence.md](roadmaps/road-to-composer-intelligence.md) | 7 | 32 | 32 | 0 | 0 | 0 | ░░░░░░░░░░ 0% |
 | 3 | [road-to-desktop-release.md](roadmaps/road-to-desktop-release.md) | 6 | 14 | 14 | 0 | 0 | 0 | ░░░░░░░░░░ 0% |
 | 4 | [road-to-real-breadth.md](roadmaps/road-to-real-breadth.md) | 5 | 30 | 22 | 8 | 0 | 0 | ███░░░░░░░ 27% |
-| 5 | [road-to-real-runtime.md](roadmaps/road-to-real-runtime.md) | 5 | 29 | 7 | 22 | 0 | 0 | ████████░░ 76% |
+| 5 | [road-to-real-runtime.md](roadmaps/road-to-real-runtime.md) | 5 | 29 | 6 | 23 | 0 | 0 | ████████░░ 79% |
 | 6 | [road-to-sentry-observability.md](roadmaps/road-to-sentry-observability.md) | 5 | 29 | 29 | 0 | 0 | 0 | ░░░░░░░░░░ 0% |
 
 ---
@@ -84,11 +84,11 @@
 
 ### [road-to-real-runtime.md](roadmaps/road-to-real-runtime.md)
 
-**Road to Real Runtime — mächtiges Coden (Container · Debug · Quality · LSP · Recovery)** — 22 / 29 done (76%)
+**Road to Real Runtime — mächtiges Coden (Container · Debug · Quality · LSP · Recovery)** — 23 / 29 done (79%)
 
 | # | Phase | State | Open | Done | Deferred | Cancelled | % |
 |---|---|---|---:|---:|---:|---:|---:|
-| 0 | Worktree-Runtime + Container (Docker · Devcontainer · Traefik · ctop) | 🟡 in progress | 2 | 7 | 0 | 0 | 78% |
+| 0 | Worktree-Runtime + Container (Docker · Devcontainer · Traefik · ctop) | 🟡 in progress | 1 | 8 | 0 | 0 | 89% |
 | 1 | Debugging (DAP / xdebug) | ✅ done | 0 | 6 | 0 | 0 | 100% |
 | 2 | Quality real (Grounding) + Model-Routing-Signal | 🟡 in progress | 3 | 2 | 0 | 0 | 40% |
 | 3 | Advanced-LSP (Navigation jenseits Autocomplete) | ✅ done | 0 | 4 | 0 | 0 | 100% |
