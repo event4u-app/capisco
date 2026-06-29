@@ -25,6 +25,7 @@ import { registerBroker } from "../register-broker.ts";
 import { registerSession } from "../register-session.ts";
 import { registerQuality } from "../register-quality.ts";
 import { registerTaskForge } from "../register-task-forge.ts";
+import { registerSentry } from "../register-sentry.ts";
 
 export interface HarnessHandle {
   /**
@@ -62,6 +63,8 @@ export function startTsIpcHarness(): HarnessHandle {
   registerQuality(registry);
   // B6 — read-only Task/Forge fixture providers over the same protocol.
   registerTaskForge(registry);
+  // P0 — read-only Sentry fixture provider over the same protocol.
+  registerSentry(registry);
   const connection = new IpcConnection(sidecarSide, registry);
 
   return {
