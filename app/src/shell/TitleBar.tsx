@@ -1,6 +1,12 @@
 import { useTranslation } from "react-i18next";
 import { ChevronDown, Ellipsis, GitBranch, Play, Search, Settings, Sun } from "lucide-react";
 import { useTheme } from "@/lib/theme";
+import {
+  closeWindow,
+  isTauri,
+  minimizeWindow,
+  toggleMaximizeWindow,
+} from "@/lib/desktop/window-controls";
 import { usePalette } from "./command-registry";
 import { ProjectSwitcher } from "./ProjectSwitcher";
 
@@ -9,17 +15,50 @@ import { ProjectSwitcher } from "./ProjectSwitcher";
  * classes (`.titlebar`, `.tb-traffic`/`.tl`, `.tb-mark`, `.tb-chip`, `.tb-ico`)
  * are verbatim; styling lives in capisco-composer.css. App wiring (theme
  * toggle, command palette, ProjectSwitcher) + the `titlebar` testid preserved.
+ *
+ * Desktop (Tauri, frameless): the bar is the window drag region and the traffic
+ * lights drive the real window (close/min/max). In the browser the lights stay
+ * decorative and `data-tauri-drag-region` is an inert attribute — visual 1:1.
  */
 export function TitleBar() {
   const { t } = useTranslation();
   const { toggle } = useTheme();
   const openPalette = usePalette((s) => s.toggle);
+  const desktop = isTauri();
   return (
-    <header className="titlebar" data-testid="titlebar">
-      <div className="tb-traffic" aria-hidden>
-        <span className="tl tl-r" />
-        <span className="tl tl-y" />
-        <span className="tl tl-g" />
+    <header className="titlebar" data-testid="titlebar" data-tauri-drag-region>
+      <div className="tb-traffic" aria-hidden={!desktop}>
+        {desktop ? (
+          <>
+            <button
+              type="button"
+              className="tl tl-r"
+              title={t("titlebar.close")}
+              aria-label={t("titlebar.close")}
+              onClick={() => void closeWindow()}
+            />
+            <button
+              type="button"
+              className="tl tl-y"
+              title={t("titlebar.minimize")}
+              aria-label={t("titlebar.minimize")}
+              onClick={() => void minimizeWindow()}
+            />
+            <button
+              type="button"
+              className="tl tl-g"
+              title={t("titlebar.maximize")}
+              aria-label={t("titlebar.maximize")}
+              onClick={() => void toggleMaximizeWindow()}
+            />
+          </>
+        ) : (
+          <>
+            <span className="tl tl-r" />
+            <span className="tl tl-y" />
+            <span className="tl tl-g" />
+          </>
+        )}
       </div>
       <ProjectSwitcher current="capisco" />
       <button type="button" className="tb-chip tb-branch" title={t("titlebar.branch")}>

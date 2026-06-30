@@ -13,7 +13,10 @@
     "search": "Search",
     "more": "More",
     "settings": "Settings",
-    "commandPalette": "Command palette"
+    "commandPalette": "Command palette",
+    "close": "Close window",
+    "minimize": "Minimize window",
+    "maximize": "Maximize window"
   },
   "projectSwitcher": {
     "recent": "Recent projects",
