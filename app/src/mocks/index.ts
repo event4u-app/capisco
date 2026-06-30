@@ -31,3 +31,4 @@ export { mockWorktreeProvider } from "./worktree";
 export { mockSessionStore, mockTodoProvider } from "./session";
 export { mockIngestProvider } from "./ingest";
 export { mockRevertProvider } from "./revert";
+export { sentrySnapshot, mockSentryProvider } from "./sentry";

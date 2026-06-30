@@ -31,6 +31,7 @@ import type {
   ProjectFsProvider,
   RecentProjectsProvider,
   RevertProvider,
+  SentryReadProvider,
   SessionStore,
   ShadowStore,
   SignalProvider,
@@ -70,6 +71,9 @@ export interface ProviderBundle {
   /** Code-hunk revert (composer-context-runtime P4) — broker-gated, git-authoritative
    * `checkout -- <path>`; real over the bridge, deterministic mock in browser. */
   revert: RevertProvider;
+  /** Sentry observability (road-to-sentry-observability P0) — issues / crons /
+   * stats / alert rules; fixture-backed read provider, real adapter deferred. */
+  sentry: SentryReadProvider;
 }
 
 /**
@@ -124,5 +128,6 @@ export function createIpcProviders(client: SidecarClient): ProviderBundle {
     todo: rpcProxy<TodoProvider>(client, "todo"),
     ingest: rpcProxy<IngestProvider>(client, "ingest"),
     revert: rpcProxy<RevertProvider>(client, "revert"),
+    sentry: rpcProxy<SentryReadProvider>(client, "sentry"),
   };
 }

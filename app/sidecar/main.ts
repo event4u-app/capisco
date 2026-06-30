@@ -24,6 +24,7 @@ import { readRealAcpEnv } from "./acp/real-acp-config.ts";
 import { PROVIDER_IDS } from "./register-mocks.ts";
 import { registerQuality } from "./register-quality.ts";
 import { registerTaskForge } from "./register-task-forge.ts";
+import { registerSentry } from "./register-sentry.ts";
 import { registerProvision } from "./register-provision.ts";
 import { BackendSelection } from "./acp/backend-selection.ts";
 import { registerLsp } from "./register-lsp.ts";
@@ -149,6 +150,10 @@ export function registerAllProviders(
   // (its external status write is broker-gated, not RPC-fired). Live tokens +
   // bidirectional sync deferred.
   registerTaskForge(registry);
+  // P0 — read-only Sentry provider from recorded fixtures: issues / crons /
+  // performance stats / alert rules. Live API tokens + write surface (resolve /
+  // ignore / assign) deferred.
+  registerSentry(registry);
   // B8 — backend detection (read-only `which`/`--version` probe) + broker-gated
   // install. `provision.detect` returns the structured agent-backend catalog so
   // the AgentSettings UI can offer a low-friction install/use flow. The install

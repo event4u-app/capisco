@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-export type WorkspaceMode = "agents" | "chat" | "editor" | "git" | "tasks" | "diff";
+export type WorkspaceMode = "agents" | "chat" | "editor" | "git" | "tasks" | "sentry" | "diff";
 
 /** The four dockable rail groups. The terminal toggle is itself a draggable
  * item (`TERMINAL_ID`) that lives in one of the left groups, so its position

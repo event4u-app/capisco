@@ -2,6 +2,7 @@ import * as React from "react";
 import { useTranslation } from "react-i18next";
 import {
   Bot,
+  Bug,
   GitGraph,
   Kanban,
   MessageSquare,
@@ -21,6 +22,7 @@ const MODES: { id: WorkspaceMode; icon: LucideIcon; labelKey: string }[] = [
   { id: "editor", icon: SquareCode, labelKey: "mode.editor" },
   { id: "git", icon: GitGraph, labelKey: "mode.git" },
   { id: "tasks", icon: Kanban, labelKey: "mode.tasks" },
+  { id: "sentry", icon: Bug, labelKey: "mode.sentry" },
 ];
 
 /**
