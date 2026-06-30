@@ -15,6 +15,8 @@ import type {
   PrChecks,
   PullRequest,
   ReviewState,
+  SignalItem,
+  SignalSeverity,
   WhoseTurnEntry,
 } from "@/contracts";
 import { ghMe, ghPrList, ghRepo } from "./gh-exec.ts";
@@ -154,4 +156,36 @@ export async function createRealForgeProvider(opts: {
   if (!repo) throw new Error("no GitHub repo resolved — pass { repo } or run inside a gh-tracked checkout");
   const me = await ghMe();
   return new RealForgeProvider({ repo, me, staleThresholdDays: opts.staleThresholdDays });
+}
+
+/** Pure: a PR's check/review state → shared-rail severity. */
+function prSeverity(pr: PullRequest): SignalSeverity {
+  if (pr.checks === "failing") return "warning";
+  if (pr.checks === "pending") return "waiting";
+  if (pr.requested === true) return "waiting"; // a review is waiting on me
+  return "success";
+}
+
+/** Pure: a PR's state phrase for the signal subtitle. */
+function prState(pr: PullRequest): string {
+  if (pr.checks === "failing") return "checks failing";
+  if (pr.checks === "pending") return "checks pending";
+  if (pr.requested === true) return "review requested";
+  return "checks passing";
+}
+
+/** Pure: one PR → a shared-rail SignalItem (source `pr`). */
+export function prToSignal(pr: PullRequest): SignalItem {
+  return {
+    id: `pr:${pr.num}`,
+    sev: prSeverity(pr),
+    source: "pr",
+    title: `#${pr.num} ${pr.title}`,
+    sub: `${pr.author} · ${pr.branch} · ${prState(pr)} · ${pr.days}d`,
+  };
+}
+
+/** Pure: open PRs → SignalItems (the §5.2 PR fold). */
+export function prsToSignals(prs: readonly PullRequest[]): SignalItem[] {
+  return prs.map(prToSignal);
 }

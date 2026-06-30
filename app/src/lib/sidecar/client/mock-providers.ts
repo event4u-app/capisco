@@ -13,6 +13,7 @@ import {
   mockGitProvider,
   mockIngestProvider,
   mockProjectFsProvider,
+  mockQualityProvider,
   mockRecentProjects,
   mockRevertProvider,
   mockSentryProvider,
@@ -20,6 +21,7 @@ import {
   mockShadowStore,
   mockSignalProvider,
   mockTasksProvider,
+  mockTerminalProvider,
   mockTodoProvider,
   mockWorkspaceProvider,
   mockWorktreeProvider,
@@ -33,6 +35,12 @@ const mockLsp: LspProvider = {
   open: () => Promise.resolve(),
   completion: () => Promise.resolve([]),
   hover: () => Promise.resolve(null),
+  definition: () => Promise.resolve([]),
+  references: () => Promise.resolve([]),
+  rename: () => Promise.resolve({ changes: [] }),
+  documentSymbol: () => Promise.resolve([]),
+  inlayHints: () => Promise.resolve([]),
+  foldingRanges: () => Promise.resolve([]),
 };
 
 /**
@@ -63,6 +71,8 @@ export function createMockProviders(): ProviderBundle {
     agent: mockAgentProvider,
     agentBackend: mockAgentBackend,
     lsp: mockLsp,
+    terminal: mockTerminalProvider,
+    quality: mockQualityProvider,
     workspace: mockWorkspaceProvider,
     editor: mockEditorProvider,
     git: mockGitProvider,

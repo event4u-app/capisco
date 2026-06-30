@@ -50,6 +50,24 @@ export function dockerExec(args: readonly string[]): Promise<string> {
   });
 }
 
+/** A container's lifecycle state, or `absent` when no such container exists. */
+export type ContainerLifecycleState = "running" | "exited" | "created" | "paused" | "absent";
+
+/**
+ * Read a container's lifecycle state via `docker inspect` (read-only). An absent
+ * container (inspect errors) maps to `absent` — the health signal a crash/kill
+ * recovery flow watches for (road-to-real-runtime P4).
+ */
+export async function containerStatus(containerId: string): Promise<ContainerLifecycleState> {
+  try {
+    const out = (await dockerExec(["inspect", "-f", "{{.State.Status}}", containerId])).trim();
+    if (out === "running" || out === "exited" || out === "created" || out === "paused") return out;
+    return "absent";
+  } catch {
+    return "absent"; // no such container
+  }
+}
+
 /** Parse NDJSON (one JSON object per line) — the shape of `docker … --format json`. */
 export function parseNdjson<T = Record<string, unknown>>(text: string): T[] {
   return text

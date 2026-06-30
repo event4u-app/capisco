@@ -34,6 +34,12 @@ export function encode(msg: JsonRpcMessage): string {
 export class LspDecoder {
   #buf = "";
 
+  /** Drop the buffered partial frame — used when the server connection is torn
+   *  down (crash-restart): a half-message from the dead process is garbage. */
+  reset(): void {
+    this.#buf = "";
+  }
+
   push(chunk: string): JsonRpcMessage[] {
     this.#buf += chunk;
     const out: JsonRpcMessage[] = [];

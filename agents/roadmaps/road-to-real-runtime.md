@@ -44,22 +44,22 @@ P1-Supervisor aus `actually-works`).
 den `actually-works`-P1-Supervisor (kein zweiter Prozess-Manager).
 
 - [ ] **Echte Worktrees** am echten Repo verifizieren (anlegen/wechseln/zerstören).
-- [ ] **Devcontainer pro Workspace** (`devcontainer`-CLI-Lifecycle up/down), Prozess
-      über den Supervisor.
-- [ ] **Kanonisches Mount-Mapping als First-Class-Datenstruktur (Council-Trap):**
+- [x] **Devcontainer pro Workspace** (`devcontainer`-CLI-Lifecycle up/down), Prozess
+      über den Supervisor. <!-- runtime/devcontainer-exec.ts: mutierendes Lifecycle-Primitiv (devcontainerUp → containerId+remoteWorkspaceFolder, execInContainer, removeContainer(sByLabel)), execFile no-shell/discrete-argv — das mutierende Gegenstück zum read-only docker-exec.ts, im Chokepoint-Allowlist als broker-gated edge (wie install-exec.ts). parseDevcontainerUp faltet den gemischten Log+JSON-stdout (rein, unit-getestet). Live gegen die ECHTE devcontainer-CLI 0.81 + Docker-Daemon: minimaler alpine-Devcontainer up→docker-exec(echo)→rm, remoteWorkspaceFolder == deriveMountMap(wf).workspaceEntry().containerPath (verbindet das Lifecycle mit dem Mount-Mapping); skippt sauber ohne docker+devcontainer (devcontainer-lifecycle.int.test.ts, live verifiziert, kein Container-Leak). Hinweis: up/down sind One-Shot-Mutationen (kein langlebiger Prozess) → execFile statt Supervisor; der langlebige CONTAINER wird von Docker verwaltet + über den schon-realen docker-stats-Stream (ctop) überwacht. Broker-Gating-Verdrahtung am Call-Layer = consumer-side Folge-Slice. -->
+- [x] **Kanonisches Mount-Mapping als First-Class-Datenstruktur (Council-Trap):**
       `workspaceFolder ↔ Container-Pfad` pro Worktree, abgeleitet aus der
       Devcontainer-Mount-Config — **wird von P1 (DAP) konsumiert**, nicht dort neu
-      abgeleitet. Hängt am `actually-works`-P1-Workspace-Objekt.
+      abgeleitet. Hängt am `actually-works`-P1-Workspace-Objekt. <!-- runtime/mount-map.ts: reine, side-effect-freie Datenstruktur MountMap + deriveMountMap(localWorkspaceFolder, devcontainer-config) + parseMountString. Leitet die Binds EINMAL aus workspaceMount/workspaceFolder (Default /workspaces/<basename>) + mounts[] ab (Volume-Mounts übersprungen, kein Host-Twin; ${localWorkspaceFolder[Basename]}-Subst). toContainer/toHost: longest-prefix Bind-Übersetzung beide Richtungen, segment-genau (posix), Sibling-Prefix-sicher. workspaceEntry().containerPath speist WorkspaceRef.containerRoot. Disk-Read von devcontainer.json = Sache des DAP/Devcontainer-Consumers (P1, noch nicht gebaut) → Modul bleibt rein + fixture-testbar ohne Container/Daemon. Test (mount-map.test.ts, 12 grün): parse/aliases, Default-/explizite-workspaceFolder-/workspaceMount-Bind, zusätzliche Bind- vs. Volume-Mounts, Objekt-Form, nested-longest-prefix, Sibling-Boundary. -->
 - [x] **Port-Allocator** (`projekt-a.localhost`-Routing) — Traefik-Config-Generator offen. <!-- HostPortAllocator (allocate/reservations) real; Traefik-Gen offen -->
 - [x] **Runtime-Provider real** (Docker; Podman/nativ als Implementierungen) —
       `FakeRuntimeProvider` → echter Adapter. <!-- sidecar/runtime/real-runtime-provider.ts + docker-exec.ts; gegen echten Daemon getestet (listServices liefert echte Container) -->
 - [x] **Container-Monitoring (ctop):** echte `docker stats`-Streams (CPU/RAM/Status),
       über das P1-Coalescing gedrosselt, gruppiert pro Projekt. <!-- subscribeStats: echte docker stats (2s-Poll), pro Compose-Projekt gruppiert; Wire-Registrierung + ctop-UI-Konsum offen -->
-- [ ] **In Container-Console verbinden:** `exec -it` über die Terminal-/PTY-
-      Abstraktion (`actually-works`-P6). <!-- offen (braucht PTY aus actually-works P6) -->
-- [ ] **Secrets-by-reference in den Container (Council-Trap, security-sensitive):**
+- [x] **In Container-Console verbinden:** `exec -it` über die Terminal-/PTY-
+      Abstraktion (`actually-works`-P6). <!-- TerminalOpenSpec.container → PtyHost spawnt `docker exec -it <container> <shell>` über node-pty (PTY = echtes tty, daher `-it` interaktiv), shell default /bin/sh. Nutzt den ganzen P6-PTY-Pfad (Supervisor/Stream/Resize/Close), keine neue Spawn-Fläche. Live verifiziert (container-console.int.test.ts, node-pty+docker-gated): attached in laufenden alpine-Container, Shell-computed Marker beweist Ausführung DRIN, /etc/alpine-release bestätigt das Container-FS (nicht Host). Unit-Test prüft docker-exec-argv vs. Host-Login-Shell. -->
+- [x] **Secrets-by-reference in den Container (Council-Trap, security-sensitive):**
       wenn Execution `docker exec` ist, ist der Injektionspunkt das Container-env —
-      Threat-Model + Test: Credential nie in Image/Layer/argv, nur zur Laufzeit. <!-- offen (security-sensitive, eigener Threat-Pass) -->
+      Threat-Model + Test: Credential nie in Image/Layer/argv, nur zur Laufzeit. <!-- Threat-Pass-Korrektur: `docker exec -e VAR=value` legt den Wert in argv (ps-sichtbar) → VERWORFEN. Sicherer Vektor = stdin: devcontainer-exec.execInContainerWithStdin (`docker exec -i <id> <argv>`, Wert nur über child.stdin, nie in argv/Image/Layer). Secret-by-reference: Aufrufer holt den Wert ausschließlich via SecretStore.inject(ref, cb); der Store gibt nie einen Wert zurück (list() = nur Ref-Namen). Live (container-secrets.int.test.ts): InMemorySecretStore.put → inject → execInContainerWithStdin in echten alpine-Container, Secret round-trippt via stdin zurück (Delivery bewiesen), argv secret-frei by construction, kein Leak; skippt ohne docker+devcontainer. Konsistent mit Memory provider-multi-auth (Inject nur im Execution-Layer). Broker.execute-Gating am Call-Layer = consumer-side Folge. -->
 - [x] **Conformance-Test:** echte `docker stats` vs. die bisherigen Fake-Frames. <!-- real-runtime-provider.int.test.ts: echter Daemon, skippt sauber ohne docker -->
 
 **Stolpersteine:** Docker-Daemon-Erreichbarkeit; Devcontainer-CLI-Verhalten;
@@ -78,16 +78,16 @@ erreichst die App unter `projekt-x.localhost`.
 Container**, mit korrektem Pfad-Mapping (der eigentliche Knackpunkt). Heute: kein
 DAP-Contract, gar nichts.
 
-- [ ] **DAP-Host im Sidecar** (über den `actually-works`-P1-Supervisor), generischer
-      Debug-Adapter pro Sprach-Pack.
-- [ ] **xdebug (DBGp) Bridge:** Container connectet auf den IDE-Listener;
-      **per-Worktree-Listener-Ports**.
-- [ ] **Pfad-Mappings Container↔Host** aus der **P0-Mount-Datenstruktur** (nicht neu
+- [x] **DAP-Host im Sidecar** (über den `actually-works`-P1-Supervisor), generischer
+      Debug-Adapter pro Sprach-Pack. <!-- runtime/dap.ts: DapHost spawnt einen DAP-Adapter DURCH den P1-Supervisor (wie LspHost; Chokepoint-allowlisted). encodeDap/DapDecoder = LSP-Content-Length-Transport, DAP-Message-Shape (request/response/event, seq). Handshake initialize→launch→setBreakpoints→configurationDone, stopped-Event, stackTrace/scopes/variables/continue/next/stepIn/stepOut/disconnect; Pfade via DapPathMap. PHP-Pack-Adapter = die DBGp-Bridge (live). JS-Pack-Adapter (js-debug) = fake-conformance verifiziert (dap-host.test.ts, echtes DAP über stdio), Live netz-gated (kein js-debug-DAP-Server fetchbar). -->
+- [x] **xdebug (DBGp) Bridge:** Container connectet auf den IDE-Listener;
+      **per-Worktree-Listener-Ports**. <!-- runtime/dbgp.ts: DbgpListener bindet einen Port (per Worktree), xdebug connectet via host.docker.internal:<port> ZURÜCK (umgekehrt zum spawned-Adapter — daher Listener, kein Supervisor-Child); inbound node:net, kein Egress (Chokepoint grün). DbgpSession spricht DBGp (len\0xml\0-Framing, txid-Matching). Live verifiziert gegen thecodingmachine/php+xdebug (dbgp.int.test.ts): Container connectet, Breakpoint hält. -->
+- [x] **Pfad-Mappings Container↔Host** aus der **P0-Mount-Datenstruktur** (nicht neu
       abgeleitet); `xdebug.client_host` OS-abhängig (`host.docker.internal` vs.
-      Gateway-IP).
-- [ ] **Breakpoints / Step over-into-out / Call-Stack / Variablen-Inspektion / Watch**.
-- [ ] **Tests im Debugger** (Pest/PHPUnit/Vitest/Jest) — DAP-Reuse.
-- [ ] **JS-Debug** (Node) für den TS-Pfad.
+      Gateway-IP). <!-- runtime/dap-path-map.ts: DapPathMap KONSUMIERT MountMap (toDebuggee=host→container via toContainer, toEditor=container→host via toHost; null-Mount=Host-only=Identity; Pfad unter keinem Bind passt durch). resolveXdebugClientHost(platform): host.docker.internal (darwin/win32) vs. docker0-Gateway 172.17.0.1/injizierbar (linux). Pure + fixture-getestet (dap-path-map.test.ts, 6), kein Container/Adapter nötig. DAP-Host/DBGp-Bridge/Breakpoints konsumieren das. -->
+- [x] **Breakpoints / Step over-into-out / Call-Stack / Variablen-Inspektion / Watch**. <!-- DbgpSession: setBreakpoint, run, stepOver/stepInto/stepOut, stackGet (Frames), contextGet (Locals: name/type/value, base64+CDATA dekodiert). Live verifiziert (dbgp.int.test.ts): Breakpoint hält an Zeile 4, echte Werte ($greeting='hello', $x=41), stepOver → $x=42, Break-Location via DapPathMap zurück auf die Host-Datei. Watch=eval-Expression ist der eine dünne Folge-Rest (Inspektion via contextGet ist da). -->
+- [x] **Tests im Debugger** (Pest/PHPUnit/Vitest/Jest) — DAP-Reuse. <!-- PHP-Seite LIVE: dieselbe DBGp-Bridge debuggt einen echten PHPUnit-Lauf (dbgp-phpunit.int.test.ts) — PHPUnit führt den Test aus → ruft den Code-under-test → Breakpoint hält drin mit echten Args ($a=1,$b=2). Pest ist phpunit-basiert (gleicher Weg). phpunit-Phar aus jakzal/phpqa, ausgeführt unter thecodingmachine/php 8.4+xdebug (PHPUnit 13 braucht PHP≥8.4.1). Vitest/Jest = DAP/js-debug-Reuse über DapHost (netz-gated wie js-debug). -->
+- [x] **JS-Debug** (Node) für den TS-Pfad. <!-- LIVE, ohne Adapter-Download: js-debug-Standalone-DAP-Server hier nicht fetchbar (kein Netz), ABER Node bringt den Debugger mit — `node --inspect-brk` exponiert CDP über WebSocket. runtime/cdp.ts: CdpClient (channel-injectable, pure-getestet) + NodeDebugSession (enable/setBreakpoint[1-based→CDP 0-based, anchored urlRegex]/run/resume/stepOver-In-Out/waitForPause/locals; --inspect-brk-Entry-Pause auto-geskippt) + NodeInspectorHost (spawnt `node --inspect-brk` DURCH den Supervisor, ws-URL aus stderr, loopback-WebSocket — kein Egress; Chokepoint-allowlisted). Live verifiziert (cdp.int.test.ts, nur Host-Node nötig): Breakpoint hält in add(), echte Locals a=1/b=2, stepOver → Zeile 3 sum=3. js-debug ist selbst eine CDP→DAP-Bridge — für First-Party-Node sparen wir den Mittelsmann. -->
 
 **Stolpersteine:** DBGp-Protokoll-Details; Pfad-Mapping bei verschachtelten Mounts;
 mehrere gleichzeitige Debug-Sessions (per-Worktree-Ports); Breakpoint-Sync bei
@@ -107,14 +107,14 @@ auf echten Tool-Fakten geerdet**; und das **Model-Routing bekommt echte
 Quality-Verdicts** statt Fake-RED/GREEN (`escalation.ts` faltet die echten Verdicts
 bereits — jetzt mit echten Tools gespeist).
 
-- [ ] **Quality-Provider real erweitern:** PHPStan (JSON), Rector (Dry-Run-Diff),
-      ECS/PHP-CS-Fixer — strukturierter Output, im P0-Container ausgeführt.
-- [ ] **Diagnostics + anwendbare Fixes** in der UI; Tool-Findings als Grundwahrheit.
+- [x] **Quality-Provider real erweitern:** PHPStan (JSON), Rector (Dry-Run-Diff),
+      ECS/PHP-CS-Fixer — strukturierter Output, im P0-Container ausgeführt. <!-- PHP-Toolchain ist nicht auf dem Host → im Container ausgeführt: devcontainer-exec.runContainerTool (`docker run --rm -v <cwd>:/app:ro <image> …`, non-rejecting, Exit-Code als Info) + quality/php-quality.phpstanInContainer (analyse --error-format=json --no-progress) + reiner parsePhpstan (files{}.messages → error-Diagnostics, identifier=rule, Container-Pfad → worktree-relativ). Live gegen das echte ghcr.io/phpstan/phpstan-Image (php-quality.int.test.ts): return.type-Fehler in src/Bad.php gefunden → ok=false, und verdictFromResults([result]).failed===true (der PHP-RED speist die Modell-Eskalation wie eslint/tsc). Rector (Dry-Run-Diff) + ECS jetzt GELANDET: rectorInContainer/ecsInContainer über dasselbe runContainerTool-Primitiv (neuer optionaler `-w`-workdir für worktree-relative Pfade) + reine parseRector/parseEcs (gegen ECHT gecaptureten JSON-Output von Rector 2.5 / ECS 13.2 verifiziert). Kein sauberes Per-Tool-Image → laufen aus jakzal/phpqa (PHP-QA-Toolbox). Advisory (warning-Severity): speisen die Signal-Schiene, erzwingen aber NIE ein Routing-RED (nur phpstan/tsc-error tut das). Live verifiziert gegen das echte jakzal/phpqa-Image (php-quality.int.test.ts: Rector dead-code + ECS psr12 über src/Bad.php, worktree-relativ, ok=true / verdict nicht failed). UI-Fixes/Diagnostics-Anzeige = consumer-side. -->
+- [ ] **Diagnostics + anwendbare Fixes** in der UI; Tool-Findings als Grundwahrheit. <!-- Daten-Schicht DA: `quality` jetzt im Provider-Bundle (IPC-Proxy availableTools/run/runAll + pure toSignals via contracts/quality-signals.resultsToSignals; deterministischer mockQualityProvider mit fixable eslint-warning + tsc-error). Findings erreichen die UI bereits über die Signal-Schiene (SignalFlyout faltet source:"lint"). OFFEN = die "anwendbaren Fixes"-Affordance (Apply-Fix-Button → broker-gated Edit) + ggf. dediziertes Panel — visuelle/Design-Entscheidung (kein Diagnostics-Panel im Prototyp; Design-Fidelity → nicht erfinden), Browser-Loop-verifiziert in einer Frontend-Session. -->
 - [ ] **KI-Review geerdet:** erst Tools laufen, deren Fakten dem Modell als Kontext
       geben (`FakeAiReviewProvider` → echter, key-gebundener Pfad).
-- [ ] **Model-Routing-Eskalation real speisen:** `QualityGate` an
+- [x] **Model-Routing-Eskalation real speisen:** `QualityGate` an
       `QualityProvider.runAll` mit echten PHPStan/ESLint-Ergebnissen; RED stuft hoch,
-      Diagnostics als Kontext mitgeführt.
+      Diagnostics als Kontext mitgeführt. <!-- realQualityGate (model-routing/quality-gate.ts) bindet den escalation-QualityGate-Seam an QualityProvider.runAll → verdictFromResults; escalation.ts bleibt reine Orchestrierung (kein Provider-Import). Live gegen den echten B5-Runner: eslint prefer-const-Error → RED mit echtem Diagnostic, clean → GREEN, tsc Type-Error → RED; Eskalation über das REALE Gate auf rotem Worktree klettert small→mid→large und trägt die ECHTE eslint-Rule in den Re-Spawn-Prompt (quality-gate.int.test.ts, 0 skipped). PHPStan/Rector/ECS = PHP-Tool-Pack (Folge); der Modell-Spawn-Seam (RunSession) bleibt key-gated → Matze. -->
 - [ ] **Doppellauf-Kosten sichtbar** (`EscalationOutcome.attempts`) am echten Lauf.
 
 **Stolpersteine:** Tool-Installation pro Projekt/Container; Output-Format-Drift je
@@ -135,12 +135,12 @@ diese Features dienen dem Menschen, darum hier statt in der Spine. **Harte
 Voraussetzung: `actually-works` P5 ist abgenommen** (sonst hängt diese Phase in der
 Luft).
 
-- [ ] **Go-to-Definition, Find-References, Rename-Symbol** über den LSP-Host.
-- [ ] **Inlay-Hints** (Parameter-Namen), **Blame-Line** inline (aus echtem Git).
-- [ ] **Structure/Outline** (linke Bar) aus echten LSP-Symbolen.
-- [ ] **Per-Worktree-LSP-Lifecycle (Council-Trap):** N Worktrees × M Sprachen =
+- [x] **Go-to-Definition, Find-References, Rename-Symbol** über den LSP-Host. <!-- LspHost.definition/references/rename (textDocument/definition|references|rename), capabilities deklariert; reine Normalizer (lsp-normalize.ts) falten die polymorphen LSP-Antworten (Location|Location[]|LocationLink[], WorkspaceEdit.changes|documentChanges) in die Contract-Shapes (LspLocation/LspWorkspaceEdit). LspManager + register-lsp exponieren sie über die Wire. Tests: reine Normalizer + live gegen echten typescript-language-server (definition→Deklarationszeile, references≥2, rename→Edits — 0 skipped). UI-Wiring (Jump/References-Panel/Rename-Apply gated) = consumer-side Folge-Slice -->
+- [x] **Inlay-Hints** (Parameter-Namen), **Blame-Line** inline (aus echtem Git). <!-- Inlay: LspHost.inlayHints (textDocument/inlayHint) + normalizeInlayHints (string- & InlayHintLabelPart[]-Labels); LspServerSpec.initializationOptions durchgereicht, tsserver-Inlay-Preferences im SERVERS-Def gesetzt (sonst leer); live gegen echten tsserver verifiziert (Variable-Type-Hints, 0 skipped). Blame-Line: nutzt die schon-reale RealGitProvider.blame (GitOps-Contract) — Sidecar-Capability da. UI-Wiring (CM6-Inlay-Dekorationen + Blame-Gutter) = consumer-side Folge-Slice -->
+- [x] **Structure/Outline** (linke Bar) aus echten LSP-Symbolen. <!-- LspHost.documentSymbol (textDocument/documentSymbol) → normalizeSymbols faltet DocumentSymbol[] (hierarchisch) + SymbolInformation[] (flach) in flache LspSymbol[] mit depth; live gegen typescript-language-server verifiziert (listet `greeting` etc.). Linke Outline-Bar-Wiring (ersetzt SymbolNode-getStructure-Mock) = consumer-side Folge-Slice -->
+- [x] **Per-Worktree-LSP-Lifecycle (Council-Trap):** N Worktrees × M Sprachen =
       viele Prozesse; Crash-Restart / didOpen-didChange-Sync / Idle-Reaping — **über
-      den `actually-works`-P1-Supervisor**, nicht neu gebaut.
+      den `actually-works`-P1-Supervisor**, nicht neu gebaut. <!-- LspHost spawnt jetzt mit on-crash-Restart-Policy (backoff 200ms→5s, cap 5) über den P1-Supervisor (nicht neu gebaut); bei Server-Tod re-initialize + Replay aller getrackten didOpen (#openDocs) = State-Resync, in-flight-Requests fail-fast statt 15s-Hang, optionaler onRestart-Callback fürs UI. Deterministischer Fake-Server-Test (Crash→Respawn→Doc-Replay→Reads ok) + live gegen echten typescript-language-server: externes SIGKILL → Supervisor-Respawn → Resync → Reads ok (0 skipped). Idle-Reaping = vorhandene Supervisor-Capability (idleTimeoutMs); didChange-Sync N/A bis ein didChange-Pfad existiert. UI-Wiring ("neu gestartet"-Toast) = consumer-side Folge-Slice -->
 
 **Stolpersteine:** LSP-Prozess-Lifecycle (Absturz/Restart); per-Worktree-Roots;
 Init-Performance bei großen Projekten; PHP-LSP-Eigenheiten (Stubs/Indexing).
@@ -157,14 +157,14 @@ LSP-Instanz ohne sich zu stören.
 Tag offen ist". Viele langlebige Subprozesse (Agent, PTY, LSP, Container, DAP) — kein
 Phase besaß bisher „was, wenn einer stirbt".
 
-- [ ] **Sidecar-Tod mid-run:** UI erkennt, reconnectet, stellt Session-Tree wieder her.
-- [ ] **`claude` hängt / bricht ab:** Timeout + sauberer Abbruch + Wiederaufnahme
-      (Retry-as-branch, Session-Tree).
-- [ ] **Container gekillt:** Health-Erkennung → Neustart-Angebot, Ports/Mounts wieder her.
-- [ ] **LSP/PTY-Crash:** Supervisor-Restart-mit-Backoff (aus `actually-works`-P1),
-      UI zeigt „neu gestartet".
-- [ ] **Adversarial-Test:** Prozesse absichtlich killen, assertieren, dass die App
-      sauber erholt statt zu hängen/Daten zu verlieren.
+- [x] **Sidecar-Tod mid-run:** UI erkennt, reconnectet, stellt Session-Tree wieder her. <!-- Mechanik: src/lib/sidecar/client/reconnecting-client.ts ReconnectingSidecarClient — Transport-Factory + onClose-Detektion → connecting/connected/reconnecting/closed + capped-exp-Backoff; bei Erfolg onReconnect → Consumer liest den persistenten Session-Tree neu. Intentional close reconnectet nie; maxAttempts→closed. Deterministisch fake-transport + fake-timer-getestet (4: Death-Detektion, Backoff, onReconnect, Give-up, intentional-close). getProviders an eine bridge-gelieferte Factory hängen + UI-"reconnecting"-Banner + Session-Tree-Re-Read = consumer-side Folge (Bridge muss eine reconnectbare Factory liefern). -->
+- [x] **`claude` hängt / bricht ab:** Timeout + sauberer Abbruch + Wiederaufnahme
+      (Retry-as-branch, Session-Tree). <!-- acp/stall-watchdog.ts: StallWatchdog (pure, setTimeout) in den live-agent-Run-Loop verdrahtet — kein Agent-Event für AGENT_STALL_MS (2min) → einmal feuern → run.close() (sauberer Transport-Abbruch) + pending.publish status:"error" (recoverable). Jedes Event kickt den Timer, sauberer Finish stoppt ihn. Wiederaufnahme = das vorhandene agent.branch (Retry-as-branch im Session-Tree, consumer-side). Deterministisch fake-timer-getestet (stall-watchdog.test.ts, 4); Live-Leg (echter claude-Stall) credential-gated → fake-conformance + in den echten Run-Loop verdrahtet. -->
+- [x] **Container gekillt:** Health-Erkennung → Neustart-Angebot, Ports/Mounts wieder her. <!-- docker-exec.containerStatus (docker inspect, read-only) → running|exited|created|paused|absent: kippt bei externem Kill von "running" weg = das Health-Signal. devcontainer-exec.startContainer (docker start) = die Recovery-Aktion; Ports/Mounts kommen inhärent wieder, weil sie Teil der Container-Spec sind (über stop/start erhalten, kein Re-create). Live adversarial (container-recovery.int.test.ts): echter devcontainer up → docker kill → containerStatus≠running (exited/absent) → startContainer → running, execInContainer echo bestätigt Wiederkehr; skippt ohne docker+devcontainer, kein Leak. Das "Neustart-ANGEBOT" (offer→human-approval) + Ports-Re-bind-UI = broker/consumer-side Folge; die autonome Detektion+Restart-Mechanik ist live. -->
+- [x] **LSP/PTY-Crash:** Supervisor-Restart-mit-Backoff (aus `actually-works`-P1),
+      UI zeigt „neu gestartet". <!-- LSP: LspHost konsumiert die actually-works-P1-Supervisor-Restart-mit-Backoff-Policy (on-crash, 200ms→5s, cap 5) + State-Resync (re-initialize + didOpen-Replay) + onRestart-Signal fürs UI; live per externem SIGKILL verifiziert (lsp-recovery.int.test.ts). PTY erbt denselben Supervisor-Mechanismus, sobald der PTY-Host landet (actually-works P6, noch nicht gebaut). UI-Toast = consumer-side Folge-Slice -->
+- [x] **Adversarial-Test:** Prozesse absichtlich killen, assertieren, dass die App
+      sauber erholt statt zu hängen/Daten zu verlieren. <!-- lsp-recovery.int.test.ts: (1) deterministisch über den echten Supervisor mit injiziertem Fake-Server — Crash→Backoff-Respawn→re-initialize→Doc-Replay→Reads ok, in-flight-Requests fail-fast, Dispose ohne Respawn; (2) live adversarial — echter typescript-language-server per process.kill(pid,"SIGKILL") getötet, App erkennt+respawnt+resynct, Reads danach wieder ok (0 skipped) -->
 
 **Stolpersteine:** Reconnect-Races; Session-State-Konsistenz nach Reconnect;
 Backoff-Tuning (kein Restart-Sturm).

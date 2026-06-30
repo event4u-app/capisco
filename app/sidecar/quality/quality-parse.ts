@@ -10,7 +10,7 @@
  */
 
 import { realpathSync } from "node:fs";
-import { relative } from "node:path";
+import { posix, relative } from "node:path";
 import type { Diagnostic, QualityFix } from "@/contracts";
 
 /** Canonical (symlink-resolved) form of a path. Tools report the real path —
@@ -117,6 +117,59 @@ export function parseTsc(cwd: string, stdout: string): Diagnostic[] {
   return out;
 }
 
+// --- PHPStan (--error-format=json, run in a container) ----------------------
+
+interface PhpstanMessage {
+  message: string;
+  line?: number | null;
+  identifier?: string;
+  ignorable?: boolean;
+}
+interface PhpstanFile {
+  messages?: PhpstanMessage[];
+}
+interface PhpstanJson {
+  files?: Record<string, PhpstanFile>;
+  /** Non-file-specific errors (config, parse) — kept honest, attached to no file. */
+  errors?: string[];
+}
+
+/**
+ * Parse PHPStan `--error-format=json` stdout into diagnostics. PHPStan runs
+ * INSIDE the container (the PHP toolchain is not on the host), so its file paths
+ * are container paths under the mount root (e.g. `/app/src/X.php`); pass that
+ * `containerRoot` to relativise them back to worktree-relative. Every PHPStan
+ * message is error-severity; the `identifier` (e.g. `return.type`) is the rule.
+ */
+export function parsePhpstan(containerRoot: string, stdout: string): Diagnostic[] {
+  const text = stdout.trim();
+  if (!text) return [];
+  let parsed: PhpstanJson;
+  try {
+    parsed = JSON.parse(text) as PhpstanJson;
+  } catch {
+    return [];
+  }
+  const out: Diagnostic[] = [];
+  for (const [path, file] of Object.entries(parsed.files ?? {})) {
+    const relPath = path.startsWith("/") ? posix.relative(containerRoot, path) : path;
+    for (const m of file.messages ?? []) {
+      out.push({
+        tool: "phpstan",
+        file: relPath.startsWith("..") ? path : relPath,
+        line: typeof m.line === "number" ? m.line : undefined,
+        severity: "error",
+        rule: m.identifier,
+        message: m.message,
+      });
+    }
+  }
+  for (const e of parsed.errors ?? []) {
+    out.push({ tool: "phpstan", file: "", severity: "error", message: e });
+  }
+  return out;
+}
+
 // --- vitest (--reporter=json) -----------------------------------------------
 
 interface VitestAssertion {
@@ -171,6 +224,122 @@ export function parseVitest(cwd: string, stdout: string): Diagnostic[] {
         // First line of the failure message is the assertion (rest is the stack).
         message: msg.split("\n")[0].trim(),
       });
+    }
+  }
+  return out;
+}
+
+// --- rector (process --dry-run --output-format=json) ------------------------
+
+interface RectorFileDiff {
+  file: string;
+  diff?: string;
+  applied_rectors?: string[];
+}
+interface RectorJson {
+  totals?: { changed_files?: number; errors?: number };
+  file_diffs?: RectorFileDiff[];
+}
+
+/** Short Rector rule name from the FQCN (`Rector\DeadCode\…\FooRector` → `FooRector`). */
+function shortRule(fqcn: string): string {
+  const parts = fqcn.split("\\");
+  return parts[parts.length - 1] || fqcn;
+}
+
+/**
+ * Parse Rector `--output-format=json` (dry-run) into diagnostics — one per
+ * applied rector per file (advisory `warning`: a dry-run diff is a suggested
+ * modernization, never a hard error). Paths are already worktree-relative when
+ * Rector runs with cwd = the mount root (`-w`). Verified against Rector 2.5.
+ */
+export function parseRector(stdout: string): Diagnostic[] {
+  const text = stdout.trim();
+  if (!text) return [];
+  let parsed: RectorJson;
+  try {
+    parsed = JSON.parse(text) as RectorJson;
+  } catch {
+    return [];
+  }
+  const out: Diagnostic[] = [];
+  for (const fd of parsed.file_diffs ?? []) {
+    const rectors = fd.applied_rectors?.length ? fd.applied_rectors : ["Rector"];
+    for (const r of rectors) {
+      out.push({
+        tool: "rector",
+        file: fd.file,
+        severity: "warning",
+        rule: r,
+        message: `Rector: ${shortRule(r)} suggests a change`,
+        fix: { description: `Apply ${shortRule(r)}`, autoApplicable: true },
+      });
+    }
+  }
+  return out;
+}
+
+// --- ecs (check --output-format=json) ---------------------------------------
+
+interface EcsDiff {
+  diff?: string;
+  applied_checkers?: string[];
+}
+interface EcsError {
+  line?: number;
+  message?: string;
+  source_class?: string;
+}
+interface EcsFile {
+  errors?: EcsError[];
+  diffs?: EcsDiff[];
+}
+interface EcsJson {
+  totals?: { errors?: number; diffs?: number };
+  files?: Record<string, EcsFile>;
+}
+
+/**
+ * Parse ECS `--output-format=json` into diagnostics: non-fixable violations
+ * (`files[].errors[]`, with line + source_class) and auto-fixable reformats
+ * (`files[].diffs[].applied_checkers[]`). All `warning` severity — coding-style,
+ * not a logic error — so they inform the rail without forcing a routing RED.
+ * Paths are worktree-relative when ECS runs with cwd = the mount root (`-w`).
+ * Verified against EasyCodingStandard 13.2.
+ */
+export function parseEcs(stdout: string): Diagnostic[] {
+  const text = stdout.trim();
+  if (!text) return [];
+  let parsed: EcsJson;
+  try {
+    parsed = JSON.parse(text) as EcsJson;
+  } catch {
+    return [];
+  }
+  const out: Diagnostic[] = [];
+  for (const [file, entry] of Object.entries(parsed.files ?? {})) {
+    for (const e of entry.errors ?? []) {
+      out.push({
+        tool: "ecs",
+        file,
+        line: typeof e.line === "number" ? e.line : undefined,
+        severity: "warning",
+        rule: e.source_class,
+        message: e.message ?? "Coding-standard violation",
+      });
+    }
+    for (const d of entry.diffs ?? []) {
+      const checkers = d.applied_checkers?.length ? d.applied_checkers : ["ECS"];
+      for (const c of checkers) {
+        out.push({
+          tool: "ecs",
+          file,
+          severity: "warning",
+          rule: c,
+          message: `ECS: ${shortRule(c)} would reformat`,
+          fix: { description: `Apply ${shortRule(c)}`, autoApplicable: true },
+        });
+      }
     }
   }
   return out;

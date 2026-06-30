@@ -193,3 +193,64 @@ describe("ProcessSupervisor", () => {
     expect(sup.size).toBe(0);
   });
 });
+
+describe("ProcessSupervisor — health introspection (P3 observability)", () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  it("health() reports id / state / restarts for every supervised process", () => {
+    const { spawnFn } = spawnTracker();
+    const sup = new ProcessSupervisor({ spawnFn });
+    sup.spawn({ id: "lsp:ts", command: "tsserver", restart: "never" });
+    sup.spawn({ id: "pty:1", command: "bash", restart: "never" });
+
+    const health = sup.health();
+    expect(health.map((h) => h.id).sort()).toEqual(["lsp:ts", "pty:1"]);
+    expect(health.every((h) => h.state === "running")).toBe(true);
+    expect(health.every((h) => h.restarts === 0)).toBe(true);
+  });
+
+  it("subscribe fires a fresh snapshot on spawn, state change, and reap", () => {
+    const { spawnFn, children } = spawnTracker();
+    const sup = new ProcessSupervisor({ spawnFn });
+    const snapshots: number[] = [];
+    sup.subscribe((h) => snapshots.push(h.length));
+
+    const proc = sup.spawn({
+      id: "lsp:ts",
+      command: "tsserver",
+      restart: { mode: "on-crash", maxRestarts: 2, baseDelayMs: 100, maxDelayMs: 1000 },
+    });
+    expect(snapshots.at(-1)).toBe(1); // spawned → one running process
+
+    // Crash → restarting (a state transition fires a snapshot).
+    children[0].exit(1);
+    expect(proc.state).toBe("restarting");
+    vi.advanceTimersByTime(100);
+    expect(proc.state).toBe("running");
+    // The restart bumped the count surfaced in health.
+    expect(sup.health()[0].restarts).toBe(1);
+
+    // Reap → the process leaves the snapshot.
+    proc.kill();
+    expect(snapshots.at(-1)).toBe(0);
+  });
+
+  it("unsubscribe stops delivery; a throwing observer is isolated", () => {
+    const { spawnFn } = spawnTracker();
+    const sup = new ProcessSupervisor({ spawnFn });
+    const good: number[] = [];
+    sup.subscribe(() => {
+      throw new Error("observer blew up");
+    });
+    const off = sup.subscribe((h) => good.push(h.length));
+
+    sup.spawn({ id: "a", command: "x", restart: "never" }); // both observers fire; throw isolated
+    expect(good.at(-1)).toBe(1);
+
+    off();
+    sup.spawn({ id: "b", command: "x", restart: "never" });
+    expect(good.at(-1)).toBe(1); // unsubscribed — no further delivery
+    expect(sup.size).toBe(2); // the supervisor still works despite the throwing observer
+  });
+});

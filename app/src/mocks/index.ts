@@ -25,6 +25,8 @@ export {
   signalSnapshot,
 } from "./tooling";
 export { fakeRuntimeProvider, FakeRuntimeProvider, StubPortAllocator } from "./runtime";
+export { mockTerminalProvider } from "./terminal";
+export { mockQualityProvider } from "./quality";
 export { mockShadowStore, createInMemoryShadowStore } from "./history";
 export { mockRecentProjects, createInMemoryRecentProjects, THIS_INSTANCE_ID } from "./recent";
 export { mockWorktreeProvider } from "./worktree";

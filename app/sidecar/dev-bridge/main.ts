@@ -33,8 +33,14 @@ import { createSecretStore } from "../broker/create-secret-store.ts";
 import { ghAvailable, ghRepo } from "../task-forge/gh-exec.ts";
 import { createRealForgeProvider } from "../task-forge/real-forge-provider.ts";
 import { createRealTaskProvider } from "../task-forge/real-task-provider.ts";
+import { createRealLinearProvider } from "../task-forge/real-linear-provider.ts";
 import { FORGE_PROVIDER_ID, TASK_PROVIDER_ID } from "../register-task-forge.ts";
 import { createRealSentryProvider } from "../observability/real-sentry-provider.ts";
+import { servicesToSignals } from "../runtime/real-runtime-provider.ts";
+import { prsToSignals } from "../task-forge/real-forge-provider.ts";
+import { RealSignalProvider } from "../observability/real-signal-provider.ts";
+import { PROVIDER_IDS } from "../register-mocks.ts";
+import type { ForgeProvider, RuntimeProvider, SentryProvider } from "@/contracts";
 import { registerDevWorkspace } from "../register-dev-workspace.ts";
 import { isWebSocketUpgrade, WsServerTransport } from "./ws-server-transport.ts";
 
@@ -97,9 +103,20 @@ export async function buildDevRegistry(repo?: string): Promise<ProviderRegistry>
   // (so `task dev:web` auto-wires Jira without re-exporting env each run).
   const cfg = (k: string): string | undefined =>
     secrets.has(k) ? secrets.inject(k, (v) => v) : undefined;
+  // Two TaskProvider backends share TASK_PROVIDER_ID: Jira (default) and Linear.
+  // `task-backend` (env/store: "jira" | "linear") picks which one wins when both
+  // are configured; absent → Jira, the original behaviour. Linear needs only a
+  // `linear-token` (single SaaS endpoint, personal key — no URL/email).
+  const taskBackend = (process.env.TASK_BACKEND ?? cfg("task-backend"))?.toLowerCase();
   const jiraUrl = process.env.JIRA_BASE_URL ?? cfg("jira-base-url");
   const jiraEmail = process.env.JIRA_EMAIL ?? cfg("jira-email");
-  if (jiraUrl && jiraEmail && secrets.has("jira-token")) {
+  if (taskBackend === "linear" && secrets.has("linear-token")) {
+    try {
+      registry.replace(TASK_PROVIDER_ID, (await createRealLinearProvider({ secrets })) as never);
+    } catch {
+      /* keep the fixture task provider on any Linear error */
+    }
+  } else if (jiraUrl && jiraEmail && secrets.has("jira-token")) {
     try {
       registry.replace(
         TASK_PROVIDER_ID,
@@ -126,6 +143,35 @@ export async function buildDevRegistry(repo?: string): Promise<ProviderRegistry>
       /* no sentry provider on any error */
     }
   }
+  // Shared signal rail (§5.2): fold the live PR / container / observability
+  // providers onto ONE SignalItem rail, replacing the mock. Sources pull from the
+  // registry at call time, so the rail reflects whatever real/fixture providers
+  // are registered now (real GitHub forge when gh is authed, real Sentry when
+  // org+token are set, the runtime services snapshot). A missing/erroring source
+  // contributes nothing — it never blanks the rail.
+  const forgeFor = (): ForgeProvider | undefined =>
+    registry.get(FORGE_PROVIDER_ID) as unknown as ForgeProvider | undefined;
+  const runtimeFor = (): RuntimeProvider | undefined =>
+    registry.get(PROVIDER_IDS.runtime) as unknown as RuntimeProvider | undefined;
+  const sentryFor = (): SentryProvider | undefined =>
+    registry.get("sentry") as unknown as SentryProvider | undefined;
+  registry.replace(
+    PROVIDER_IDS.signal,
+    new RealSignalProvider({
+      pr: async () => {
+        const f = forgeFor();
+        return f ? prsToSignals(await f.listPullRequests()) : [];
+      },
+      container: async () => {
+        const r = runtimeFor();
+        return r ? servicesToSignals(await r.listServices()) : [];
+      },
+      observability: async () => {
+        const s = sentryFor();
+        return s ? s.toSignals(await s.listIssues()) : [];
+      },
+    }) as never,
+  );
   return registry;
 }
 

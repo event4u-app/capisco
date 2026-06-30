@@ -1,31 +1,160 @@
 import * as React from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, SplitSquareHorizontal, SquareTerminal, Trash2, X } from "lucide-react";
+import { Terminal as Xterm } from "@xterm/xterm";
+import { FitAddon } from "@xterm/addon-fit";
 import { Icon } from "@/components/icon";
 import { useReducedMotion } from "@/lib/use-reduced-motion";
+import { getProviders } from "@/lib/desktop-shell";
+import { useOpenProject } from "@/shell/open-project-store";
+import { useWorktrees } from "@/shell/worktree-store";
 import { useLayout } from "./store";
 
 interface TermTab {
   id: string;
   label: string;
+  /** PTY ids shown side-by-side in this tab (1 normally, 2 when split). */
+  panes: string[];
 }
 
-/** Deterministic terminal transcript (no Date.now / Math.random). */
-const LINES: { kind: "cmd" | "dim" | "ok"; text: string }[] = [
-  { kind: "cmd", text: "~/dev/capisco ❯ pnpm test core/broker" },
-  { kind: "dim", text: "$ vitest run src/core/broker.test.ts" },
-  { kind: "ok", text: "broker · grants scoped capability once (4 ms)" },
-  { kind: "ok", text: "broker · denies revoked principal (2 ms)" },
-  { kind: "ok", text: "broker · escalates to prompt on unknown scope (6 ms)" },
-  { kind: "dim", text: "Test Files  1 passed (1)" },
-  { kind: "ok", text: "3 passed · 312ms" },
+const INITIAL_TABS: TermTab[] = [
+  { id: "local", label: "Local", panes: ["local"] },
+  { id: "py2ts", label: "Py2Ts", panes: ["py2ts"] },
+  { id: "evidence", label: "Evidence", panes: ["evidence"] },
 ];
 
-const INITIAL_TABS: TermTab[] = [
-  { id: "local", label: "Local" },
-  { id: "py2ts", label: "Py2Ts" },
-  { id: "evidence", label: "Evidence" },
-];
+/** Read an xterm theme from the design-system CSS vars so it tracks light/dark. */
+function readXtermTheme(el: HTMLElement): Record<string, string> {
+  const cs = getComputedStyle(el);
+  const v = (name: string, fallback: string): string =>
+    cs.getPropertyValue(name).trim() || fallback;
+  const fg = v("--ds-text-primary", "#dfe1e5");
+  return {
+    background: v("--ds-surface-editor", "#1e1f22"),
+    foreground: fg,
+    cursor: v("--ds-accent", "#3fb6a8"),
+    cursorAccent: v("--ds-surface-editor", "#1e1f22"),
+    green: v("--ds-success", "#3e8c49"),
+    brightGreen: v("--ds-success", "#3e8c49"),
+  };
+}
+
+/**
+ * One real shell terminal (road-to-actually-works P6) — an xterm.js instance
+ * bound to the sidecar `terminal` provider for `id`. Subscribes BEFORE open to
+ * catch the shell's first prompt; pipes provider output → xterm and keystrokes
+ * → provider.write; propagates resize. The login shell runs in the active
+ * worktree (a real LOCAL terminal on desktop; the deterministic mock transcript
+ * in the browser). jsdom-safe: the xterm lifecycle is guarded so the unit-test
+ * render of the panel never throws (real layout only exists in a browser).
+ */
+function TerminalView({
+  id,
+  active,
+  reduced,
+}: {
+  id: string;
+  active: boolean;
+  reduced: boolean;
+}) {
+  const ref = React.useRef<HTMLDivElement>(null);
+  const fitRef = React.useRef<FitAddon | null>(null);
+  const termRef = React.useRef<Xterm | null>(null);
+
+  React.useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const term = getProviders().terminal;
+    // cwd snapshot at mount: active worktree → open project root → shell default.
+    const cwd =
+      useWorktrees.getState().activePath || useOpenProject.getState().project?.path || "";
+
+    let xterm: Xterm | undefined;
+    let off: (() => void) | undefined;
+    let dataSub: { dispose(): void } | undefined;
+    let ro: ResizeObserver | undefined;
+    try {
+      xterm = new Xterm({
+        cursorBlink: !reduced,
+        fontFamily:
+          getComputedStyle(el).getPropertyValue("--ds-font-mono").trim() || "monospace",
+        fontSize: 13,
+        theme: readXtermTheme(el),
+        scrollback: 5000,
+        convertEol: false,
+      });
+      const fit = new FitAddon();
+      xterm.loadAddon(fit);
+      xterm.open(el);
+      fitRef.current = fit;
+      termRef.current = xterm;
+
+      // Subscribe BEFORE open so the shell's first output (the prompt) is caught.
+      off = term.subscribe(id, (event) => {
+        if (event.kind === "data") xterm?.write(event.data);
+        else
+          xterm?.write(
+            `\r\n\x1b[2m[process exited${event.exitCode != null ? ` (${event.exitCode})` : ""}]\x1b[0m\r\n`,
+          );
+      });
+      dataSub = xterm.onData((d) => void term.write(id, d));
+
+      const safeFit = (): void => {
+        try {
+          fit.fit();
+          if (xterm) void term.resize(id, xterm.cols, xterm.rows);
+        } catch {
+          /* no real layout (jsdom / hidden) — fit is a no-op */
+        }
+      };
+      safeFit();
+      void term.open({ id, cwd, cols: xterm.cols, rows: xterm.rows }).then(safeFit);
+
+      if (typeof ResizeObserver !== "undefined") {
+        ro = new ResizeObserver(safeFit);
+        ro.observe(el);
+      }
+    } catch {
+      // jsdom (no canvas/layout) or a transient xterm failure — degrade to an
+      // empty panel instead of crashing the surrounding shell render.
+    }
+
+    return () => {
+      ro?.disconnect();
+      dataSub?.dispose();
+      off?.();
+      void term.close(id);
+      xterm?.dispose();
+      termRef.current = null;
+      fitRef.current = null;
+    };
+    // Bind once per terminal id; worktree switches do not re-spawn an open shell.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
+
+  // On activation, re-fit to the now-visible size and focus for typing.
+  React.useEffect(() => {
+    if (!active) return;
+    try {
+      fitRef.current?.fit();
+      const x = termRef.current;
+      if (x) {
+        void getProviders().terminal.resize(id, x.cols, x.rows);
+        x.focus();
+      }
+    } catch {
+      /* not laid out yet */
+    }
+  }, [active, id]);
+
+  return (
+    <div
+      ref={ref}
+      data-testid={`term-view-${id}`}
+      className={"term-view h-full w-full" + (active ? "" : " hidden")}
+    />
+  );
+}
 
 /**
  * Bottom terminal panel — 1:1 port of the prototype `Terminal` (panels.jsx):
@@ -58,8 +187,20 @@ export function Terminal() {
   const addTab = () => {
     const id = `term-${counter}`;
     setCounter((c) => c + 1);
-    setTabs((ts) => [...ts, { id, label: t("terminal.session", { n: counter }) }]);
+    setTabs((ts) => [...ts, { id, label: t("terminal.session", { n: counter }), panes: [id] }]);
     setActive(id);
+  };
+
+  // Split the active tab into two side-by-side PTYs (toggle). The second pane is
+  // a distinct PTY id; mounting/unmounting its TerminalView spawns/reaps it.
+  const splitActive = () => {
+    setTabs((ts) =>
+      ts.map((x) =>
+        x.id === active
+          ? { ...x, panes: x.panes.length < 2 ? [...x.panes, `${x.id}:split`] : [x.panes[0]] }
+          : x,
+      ),
+    );
   };
 
   const startRename = (tab: TermTab) => {
@@ -85,6 +226,7 @@ export function Terminal() {
             aria-label={t("terminal.split")}
             title={t("terminal.split")}
             data-testid="term-split"
+            onClick={() => active && splitActive()}
             className="ph-act focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           >
             <Icon icon={SplitSquareHorizontal} size={13} />
@@ -166,21 +308,27 @@ export function Terminal() {
         </div>
       </div>
       <div data-testid="terminal-output" className="term-body">
-        {LINES.map((l, i) => (
-          <div key={i} className={"t-line" + (l.kind === "dim" ? " t-dim" : "")}>
-            {l.kind === "ok" && <span className="t-ok">✓ </span>}
-            {l.text}
-          </div>
-        ))}
-        <div className="t-line">
-          <span className="t-prompt">❯</span>{" "}
-          <span
-            data-testid="terminal-caret"
-            data-reduced={reduced || undefined}
-            className="t-caret"
-            aria-hidden
-          />
-        </div>
+        {tabs.map((tab) => {
+          const isActive = tab.id === active;
+          const split = tab.panes.length > 1;
+          return (
+            <div
+              key={tab.id}
+              data-testid={`term-tabview-${tab.id}`}
+              data-split={split || undefined}
+              className={"flex h-full w-full" + (isActive ? "" : " hidden")}
+            >
+              {tab.panes.map((paneId, i) => (
+                <div
+                  key={paneId}
+                  className={"min-w-0 flex-1" + (i > 0 ? " border-l border-border" : "")}
+                >
+                  <TerminalView id={paneId} active={isActive} reduced={reduced} />
+                </div>
+              ))}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

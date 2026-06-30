@@ -1,7 +1,53 @@
 import { describe, expect, it } from "vitest";
-import { parseEslint, parseTsc, parseVitest } from "../quality/quality-parse.ts";
+import {
+  parseEcs,
+  parseEslint,
+  parsePhpstan,
+  parseRector,
+  parseTsc,
+  parseVitest,
+} from "../quality/quality-parse.ts";
 
 const CWD = "/work/repo";
+
+describe("parsePhpstan", () => {
+  // The exact shape the phpstan image emits with --error-format=json.
+  const json = JSON.stringify({
+    totals: { errors: 0, file_errors: 1 },
+    files: {
+      "/app/src/Bad.php": {
+        errors: 1,
+        messages: [
+          { message: "Function add() should return string but returns int.", line: 3, ignorable: true, identifier: "return.type" },
+        ],
+      },
+    },
+    errors: [],
+  });
+
+  it("relativises container paths and maps messages to error diagnostics", () => {
+    expect(parsePhpstan("/app", json)).toEqual([
+      {
+        tool: "phpstan",
+        file: "src/Bad.php",
+        line: 3,
+        severity: "error",
+        rule: "return.type",
+        message: "Function add() should return string but returns int.",
+      },
+    ]);
+  });
+
+  it("keeps non-file-specific errors attached to no file", () => {
+    const out = parsePhpstan("/app", JSON.stringify({ files: {}, errors: ["Config invalid"] }));
+    expect(out).toEqual([{ tool: "phpstan", file: "", severity: "error", message: "Config invalid" }]);
+  });
+
+  it("returns [] for empty or junk output", () => {
+    expect(parsePhpstan("/app", "")).toEqual([]);
+    expect(parsePhpstan("/app", "{not json")).toEqual([]);
+  });
+});
 
 describe("parseEslint", () => {
   const stdout = JSON.stringify([
@@ -120,5 +166,85 @@ describe("parseVitest", () => {
   it("returns [] for empty or junk output", () => {
     expect(parseVitest(CWD, "")).toEqual([]);
     expect(parseVitest(CWD, "{not json")).toEqual([]);
+  });
+});
+
+// Fixtures below are REAL output captured from jakzal/phpqa (Rector 2.5.2 / ECS
+// 13.2.3) over a messy PHP fixture, run with cwd = mount root (`-w`) so paths
+// are worktree-relative. The live container run is in php-quality.int.test.ts.
+
+describe("parseRector", () => {
+  const json = JSON.stringify({
+    totals: { changed_files: 1, errors: 0 },
+    file_diffs: [
+      {
+        file: "src/Bad.php",
+        diff: "--- Original\n+++ New\n@@ -1,7 +1,9 @@\n <?php\n+declare(strict_types=1);\n",
+        applied_rectors: [
+          "Rector\\DeadCode\\Rector\\Assign\\RemoveUnusedVariableAssignRector",
+          "Rector\\TypeDeclaration\\Rector\\StmtsAwareInterface\\SafeDeclareStrictTypesRector",
+        ],
+      },
+    ],
+    changed_files: ["src/Bad.php"],
+  });
+
+  it("emits one advisory (warning) diagnostic per applied rector, worktree-relative", () => {
+    const out = parseRector(json);
+    expect(out).toHaveLength(2);
+    expect(out[0]).toMatchObject({
+      tool: "rector",
+      file: "src/Bad.php",
+      severity: "warning",
+      rule: "Rector\\DeadCode\\Rector\\Assign\\RemoveUnusedVariableAssignRector",
+    });
+    expect(out[0].message).toContain("RemoveUnusedVariableAssignRector");
+    expect(out[0].fix?.autoApplicable).toBe(true);
+  });
+
+  it("returns [] for no changes or junk", () => {
+    expect(parseRector(JSON.stringify({ totals: { changed_files: 0 }, file_diffs: [] }))).toEqual([]);
+    expect(parseRector("")).toEqual([]);
+    expect(parseRector("{not json")).toEqual([]);
+  });
+});
+
+describe("parseEcs", () => {
+  const json = JSON.stringify({
+    totals: { errors: 1, diffs: 1 },
+    files: {
+      "src/Bad.php": {
+        errors: [
+          { line: 5, message: "Line exceeds 120 chars", source_class: "PhpCsFixer\\Fixer\\Whitespace\\LineLengthFixer" },
+        ],
+        diffs: [
+          {
+            diff: "--- Original\n+++ New\n",
+            applied_checkers: [
+              "PhpCsFixer\\Fixer\\Basic\\BracesPositionFixer",
+              "PhpCsFixer\\Fixer\\ClassNotation\\ClassDefinitionFixer",
+            ],
+          },
+        ],
+      },
+    },
+  });
+
+  it("maps non-fixable errors (with line) + fixable diffs (per checker) to warnings", () => {
+    const out = parseEcs(json);
+    // 1 error + 2 applied_checkers = 3 diagnostics.
+    expect(out).toHaveLength(3);
+    const err = out.find((d) => d.line === 5);
+    expect(err).toMatchObject({ tool: "ecs", file: "src/Bad.php", severity: "warning" });
+    const fix = out.find((d) => d.rule === "PhpCsFixer\\Fixer\\Basic\\BracesPositionFixer");
+    expect(fix).toMatchObject({ tool: "ecs", file: "src/Bad.php", severity: "warning" });
+    expect(fix?.fix?.autoApplicable).toBe(true);
+    expect(fix?.message).toContain("BracesPositionFixer");
+  });
+
+  it("returns [] for clean or junk output", () => {
+    expect(parseEcs(JSON.stringify({ totals: { errors: 0, diffs: 0 }, files: {} }))).toEqual([]);
+    expect(parseEcs("")).toEqual([]);
+    expect(parseEcs("{not json")).toEqual([]);
   });
 });
