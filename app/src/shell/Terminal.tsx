@@ -26,7 +26,8 @@ const INITIAL_TABS: TermTab[] = [
 /** Read an xterm theme from the design-system CSS vars so it tracks light/dark. */
 function readXtermTheme(el: HTMLElement): Record<string, string> {
   const cs = getComputedStyle(el);
-  const v = (name: string, fallback: string): string => cs.getPropertyValue(name).trim() || fallback;
+  const v = (name: string, fallback: string): string =>
+    cs.getPropertyValue(name).trim() || fallback;
   const fg = v("--ds-text-primary", "#dfe1e5");
   return {
     background: v("--ds-surface-editor", "#1e1f22"),
@@ -47,7 +48,15 @@ function readXtermTheme(el: HTMLElement): Record<string, string> {
  * in the browser). jsdom-safe: the xterm lifecycle is guarded so the unit-test
  * render of the panel never throws (real layout only exists in a browser).
  */
-function TerminalView({ id, active, reduced }: { id: string; active: boolean; reduced: boolean }) {
+function TerminalView({
+  id,
+  active,
+  reduced,
+}: {
+  id: string;
+  active: boolean;
+  reduced: boolean;
+}) {
   const ref = React.useRef<HTMLDivElement>(null);
   const fitRef = React.useRef<FitAddon | null>(null);
   const termRef = React.useRef<Xterm | null>(null);
@@ -67,7 +76,8 @@ function TerminalView({ id, active, reduced }: { id: string; active: boolean; re
     try {
       xterm = new Xterm({
         cursorBlink: !reduced,
-        fontFamily: getComputedStyle(el).getPropertyValue("--ds-font-mono").trim() || "monospace",
+        fontFamily:
+          getComputedStyle(el).getPropertyValue("--ds-font-mono").trim() || "monospace",
         fontSize: 13,
         theme: readXtermTheme(el),
         scrollback: 5000,

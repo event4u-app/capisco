@@ -15,7 +15,12 @@
  * against at runtime.
  */
 
-import type { GrantAxis, PermissionDecision, PermissionRequest, Unsubscribe } from "./agents.ts";
+import type {
+  GrantAxis,
+  PermissionDecision,
+  PermissionRequest,
+  Unsubscribe,
+} from "./agents.ts";
 import type { WriteEscape } from "./tooling.ts";
 
 /**

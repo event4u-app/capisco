@@ -6,12 +6,7 @@
  * is the shared pure fold (identical to the real provider by construction).
  */
 
-import type {
-  Diagnostic,
-  QualityProvider,
-  QualityRunResult,
-  QualityToolId,
-} from "@/contracts";
+import type { Diagnostic, QualityProvider, QualityRunResult, QualityToolId } from "@/contracts";
 import { resultsToSignals } from "@/contracts/quality-signals";
 
 const TOOLS: QualityToolId[] = ["eslint", "tsc", "vitest"];
@@ -28,7 +23,11 @@ const SAMPLE: Record<string, Diagnostic[]> = {
       severity: "warning",
       rule: "prefer-const",
       message: "'count' is never reassigned. Use 'const' instead.",
-      fix: { description: "Replace 'let' with 'const'", autoApplicable: true, ruleId: "prefer-const" },
+      fix: {
+        description: "Replace 'let' with 'const'",
+        autoApplicable: true,
+        ruleId: "prefer-const",
+      },
     },
   ],
   tsc: [

@@ -24,7 +24,9 @@ describe("mockTerminalProvider", () => {
     await mockTerminalProvider.open({ id: "m2", cwd: "/repo" });
     await new Promise<void>((r) => queueMicrotask(r)); // let the replay flush
 
-    const data = events.filter((e) => e.kind === "data").map((e) => (e.kind === "data" ? e.data : ""));
+    const data = events
+      .filter((e) => e.kind === "data")
+      .map((e) => (e.kind === "data" ? e.data : ""));
     expect(data.join("")).toContain("pnpm test core/broker");
     off();
     await mockTerminalProvider.close("m2");

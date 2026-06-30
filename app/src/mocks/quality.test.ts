@@ -9,7 +9,11 @@ import { mockQualityProvider } from "./quality.ts";
  */
 describe("mockQualityProvider", () => {
   it("lists the TS-pack tools", async () => {
-    expect(await mockQualityProvider.availableTools("/repo")).toEqual(["eslint", "tsc", "vitest"]);
+    expect(await mockQualityProvider.availableTools("/repo")).toEqual([
+      "eslint",
+      "tsc",
+      "vitest",
+    ]);
   });
 
   it("run() returns a deterministic result per tool (eslint warning, tsc error)", async () => {
