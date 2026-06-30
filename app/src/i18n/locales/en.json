@@ -335,6 +335,7 @@
       "planMode": "Plan mode — reply without modifying code",
       "attach": "Attach files",
       "contextAdd": "Add file or folder as context",
+      "contextAddDesc": "Attach a file or folder to this message",
       "contextRemove": "Remove from context",
       "rulesWarn": "Loaded rules and workspace guidelines ({{chars}} chars) exceed the {{limit}} character limit. Remove some rules or shorten your guidelines.",
       "model": "Model",

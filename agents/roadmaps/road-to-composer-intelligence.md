@@ -23,11 +23,15 @@ wird der Composer zum Cockpit (Edit-&-Rerun als Branch, Message-Queue,
 Mid-Run-Steering); und eine abschaltbare ML-Schicht obendrauf rankt, vervollständigt
 und schärft Prompts — jeder Assist mit deterministischem Fallback.
 
-> **Implementierungsstand (2026-06-29, autonomer Lauf):** **Phase 0 vollständig
-> erledigt & verifiziert** (tsc, eslint 0 Fehler, prettier, 731 Vitest grün,
-> build, ladle:build) — das geteilte Autocomplete-Overlay-Primitiv steht: ein
-> Tokenizer für `@`+`/`, eine Provider-Engine, `@project` re-mounted ohne
-> Verhaltens-/DOM-Change, MRU + zuschaltbares Fuzzy. **P1–P6 bleiben offen.**
+> **Implementierungsstand (2026-06-29, autonomer Lauf):** **Phase 0 + Phase 1
+> erledigt & verifiziert** (tsc, eslint 0 Fehler, prettier, 741 Vitest grün,
+> build, ladle:build). P0: geteiltes Autocomplete-Overlay-Primitiv (ein
+> Tokenizer für `@`+`/`, Provider-Engine, `@project` re-mounted ohne
+> Verhaltens-/DOM-Change, MRU + zuschaltbares Fuzzy). P1: `/`-Slash-Commands
+> (gleiche `registered`-Quelle wie Cmd-K, Accept=ausführen, mode-aware Filter,
+> S10-Arg-Hints als additives Teil-Slice). **S9 (Saved-Prompts) → P4**, **S10-
+> Modell-Variante → P6**. **P2–P6 bleiben offen.** Als getrennte PRs (PR2 = P1,
+> stacked auf PR1=P0) — Council-Vorgabe: nicht bündeln.
 >
 > **AI-Council-Konvergenz (2026-06-29, 3 Sonnet-Lenses: Scope · Architektur ·
 > Critical-Challenger, einstimmig):** Erste autonome PR = **nur P0**; P1 nicht
@@ -163,10 +167,10 @@ genau der Keim des Claude-Code-Bugs „file @-mention bricht nach einem Slash-Co
 expliziten Wunsches und fast gratis, weil die Registry schon existiert und
 self-registriert; dazu Template-/Argument-Komfort obendrauf.
 
-- [ ] **`/`-Provider** liest **dieselbe** `usePalette.registered`-Map wie Cmd-K (eine Quelle der Wahrheit, kein zweiter driftender Katalog); Trigger nur am Zeilen-/Buffer-Anfang; Fuzzy-Filter beim Tippen; Accept → Command **ausführen** (Palette-Stil) **oder** Token einfügen, das der Send-Pfad expandiert. <!-- '/' nur am Start; '@' bleibt mid-word nach Whitespace — beides aus dem einen Tokenizer -->
-- [ ] **Mode-aware Filter** (`isChat`-Prädikat, schon durch `Composer` gefädelt): Chat-Modus blendet Tool-/Subagent-/Plan-Mode-Commands + Agent-Mentions aus; Agent-Modus zeigt alles. Dasselbe Prädikat filtert P3-Empty-State + P6 — muss **mit** `/` landen, damit die erste Command-Liste im Chat-Modus nie falsch ist.
-- [ ] **Argument-Hints + Ghost-Text für Commands (S10):** nach `/commit` Inline-Arg-Hint `/commit <message>` + 1-Zeilen-Beschreibung; Tab cyclet enumerierbare Arg-Werte. <!-- User-Vorgabe: rein lokale Hints IMMER an; nur eine token-verbrauchende Variante (Modell-Vervollständigung von Arg-Werten) per Setting abschaltbar. -->
-- [ ] **Saved Prompts / Prompt-Templates (S9):** wiederverwendbare Prompts mit `{{placeholder}}`, via `/` (teilt das eine Overlay) oder Chevron; **aus einer Historie wählbar**; pro Eintrag **Speichern** und **erneut ausführen** klickbar; „aktuellen Prompt als Template speichern". <!-- User-Vorgabe: Historie-Auswahl + Save/Re-Run-Buttons. Nutzt das P4-Prompt-Log als Historie-Quelle. -->
+- [x] **`/`-Provider** liest **dieselbe** `usePalette.registered`-Map wie Cmd-K; Trigger nur am Zeilen-/Buffer-Anfang; Accept → Command **ausführen** (Palette-Stil). <!-- done: lib/autocomplete/providers/command-provider.tsx (makeCommandProvider, triggerChar '/'). Accept = Token excidieren + `command.run()` als opt-in sideEffect (nie synchron → Mode-Switch sprengt den Composer nicht). Auf der P0-Engine; `extraProviders`-Prop an MentionAutocomplete + renderItem-Dispatch auf den aktiven Provider gefixt. Die Cmd-K-Builtins (mode/vis/pin/preset) liegen NICHT in `registered` → strukturell aus dem Mid-Compose-`/` ausgeschlossen; `composer:stop` explizit ausgeschlossen. -->
+- [x] **Mode-aware Filter** (`isChat`-Prädikat): Chat blendet Nicht-Tool-Commands aus; Agent zeigt alles. <!-- done: `CHAT_GROUPS` (nur `group==='tools'`) / `ALL_GROUPS`, exportiert als kanonische Prädikate (P3/P6 importieren sie statt aus isChat neu abzuleiten). Composer wählt per `isChat`. -->
+- [~] **Argument-Hints (S10) — Teil-Slice:** `Command.argHint?`/`description?` (additiv, optional) + Render im `/`-Overlay (nicht in Cmd-K), `context:add` mit Description bespielt. <!-- done: lokale, statische Hints. DEFERRED: Tab-Cycling enumerierbarer Arg-Werte + token-verbrauchende Modell-Vervollständigung → P6 (braucht enumerierbare Arg-Quellen + Modell-Backend). -->
+- [~] **Saved Prompts / Prompt-Templates (S9):** **deferred → P4.** <!-- Council-einstimmig: S9 „aus einer Historie wählbar" hängt am Per-Session-Prompt-Log, das erst P4 baut. Jetzt bauen hieße ein Wegwerf-Store. Das `/`-Overlay nimmt später einen zweiten `/`-Provider für Templates auf. -->
 
 ## Phase 2 — Multi-Source-`@`-Mentions (Datei / Ordner / Symbol)
 
