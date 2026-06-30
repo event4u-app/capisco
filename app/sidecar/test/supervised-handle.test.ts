@@ -31,16 +31,17 @@ class FakePty implements SupervisedHandle {
   onStdout(listener: (chunk: string) => void): void {
     this.#data.push(listener);
   }
-  onStderr(_listener: (chunk: string) => void): void {
+  onStderr(): void {
     // A PTY merges everything into the data stream — wiring is a no-op, and no
     // stderr is ever synthesized. The flag lets the test assert it never fires.
+    // (The interface's listener param is intentionally unused, so it is omitted.)
     this.stderrWired = true;
   }
   onExit(listener: (code: number | null, signal: NodeJS.Signals | null) => void): void {
     this.#exit.push(listener);
   }
-  onError(_listener: (err: Error) => void): void {
-    /* a PTY has no separate error channel in this fake */
+  onError(): void {
+    /* a PTY has no separate error channel in this fake (listener param omitted) */
   }
   write(chunk: string): void {
     this.written.push(chunk);

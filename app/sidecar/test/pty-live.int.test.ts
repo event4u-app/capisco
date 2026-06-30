@@ -20,7 +20,7 @@ try {
   await import("node-pty");
   ptyAvailable = true;
 } catch {
-  ptyAvailable = false;
+  // node-pty native build unavailable — ptyAvailable stays false (suite skips).
 }
 
 /** Subscribe and resolve the accumulated output of terminal `id` once `marker` shows. */
