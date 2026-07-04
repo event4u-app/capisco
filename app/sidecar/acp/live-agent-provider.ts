@@ -43,6 +43,10 @@ import type { PendingPermissionRegistry } from "./pending-permission-registry.ts
 import { AcpSession } from "./acp-session.ts";
 import { type RealAcpConfig } from "./real-acp-config.ts";
 import { type BackendSelection } from "./backend-selection.ts";
+import { StallWatchdog } from "./stall-watchdog.ts";
+
+/** No agent event for this long → the run is treated as hung (real-runtime P4). */
+const AGENT_STALL_MS = 120_000;
 
 /** Project a persisted session record onto the UI {@link Session} shape. */
 function toSession(s: StoredSession): Session {
@@ -166,13 +170,26 @@ export function createLiveAgentProvider(opts: LiveAgentProviderOptions): AgentPr
         args,
         handshake: Boolean(command),
       });
-      const unsub = run.subscribe((ev) => pending.publish(sessionId, ev));
+      // Stall watchdog (real-runtime P4): if the agent emits nothing for too
+      // long it is treated as hung — abort the transport cleanly and surface a
+      // recoverable `error` status (the user resumes via retry-as-branch). Each
+      // event kicks the timer; a clean finish stops it.
+      const watchdog = new StallWatchdog(AGENT_STALL_MS, () => {
+        pending.publish(sessionId, { type: "status", status: "error" });
+        run.close();
+      });
+      const unsub = run.subscribe((ev) => {
+        watchdog.kick();
+        pending.publish(sessionId, ev);
+      });
+      watchdog.start();
       // Fire-and-forget: the forwarded stream drives the UI; tear the run down
       // on completion (or error). The turn is "dispatched" once we return.
       void run
         .start(text)
         .catch(() => {})
         .finally(() => {
+          watchdog.stop();
           unsub();
           run.close();
         });

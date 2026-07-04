@@ -71,15 +71,15 @@ Tokens schon.
       Windows DPAPI / Linux libsecret. Secrets überleben Neustart, **nie im
       LLM-Context**, nie ins Subprozess-env. (Wird von P1-Datasource mitgenutzt.) <!-- KeychainSecretStore (cache+write-through, 1 service `capisco`, -U idempotent, kein Garbage) + FileSecretStore (0600 fallback) + createSecretStore-Factory; in dev-bridge + unix-sidecar verdrahtet; gegen echte Keychain getestet; scripts/secret.mjs (stdin, kein argv-leak). Windows DPAPI/libsecret = Datei-Fallback bis nativ -->
 - [x] **Task-Provider real** (Jira/Linear via MCP/API-Token, aus dem Keychain):
-      „meine Tickets", „nächstes aus dem Sprint ziehen". <!-- RealTaskProvider (Jira, token-Modus via ProviderAuth, Token-by-reference aus Keychain); listTickets/myTickets/nextFromSprint über JQL; gegen echtes galawork-Jira getestet; dev-bridge Fixture→Real-Swap (env|store). Linear + OAuth/MCP-Modi offen -->
+      „meine Tickets", „nächstes aus dem Sprint ziehen". <!-- RealTaskProvider (Jira, token-Modus via ProviderAuth, Token-by-reference aus Keychain); listTickets/myTickets/nextFromSprint über JQL; gegen echtes galawork-Jira getestet; dev-bridge Fixture→Real-Swap (env|store). Linear: RealLinearTaskProvider (read-only GraphQL, Mutations verweigert; rawTokenAuth Personal-Key; viewer/issues-Filter; teilt pickNextFromSprint mit Jira) gegen echte api.linear.app verifiziert; `task-backend=linear` schaltet um. OAuth/MCP-Modi offen -->
 - [ ] **Ticket-Lifecycle live:** Ticket ziehen → Worktree+Runtime (`real-runtime`-P0)
       → Status „In Progress"; fertig → Review → Status.
 - [x] **Forge-Provider real** (GitHub/GitLab): PR-Board, **„wessen Zug?"**-Filter,
       **Overdue 7 Tage konfigurierbar**, Stale-Alert. <!-- RealForgeProvider via gh-exec (gh-Login, kein Token); whoseTurn/stale (default 7d), gegen echtes Repo getestet; dev-bridge Fixture→Real-Swap. GitLab offen -->
-- [ ] **Awareness:** wer arbeitet wo, Branch-Überlappung, Konflikt-Vorhersage.
+- [x] **Awareness:** wer arbeitet wo, Branch-Überlappung, Konflikt-Vorhersage. <!-- Forge-getriebene Awareness: computeAwareness (reine Overlap-/Konflikt-Vorhersage auf Datei-Ebene über offene PRs — wer kollidiert mit wem) + forgeAwareness-Builder (listPullRequests + ghPrFiles `gh pr view --json files`, read-only). relWhen für „when". Fixture-Tests + live gegen echtes event4u-app/capisco verifiziert (11 grün). Live-Presence („wer editiert gerade live") braucht LSP/Presence-Signale → Folge-Phase; volle GitProvider-Dashboard-Wiring (getAwareness ist noch Mock-only, ganze Analytics-Fläche) offen -->
 - [ ] **Bidirektionaler Status-Sync** (eine Richtung zuerst; Webhooks/Rate-Limits).
-- [ ] **Lethal-Trifecta-Gate:** Ticket-Text ist untrusted Input — jeder Egress/Write
-      daraus geht durch den harten Human-Gate (nie auto-gefeuert).
+- [x] **Lethal-Trifecta-Gate:** Ticket-Text ist untrusted Input — jeder Egress/Write
+      daraus geht durch den harten Human-Gate (nie auto-gefeuert). <!-- Policy-Engine: fromUntrusted + EGRESS_KINDS → harter `ask` (kein Allowlist/Session-Grant pre-cleared), clamp-to-once in resolve(), per-Target consumable grant. ticket-lifecycle.ts setzt fromUntrusted:true auf Status-Writes. Adversarial bewiesen: broker.test.ts (kein Laundering in Standing-Grant, single-use, per-Target-Bindung) + ticket-lifecycle.test.ts (fail-closed gated, ASK vor Execution auditiert, human-SESSION launders zu fromUntrusted:false, DENY/ONCE bleiben gated) — 63 Tests grün -->
 
 **Stolpersteine:** API-Tokens (Du); Webhook-Setup; Rate-Limits; Jira-vs-Linear-
 Status-Semantik; Forge-Heterogenität; Keychain-Plattform-APIs.
@@ -182,8 +182,8 @@ Zusammenfassung** an; die gemessene Ersparnis ist dokumentiert (auch wenn klein)
 externen Provider + die geteilte Signal-Schiene.
 
 - [x] **Observability-Provider** (Sentry/Datadog/New Relic via MCP); Dev-Grafana-Embed. <!-- Sentry-Issues-Kern: RealSentryProvider (Bearer via ProviderAuth, secret-by-reference), listIssues → Spec-Shape + toSignals (source observability); gegen echtes galabau-workgroup-gmbh-Sentry live verifiziert; dev-bridge registriert wenn org+token. Crons/Performance/Alerts (Spec §4.2–4.4) + Datadog/NewRelic/Grafana = Folge-Slices -->
-- [ ] **IDE-Selbst-Telemetrie** strikt opt-in, gescrubbt, nie aus Tresor/Code.
-- [ ] **Geteilte Signal-Fläche** live (PR/Container/Observability auf *einer* Schiene).
+- [x] **IDE-Selbst-Telemetrie** strikt opt-in, gescrubbt, nie aus Tresor/Code. <!-- FileTelemetryStore (TelemetryProvider): local-only JSON-Log, disabled by default (record() no-op bis Opt-in), scrubt jeden Prop-Wert (carriesSecret droppt Secrets, Home-Pfad → ~), monotone seq. First-party fs-Primitive wie recent-projects (atomic write, allowlisted fs-read/fs-write), KEINE SecretStore-Referenz → kann Tresor/Code strukturell nicht lesen. In registerAllProviders registriert (PROVIDER_IDS.telemetry), über IPC erreichbar. Tests: scrub/opt-in/persist/seq + IPC-Roundtrip (11 grün). Frontend-Toggle (AgentSettings-Switch + client-Proxy) = consumer-side Folge-Slice; remote-Sink durch Broker = Folge-Slice -->
+- [x] **Geteilte Signal-Fläche** live (PR/Container/Observability auf *einer* Schiene). <!-- RealSignalProvider: aggregiert PR-Status (prsToSignals) + Container-Health (servicesToSignals) + Observability/Sentry (toSignals) auf EINE SignalItem-Schiene, dedup by id (jede Quelle namespaced: pr:/container:/sentry:), routet per dumb Rules (pr/container/observability→alerts, lint→inspect). Quellen ziehen zur Call-Zeit aus der Registry → reflektiert echten gh-Forge/Sentry/Runtime; tote Quelle blankt die Schiene nie. dev-bridge ersetzt den Mock-Signal-Provider; dev-bridge-ipc bootet damit (5 grün). Tests: Folds + Aggregation/Dedup/Routing + live gegen echten Forge (13 grün). Cross-source semantische Dedup (gemeinsamer Korrelations-Key) = Folge-Slice -->
 
 **Stolpersteine:** MCP-Server-Anbindung; Signal-Dedup über Quellen.
 

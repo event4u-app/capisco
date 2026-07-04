@@ -22,12 +22,14 @@ import { PendingPermissionRegistry } from "./acp/pending-permission-registry.ts"
 import { createLiveAgentProvider } from "./acp/live-agent-provider.ts";
 import { readRealAcpEnv } from "./acp/real-acp-config.ts";
 import { PROVIDER_IDS } from "./register-mocks.ts";
+import { FileTelemetryStore } from "./telemetry/telemetry-store.ts";
 import { registerQuality } from "./register-quality.ts";
 import { registerTaskForge } from "./register-task-forge.ts";
 import { registerSentry } from "./register-sentry.ts";
 import { registerProvision } from "./register-provision.ts";
 import { BackendSelection } from "./acp/backend-selection.ts";
 import { registerLsp } from "./register-lsp.ts";
+import { registerTerminal } from "./register-terminal.ts";
 import { createSecretStore } from "./broker/create-secret-store.ts";
 import type { SecretStore } from "@/contracts";
 import { createFileRecentProjects } from "./recent/recent-projects.ts";
@@ -82,6 +84,10 @@ export function registerAllProviders(
 ): Broker {
   const recent = createFileRecentProjects({ filePath: resolveRecentFilePath() });
   registerMockProviders(registry, recent);
+  // IDE self-telemetry (P3): the REAL file-backed store, strict opt-in (disabled
+  // by default), scrubbed, local-only. A first-party fs primitive like
+  // recent-projects — holds no SecretStore, so it cannot leak the vault.
+  registry.register(PROVIDER_IDS.telemetry, new FileTelemetryStore() as never);
   // The capability broker — the un-bypassable execution chokepoint (B4). Booted
   // with the conservative human-authored default allowlist and NO production
   // datasources (production is human-confirmed config, never inferred). B3 (ACP)
@@ -144,6 +150,9 @@ export function registerAllProviders(
   // (root × language). Lazy spawn via the P1 supervisor; degrades to empty when
   // the language server is not installed.
   registerLsp(registry);
+  // P6 — real terminal: a shell PTY per tab (node-pty) through the P1 supervisor.
+  // open/write/resize/close + a data/exit subscription; working dir = worktree.
+  registerTerminal(registry);
   // B6 — read-only Task (Jira/Linear) + Forge (GitHub/GitLab) providers from
   // recorded fixtures: "my tickets / next from sprint / whose turn". The
   // ticket→worktree→status lifecycle is constructed in-process by the consumer

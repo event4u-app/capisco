@@ -14,11 +14,12 @@
  * swap behind this same contract.
  */
 
-import type { AuditEntry, AuditStore } from "@/contracts";
+import type { AuditEntry, AuditStore, Unsubscribe } from "@/contracts";
 import { isRtkFiltered } from "@/contracts";
 
 export class InMemoryAuditStore implements AuditStore {
   readonly #entries: AuditEntry[] = [];
+  readonly #observers = new Set<(entry: AuditEntry) => void>();
   #seq = 0;
 
   record(entry: Omit<AuditEntry, "seq">): AuditEntry {
@@ -46,12 +47,30 @@ export class InMemoryAuditStore implements AuditStore {
     const recorded: AuditEntry = { ...entry, seq: ++this.#seq };
     // Freeze each entry so a holder of the return value cannot rewrite history.
     this.#entries.push(Object.freeze(recorded));
+    // Notify live observers AFTER the append, with the frozen entry — the same
+    // value `list` exposes (no new disclosure surface). A throwing observer is
+    // isolated per-listener: `record` runs BEFORE the broker executes, so an
+    // unhandled observer error must never break the append or the chokepoint.
+    for (const observer of this.#observers) {
+      try {
+        observer(recorded);
+      } catch {
+        /* an observer's failure is its own; never corrupts the audit log */
+      }
+    }
     return recorded;
   }
 
   list(): readonly AuditEntry[] {
     // A frozen copy — the caller cannot append/splice the real log.
     return Object.freeze([...this.#entries]);
+  }
+
+  subscribe(listener: (entry: AuditEntry) => void): Unsubscribe {
+    this.#observers.add(listener);
+    return () => {
+      this.#observers.delete(listener);
+    };
   }
 }
 

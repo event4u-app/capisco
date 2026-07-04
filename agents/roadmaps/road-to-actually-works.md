@@ -154,11 +154,11 @@ hoch. Ein Mehr-Datei-Lauf fragt **einmal scoped**, nicht pro Datei.
 
 - [ ] **Audit-Log-Viewer:** der append-only Audit-Strom (Akteur + Capability +
       credentialRef, nie Wert) sichtbar in der UI.
-- [ ] **Broker-Entscheidungs-Stream:** live, welche Capability gerade
-      authorisiert/gegated/ausgeführt wird.
+- [x] **Broker-Entscheidungs-Stream:** live, welche Capability gerade
+      authorisiert/gegated/ausgeführt wird. <!-- InMemoryAuditStore.subscribe(listener)→Unsubscribe (Contract AuditStore + Impl): feuert pro record() in seq-Order mit der eingefrorenen AuditEntry. Da der Broker JEDE Entscheidung (authorize allow/deny/gate · execute · vault-write-proposed) VOR dem Handeln über audit.record schreibt, IST dieser Append-Stream der Live-Decision-Stream. Secret-safe by construction (record weist secret-/RTK-förmige Felder vor dem Append ab → ein refused record erreicht nie einen Observer); per-Listener try/catch isoliert einen werfenden Observer vom Append/Broker. Test (audit-stream.test.ts, 6 grün): seq-Order/frozen/unsubscribe/Throw-Isolation/refused-not-streamed + live über den echten Broker (allow→executed, deny/gate live, kein Secret-Value im Stream). Out-of-band wie RuntimeProvider.subscribeStats; IPC-Streaming-Bridge + UI-Viewer = consumer-side Folge-Slice. -->
 - [ ] **Echtes Token-/Kosten-Meter** (aus P2) als dauerhafte Ampel.
-- [ ] **Subprozess-Health** (aus dem P1-Supervisor): welche PTY/LSP/Agent-Prozesse
-      laufen, Restarts, Idle.
+- [x] **Subprozess-Health** (aus dem P1-Supervisor): welche PTY/LSP/Agent-Prozesse
+      laufen, Restarts, Idle. <!-- ProcessSupervisor.health()→ProcessHealth[] (id/state/pid/restarts, keine Output/Secrets) + subscribe(listener) feuert einen frischen Snapshot bei jedem spawn / Statuswechsel / reap (gewrappte onState + onClosed); throwing-Observer per try/catch isoliert (bricht den Supervisor nie). Idle = die vorhandene idle-Reaping-Capability erscheint als state→killed im Snapshot; Restarts als restarts-Zähler. Out-of-band wie RuntimeProvider.subscribeStats. Test (process-supervisor.test.ts, +3): health()-Shape, Snapshot bei spawn/crash-restart(restarts++)/reap, unsubscribe + Observer-Isolation. Shared-Supervisor-Instanz quer über LSP/PTY/Agent (heute baut LspManager je Host einen eigenen) + UI-Health-Panel = consumer-side Folge-Slice. -->
 
 **Akzeptanz (real):** Während eines echten Agent-Laufs siehst Du in Echtzeit die
 Broker-Entscheidungen, den Audit-Eintrag, das steigende Token-Meter und die
@@ -213,7 +213,7 @@ verifizieren), Autocomplete danach (expliziter Nutzer-Wunsch).
 - [x] **Diagnostics (Squiggles) + Hover zuerst:** dienen dem Gate; aus dem echten LSP. <!-- LspHost.hover + publishDiagnostics; Hover gegen echten tsserver getestet -->
 - [x] **Autovervollständigung:** CM6-`autocomplete()` an echte LSP-Completions
       hängen (ersetzt das statische Mock-Popup; `CompletionItem`-Contract existiert). <!-- cm-lsp.ts: @codemirror/autocomplete-Source an lsp.completion gebunden, guarded (editable+isDesktop), Mapping unit-getestet (13 Fälle); Popup erscheint live in dev:web, visuelle Abnahme bleibt deine -->
-- [ ] **Folding LSP-genau** (ersetzt die syntaktische Näherung aus P4). <!-- offen; syntaktisches Folding aus P4 deckt den Alltag -->
+- [x] **Folding LSP-genau** (ersetzt die syntaktische Näherung aus P4). <!-- LspHost.foldingRanges (textDocument/foldingRange) + normalizeFoldingRanges (line-based, kind comment/imports/region behalten, malformed gedroppt); foldingRange-Capability (lineFoldingOnly) deklariert; LspManager + register-lsp Passthrough. Test (lsp-navigation.int.test.ts): reiner Normalizer + live gegen echten typescript-language-server (Funktions-Body-Fold startLine 0 → endLine ≥ 3, 0 skipped). CM6-Fold-Dekorations-Wiring (ersetzt die syntaktische P4-Näherung im Editor) = consumer-side Folge-Slice. -->
 - [x] **Conformance-Test:** echte LSP-Completion-Antwort vs. das Mock-Shape, gegen
       das die UI gebaut wurde (Overview §4.1). <!-- lsp-host.int.test.ts: echter typescript-language-server → echte Completions/Hover; skippt sauber ohne Server -->
 
@@ -234,13 +234,13 @@ aus dem PHP-Projekt; Hover zeigt Typen; Tippfehler werden rot unterstrichen.
 **Goal:** Unter dem xterm.js-Terminal läuft eine **echte Shell** (heute statischer
 Text, kein Contract). Nutzt den P1-Supervisor für den Prozess-Lifecycle.
 
-- [ ] **Terminal-Contract** definieren (fehlt heute ganz).
-- [ ] **node-pty** (oder Tauri-PTY) im Sidecar, über den **P1-Supervisor** verwaltet;
-      xterm.js an echten PTY binden.
-- [ ] **Resize** propagiert (xterm cols/rows → PTY `resize`), über das P1-Coalescing.
-- [ ] **Umbenennbare Tabs**, `+`/schließen, Split/Kill — an echte PTYs.
-- [ ] Working-Dir = aktiver Worktree (aus dem P1-Workspace-Objekt).
-- [ ] **Conformance-Test:** echter PTY-Echo vs. erwartetes Shape.
+- [x] **Terminal-Contract** definieren (fehlt heute ganz). <!-- src/contracts/terminal.ts: TerminalProvider (open/write/resize/close/list + data/exit-subscribe) + TerminalOpenSpec/Event/Info. Transport-Posture wie RuntimeProvider.subscribeStats (req/resp + push-subscribe), WS heute / Tauri-IPC später. Registriert via register-terminal.ts (`terminal`-Provider). -->
+- [x] **node-pty** (oder Tauri-PTY) im Sidecar, über den **P1-Supervisor** verwaltet;
+      xterm.js an echten PTY binden. <!-- Option C gestuft: P1 abstrahiert SpawnedChild→SupervisedHandle (Blast-Radius null, bewiesen via unveränderte Supervisor/LSP-Suites), P2 wrapPty adaptiert IPty nativ (kein stderr-Fake). PtyHost öffnet je Tab EINEN PTY DURCH den P1-Supervisor (spawnPty-Backend, restart=never). node-pty-Spawn = auditiertes Chokepoint-Primitiv runtime/pty-exec.ts. Live verifiziert (pty-live.int.test.ts: echte Shell, Marker per Shell-Arithmetik = echte Execution). xterm.js-Bindung GELANDET (Terminal.tsx: je Tab eine xterm-Instanz am `terminal`-Provider — IPC-Proxy desktop / Mock-Transcript browser; subscribe(id)→xterm.write, xterm.onData→provider.write; Wiring unit-verifiziert mit gemocktem xterm; Pixel-Golden braucht Browser-`verify:visual:update`). -->
+- [x] **Resize** propagiert (xterm cols/rows → PTY `resize`), über das P1-Coalescing. <!-- SupervisedSpec.cols/rows/term + SupervisedProcess.resize → SupervisedHandle.resize → IPty.resize; stdio-Backends no-op. PtyHost.resize(id,cols,rows) live verifiziert (resize einer lebenden Shell, danach Marker-Round-Trip). xterm-cols/rows→resize via FitAddon GELANDET (fit→provider.resize bei open + ResizeObserver). -->
+- [x] **Umbenennbare Tabs**, `+`/schließen, Split/Kill — an echte PTYs. <!-- Alle an echte Per-Tab-PTYs gebunden: Tabs/`+`/Close/Rename/Kill (xterm in Terminal.tsx, close→provider.close, je Tab eigene Shell+Scrollback) + Split (term-split-Button toggelt 1↔2 Panes nebeneinander, je Pane eigener PTY via Supervisor). Wiring unit-verifiziert (Terminal.test.tsx inkl. Split open/close) + struktureller Visual-Test; volle Suite 811 grün. -->
+- [x] Working-Dir = aktiver Worktree (aus dem P1-Workspace-Objekt). <!-- TerminalOpenSpec.cwd → PtyHost.open → SupervisedSpec.cwd → node-pty cwd. Live verifiziert: pty-live.int.test.ts öffnet im mkdtemp-Worktree, `$PWD` im echten Output == angefragter Pfad (Shell-computed Sentinel, prompt-title-robust). -->
+- [x] **Conformance-Test:** echter PTY-Echo vs. erwartetes Shape. <!-- pty-live.int.test.ts (live, gated auf node-pty-Verfügbarkeit, skippt sauber sonst): echte Shell-Execution (Arithmetik-Marker), Worktree-cwd, Resize-ohne-Störung. Plus fake-behind-contract: supervised-handle.test.ts (PTY-shaped Handle ohne stderr/mit resize) + pty-host.test.ts (open/write/resize/close/list/subscribe hermetisch). -->
 
 **Stolpersteine:** node-pty-Native-Build — **NICHT** das Electron-ABI-Problem, weil
 der Sidecar ein separater Node-Prozess ist; real wird es erst beim **Packaging**

@@ -27,9 +27,9 @@ import type {
   QualityRunResult,
   QualityToolId,
   SignalItem,
-  SignalSeverity,
 } from "@/contracts";
 import { parseEslint, parseTsc, parseVitest } from "./quality-parse.ts";
+import { resultsToSignals } from "@/contracts/quality-signals";
 
 /** Repo root (`app/`) — used to resolve the installed tool binaries so a fixture
  * worktree without its own node_modules can still be linted/typechecked/tested. */
@@ -134,42 +134,9 @@ export class RealQualityProvider implements QualityProvider {
   }
 }
 
-/** Map a tool result to its shared-rail severity. */
-function severityFor(result: QualityRunResult): SignalSeverity {
-  if (!result.ok) return "warning"; // errors → warning sev on the rail (operator attention)
-  if (result.diagnostics.length > 0) return "idle"; // warnings only
-  return "success"; // clean
-}
-
-/**
- * Pure fold of quality results → `SignalItem(source:"lint")` (the §5.2 shared
- * surface). One signal per tool result: clean → success, warnings → idle,
- * errors → warning. Exported standalone so it is unit-testable without a run.
- */
-export function resultsToSignals(results: QualityRunResult[]): SignalItem[] {
-  return results.map((r) => {
-    const errors = r.diagnostics.filter((d) => d.severity === "error").length;
-    const warnings = r.diagnostics.filter((d) => d.severity === "warning").length;
-    let sub: string;
-    if (r.diagnostics.length === 0) {
-      sub = `No problems found · ${r.runtimeMs}ms`;
-    } else {
-      const parts: string[] = [];
-      if (errors) parts.push(`${errors} error${errors === 1 ? "" : "s"}`);
-      if (warnings) parts.push(`${warnings} warning${warnings === 1 ? "" : "s"}`);
-      const first = r.diagnostics[0];
-      const loc = first.file ? ` · ${first.file}${first.line ? `:${first.line}` : ""}` : "";
-      sub = `${parts.join(", ")}${loc}`;
-    }
-    return {
-      id: `lint-${r.tool}`,
-      source: "lint",
-      sev: severityFor(r),
-      title: `${r.tool} — ${r.ok ? (r.diagnostics.length ? "warnings" : "clean") : "errors"}`,
-      sub,
-    } satisfies SignalItem;
-  });
-}
+// The pure fold moved to a browser-safe contract module so the IPC proxy can
+// borrow it (shared, identical on both sides). Re-exported for existing importers.
+export { resultsToSignals };
 
 /** The concrete TypeScript language pack — the one real pack today (eslint /
  * tsc / vitest). Other packs (php, python) are the deferred interface. */

@@ -1,0 +1,88 @@
+version: "3"
+
+# Capisco task runner. `task setup` bootstraps a fresh clone for development;
+# `task dev` runs the native desktop app. See agents/roadmaps/ for the plan
+# (road-to-tauri-desktop-shell, road-to-desktop-release).
+
+tasks:
+  default:
+    desc: List available tasks.
+    cmds:
+      - task --list
+    silent: true
+
+  doctor:
+    desc: "Reality-gate preflight — report which toolchains this machine has (road-to-actually-works P0)."
+    dir: app
+    cmds:
+      - node scripts/doctor.mjs
+
+  setup:
+    desc: "One-time dev bootstrap for a fresh clone (Rust toolchain + JS deps)."
+    cmds:
+      - |
+        if command -v cargo >/dev/null 2>&1; then
+          echo "✅ Rust present: $(rustc --version)"
+        else
+          echo "⬇️  Installing Rust (rustup, minimal profile)…"
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
+          echo "✅ Rust installed — open a new shell or run: source \"$HOME/.cargo/env\""
+        fi
+      - |
+        if command -v node >/dev/null 2>&1; then echo "✅ Node: $(node --version)";
+        else echo "❌ Node is required (https://nodejs.org). Install it, then re-run 'task setup'."; exit 1; fi
+      - |
+        if command -v pnpm >/dev/null 2>&1; then echo "✅ pnpm: $(pnpm --version)";
+        else echo "⬇️  Enabling pnpm via corepack…"; corepack enable && corepack prepare pnpm@latest --activate; fi
+      - cmd: pnpm install
+        dir: app
+      - cmd: 'echo "✅ Setup complete. Run ''task dev'' for the native app, or ''task dev:web'' for the browser."'
+
+  dev:
+    desc: "Run Capisco as a native desktop app (Tauri window + Vite + sidecar)."
+    dir: app
+    cmds:
+      - source "$HOME/.cargo/env" 2>/dev/null || true; pnpm exec tauri dev
+
+  "dev:web":
+    desc: "Run Capisco in the browser (Vite + dev sidecar bridge) — no native window."
+    dir: app
+    cmds:
+      - pnpm dev
+
+  build:
+    desc: "Build a local native app bundle (unsigned; signed CI builds = road-to-desktop-release)."
+    dir: app
+    cmds:
+      - source "$HOME/.cargo/env" 2>/dev/null || true; pnpm exec tauri build
+
+  "release:sidecar":
+    desc: "Compile the sidecar to a standalone single-binary (Tauri externalBin, no host Node)."
+    dir: app
+    cmds:
+      - source "$HOME/.cargo/env" 2>/dev/null || true; node scripts/build-sidecar.mjs
+
+  "release:build":
+    desc: "Build an unsigned release bundle incl. the bundled single-binary sidecar (desktop-release P0)."
+    dir: app
+    deps: ["release:sidecar"]
+    cmds:
+      - source "$HOME/.cargo/env" 2>/dev/null || true; pnpm exec tauri build
+
+  test:
+    desc: "Run the unit/integration test suite."
+    dir: app
+    cmds:
+      - pnpm test
+
+  typecheck:
+    desc: "Type-check the app + sidecar (tsc -b)."
+    dir: app
+    cmds:
+      - pnpm typecheck
+
+  lint:
+    desc: "Lint the codebase (eslint)."
+    dir: app
+    cmds:
+      - pnpm lint

@@ -1,50 +1,46 @@
 /**
- * Node-side fixture loader (B6). Reads the recorded JSON task/forge fixtures
- * from disk and constructs the pure providers. Kept separate from the providers
- * themselves (which take fixture *objects*) so the providers stay browser-safe
- * and I/O-free — only this module touches `node:fs`.
+ * Node-side fixture loader (B6). The recorded JSON task/forge fixtures are
+ * EMBEDDED via static imports so they ship INSIDE the compiled single-binary
+ * sidecar: `bun build --compile` bundles imported JSON into the binary, whereas
+ * a runtime `readFileSync(join(HERE, "fixtures", …))` is not embedded and
+ * crashes the packaged binary with ENOENT (road-to-desktop-release P0). Kept
+ * separate from the providers (which take fixture *objects*) so the providers
+ * stay browser-safe and I/O-free.
  *
- * The fixtures live next to this file under `fixtures/`. A real adapter swaps
- * this loader for an API client; the providers are unchanged.
+ * A real adapter swaps this loader for an API client; the providers are unchanged.
  */
 
-import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
 import type { ForgeFixture, TaskFixture } from "@/contracts";
 import { FixtureTaskProvider } from "./fixture-task-provider.ts";
 import { FixtureForgeProvider } from "./fixture-forge-provider.ts";
+import jiraTask from "./fixtures/jira.task.json" with { type: "json" };
+import linearTask from "./fixtures/linear.task.json" with { type: "json" };
+import githubForge from "./fixtures/github.forge.json" with { type: "json" };
+import gitlabForge from "./fixtures/gitlab.forge.json" with { type: "json" };
 
-const HERE = dirname(fileURLToPath(import.meta.url));
-const FIXTURES = join(HERE, "fixtures");
-
-/** Recorded task fixtures shipped with the build. */
-export const TASK_FIXTURES = {
-  jira: "jira.task.json",
-  linear: "linear.task.json",
+/** Recorded task fixtures, embedded so they ship inside the compiled binary. */
+const TASK_FIXTURE_DATA = {
+  jira: jiraTask as TaskFixture,
+  linear: linearTask as TaskFixture,
 } as const;
 
-/** Recorded forge fixtures shipped with the build. */
-export const FORGE_FIXTURES = {
-  github: "github.forge.json",
-  gitlab: "gitlab.forge.json",
+/** Recorded forge fixtures, embedded so they ship inside the compiled binary. */
+const FORGE_FIXTURE_DATA = {
+  github: githubForge as ForgeFixture,
+  gitlab: gitlabForge as ForgeFixture,
 } as const;
 
-export type TaskFixtureId = keyof typeof TASK_FIXTURES;
-export type ForgeFixtureId = keyof typeof FORGE_FIXTURES;
-
-function readJson<T>(file: string): T {
-  return JSON.parse(readFileSync(join(FIXTURES, file), "utf8")) as T;
-}
+export type TaskFixtureId = keyof typeof TASK_FIXTURE_DATA;
+export type ForgeFixtureId = keyof typeof FORGE_FIXTURE_DATA;
 
 /** Load a recorded task fixture (Jira/Linear) as a {@link TaskFixture}. */
 export function loadTaskFixture(id: TaskFixtureId): TaskFixture {
-  return readJson<TaskFixture>(TASK_FIXTURES[id]);
+  return TASK_FIXTURE_DATA[id];
 }
 
 /** Load a recorded forge fixture (GitHub/GitLab) as a {@link ForgeFixture}. */
 export function loadForgeFixture(id: ForgeFixtureId): ForgeFixture {
-  return readJson<ForgeFixture>(FORGE_FIXTURES[id]);
+  return FORGE_FIXTURE_DATA[id];
 }
 
 /** Construct a {@link FixtureTaskProvider} from a recorded fixture id. */

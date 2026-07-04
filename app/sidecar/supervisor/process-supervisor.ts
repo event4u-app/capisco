@@ -66,6 +66,12 @@ export interface SupervisedSpec {
   readonly idleTimeoutMs?: number;
   /** Cap captured stdout/stderr ring per stream (bytes). Default 1 MiB. */
   readonly maxOutputBytes?: number;
+  /** PTY-only initial window columns (ignored by stdio backends). Default 80. */
+  readonly cols?: number;
+  /** PTY-only initial window rows (ignored by stdio backends). Default 24. */
+  readonly rows?: number;
+  /** PTY-only TERM name (ignored by stdio backends). Default `xterm-256color`. */
+  readonly term?: string;
 }
 
 export interface ProcessEvents {
@@ -77,7 +83,86 @@ export interface ProcessEvents {
 }
 
 type SpawnedChild = ChildProcessByStdio<Writable, Readable, Readable>;
-export type SpawnFn = (spec: SupervisedSpec) => SpawnedChild;
+
+/**
+ * The narrow lifecycle surface the supervisor actually consumes from a spawned
+ * backend (road-to-actually-works P6, Option C — staged). Abstracted out of the
+ * concrete {@link SpawnedChild} so a PTY backend (node-pty `IPty`) can satisfy it
+ * natively — without faking a separate stderr stream or Node's EventEmitter API.
+ *
+ * Two wrappers fulfil it:
+ *  - {@link wrapChildProcess} — adapts a Node `ChildProcessByStdio` (LSP, container,
+ *    DAP, agent: the stdio-pipe backends shipped today).
+ *  - a PTY wrapper (Phase 2) — adapts node-pty's `IPty`: one merged data stream
+ *    surfaced as {@link onStdout} (so `onStderr` simply never fires), plus
+ *    {@link resize}.
+ *
+ * The supervisor's lifecycle logic (state machine, backoff restart, idle reap,
+ * health) is written against THIS interface, so it is identical for every backend.
+ */
+export interface SupervisedHandle {
+  readonly pid: number | undefined;
+  /** True while the backend is alive (has not exited or been killed). */
+  readonly alive: boolean;
+  onStdout(listener: (chunk: string) => void): void;
+  /** A PTY merges all output into stdout, so a PTY handle never fires this. */
+  onStderr(listener: (chunk: string) => void): void;
+  onExit(listener: (code: number | null, signal: NodeJS.Signals | null) => void): void;
+  onError(listener: (err: Error) => void): void;
+  write(chunk: string): void;
+  kill(signal: NodeJS.Signals): void;
+  /** Optional — only a PTY backend has a window to resize. */
+  resize?(cols: number, rows: number): void;
+}
+
+/**
+ * Adapt a Node `ChildProcessByStdio` to the {@link SupervisedHandle} surface the
+ * supervisor consumes. Pure plumbing — no behaviour change vs. the pre-P6 inline
+ * stdio wiring (`setEncoding("utf8")` + `on("data")` + `on("exit"/"error")`).
+ */
+export function wrapChildProcess(child: SpawnedChild): SupervisedHandle {
+  return {
+    get pid() {
+      return child.pid;
+    },
+    get alive() {
+      return child.exitCode === null && child.signalCode === null;
+    },
+    onStdout(listener) {
+      child.stdout.setEncoding("utf8");
+      child.stdout.on("data", listener);
+    },
+    onStderr(listener) {
+      child.stderr.setEncoding("utf8");
+      child.stderr.on("data", listener);
+    },
+    onExit(listener) {
+      child.on("exit", listener);
+    },
+    onError(listener) {
+      child.on("error", listener);
+    },
+    write(chunk) {
+      child.stdin.write(chunk);
+    },
+    kill(signal) {
+      child.kill(signal);
+    },
+  };
+}
+
+/** Distinguish an already-wrapped handle from a raw spawned child process. */
+function isSupervisedHandle(x: SpawnedChild | SupervisedHandle): x is SupervisedHandle {
+  // A ChildProcess exposes stdout/stderr streams; a handle exposes `onStdout`.
+  return typeof (x as SupervisedHandle).onStdout === "function";
+}
+
+/**
+ * Produce a backend for a spec. The default returns a raw {@link SpawnedChild}
+ * (normalized internally via {@link wrapChildProcess}); a PTY spawn returns a
+ * pre-wrapped {@link SupervisedHandle} directly. Tests inject fakes of either shape.
+ */
+export type SpawnFn = (spec: SupervisedSpec) => SpawnedChild | SupervisedHandle;
 
 export interface SupervisedProcess {
   readonly id: string;
@@ -88,6 +173,8 @@ export interface SupervisedProcess {
   write(chunk: string): void;
   /** Reset the idle timer without writing (consumer saw activity, e.g. a read). */
   touch(): void;
+  /** Resize the backend's window — PTY backends only; a no-op for stdio. */
+  resize(cols: number, rows: number): void;
   /** Stop supervising: kill, cancel restarts, cancel idle timer. Idempotent. */
   kill(signal?: NodeJS.Signals): void;
 }
@@ -131,7 +218,7 @@ class OutputRing {
 
 class Supervised implements SupervisedProcess {
   #state: ProcessState = "starting";
-  #child: SpawnedChild | undefined;
+  #child: SupervisedHandle | undefined;
   #restarts = 0;
   #killed = false;
   #idleTimer: ReturnType<typeof setTimeout> | undefined;
@@ -183,25 +270,24 @@ class Supervised implements SupervisedProcess {
 
   #start(): void {
     if (this.#killed) return;
-    const child = this.spawnFn(this.spec);
+    const spawned = this.spawnFn(this.spec);
+    const child = isSupervisedHandle(spawned) ? spawned : wrapChildProcess(spawned);
     this.#child = child;
     this.#setState("running");
     this.#armIdle();
 
-    child.stdout.setEncoding("utf8");
-    child.stderr.setEncoding("utf8");
-    child.stdout.on("data", (c: string) => {
+    child.onStdout((c: string) => {
       this.stdout.push(c);
       this.touch();
       this.events.onStdout?.(c);
     });
-    child.stderr.on("data", (c: string) => {
+    child.onStderr((c: string) => {
       this.stderr.push(c);
       this.touch();
       this.events.onStderr?.(c);
     });
-    child.on("exit", (code, signal) => this.#onExit(code, signal));
-    child.on("error", () => this.#onExit(null, null));
+    child.onExit((code, signal) => this.#onExit(code, signal));
+    child.onError(() => this.#onExit(null, null));
   }
 
   #onExit(code: number | null, signal: NodeJS.Signals | null): void {
@@ -252,11 +338,16 @@ class Supervised implements SupervisedProcess {
 
   write(chunk: string): void {
     this.touch();
-    this.#child?.stdin.write(chunk);
+    this.#child?.write(chunk);
   }
 
   touch(): void {
     if (this.#idleMs > 0 && this.#state === "running") this.#armIdle();
+  }
+
+  resize(cols: number, rows: number): void {
+    // Only a PTY backend carries `resize`; stdio backends silently ignore it.
+    this.#child?.resize?.(cols, rows);
   }
 
   kill(signal: NodeJS.Signals = "SIGTERM"): void {
@@ -267,7 +358,7 @@ class Supervised implements SupervisedProcess {
       this.#restartTimer = undefined;
     }
     const child = this.#child;
-    if (child && child.exitCode === null && child.signalCode === null) {
+    if (child && child.alive) {
       child.kill(signal);
     } else {
       // Already dead (or never started) — settle state + deregister.
@@ -284,8 +375,21 @@ export interface SupervisorOptions {
   readonly spawnFn?: SpawnFn;
 }
 
+/**
+ * A health snapshot of one supervised process (road-to-actually-works P3,
+ * minimal-observability). Carries no secret/output — just the lifecycle facts
+ * the "what's running, restarts, idle" view needs.
+ */
+export interface ProcessHealth {
+  readonly id: string;
+  readonly state: ProcessState;
+  readonly pid: number | undefined;
+  readonly restarts: number;
+}
+
 export class ProcessSupervisor {
   readonly #procs = new Map<string, Supervised>();
+  readonly #healthObservers = new Set<(health: ProcessHealth[]) => void>();
   readonly #max: number;
   readonly #spawnFn: SpawnFn;
 
@@ -303,11 +407,56 @@ export class ProcessSupervisor {
         `process supervisor at capacity (${this.#max}); reap before spawning ${spec.id}`,
       );
     }
-    const proc = new Supervised(spec, this.#spawnFn, events, (id) => {
+    // Wrap the caller's events so every state transition (and reap) also pushes
+    // a fresh health snapshot to subscribers — the observability surface.
+    const wrapped: ProcessEvents = {
+      ...events,
+      onState: (state, info) => {
+        events.onState?.(state, info);
+        this.#notifyHealth();
+      },
+    };
+    const proc = new Supervised(spec, this.#spawnFn, wrapped, (id) => {
       this.#procs.delete(id);
+      this.#notifyHealth();
     });
     this.#procs.set(spec.id, proc);
+    this.#notifyHealth();
     return proc;
+  }
+
+  /**
+   * A health snapshot of every supervised process (lifecycle facts only — no
+   * output, no secrets). The "what's running, restarts" observability surface.
+   */
+  health(): ProcessHealth[] {
+    return this.list().map((p) => ({ id: p.id, state: p.state, pid: p.pid, restarts: p.restarts }));
+  }
+
+  /**
+   * Subscribe to health changes: the listener fires with a fresh {@link health}
+   * snapshot on every spawn, state transition, and reap. Out-of-band like
+   * {@link RuntimeProvider.subscribeStats} (not RPC-wired). Returns an
+   * unsubscribe handle; a throwing observer is isolated and never breaks the
+   * supervisor.
+   */
+  subscribe(listener: (health: ProcessHealth[]) => void): () => void {
+    this.#healthObservers.add(listener);
+    return () => {
+      this.#healthObservers.delete(listener);
+    };
+  }
+
+  #notifyHealth(): void {
+    if (this.#healthObservers.size === 0) return;
+    const snapshot = this.health();
+    for (const observer of this.#healthObservers) {
+      try {
+        observer(snapshot);
+      } catch {
+        /* an observer's failure is its own — never breaks the supervisor */
+      }
+    }
   }
 
   get(id: string): SupervisedProcess | undefined {

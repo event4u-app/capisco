@@ -34,15 +34,19 @@ import type {
   SentryReadProvider,
   SessionStore,
   ShadowStore,
+  QualityProvider,
   SignalProvider,
   TasksProvider,
+  TerminalProvider,
   TodoProvider,
   WorkspaceProvider,
   WorktreeOpsProvider,
 } from "@/contracts";
+import { resultsToSignals } from "@/contracts/quality-signals";
 import { mockGitProvider, mockTasksProvider } from "@/mocks";
 import type { SidecarClient } from "./sidecar-client.ts";
 import { createAgentProxy } from "./agent-proxy.ts";
+import { createTerminalProxy } from "./terminal-proxy.ts";
 
 export interface ProviderBundle {
   agent: AgentProvider;
@@ -50,6 +54,10 @@ export interface ProviderBundle {
   agentBackend: AgentBackendProvider;
   /** Real language intelligence (P5): completion/hover, per root × language. */
   lsp: LspProvider;
+  /** Real shell PTY per tab (P6): open/write/resize/close/list + per-id stream. */
+  terminal: TerminalProvider;
+  /** Containerized quality tools (P2): availableTools/run/runAll + pure toSignals. */
+  quality: QualityProvider;
   workspace: WorkspaceProvider;
   editor: EditorProvider;
   git: GitProvider;
@@ -106,6 +114,9 @@ export function createIpcProviders(client: SidecarClient): ProviderBundle {
     agent: createAgentProxy(client),
     agentBackend: rpcProxy<AgentBackendProvider>(client, "agent-backend"),
     lsp: rpcProxy<LspProvider>(client, "lsp"),
+    terminal: createTerminalProxy(client),
+    // toSignals is a pure fold (no run) — served locally, never round-tripped.
+    quality: rpcProxy<QualityProvider>(client, "quality", { toSignals: resultsToSignals }),
     workspace: rpcProxy<WorkspaceProvider>(client, "workspace"),
     editor: rpcProxy<EditorProvider>(client, "editor"),
     git: rpcProxy<GitProvider>(client, "git", {
