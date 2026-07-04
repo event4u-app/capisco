@@ -10,6 +10,17 @@ export interface Command {
   icon?: LucideIcon;
   /** Keywords to widen fuzzy matching (e.g. for hidden tools). */
   keywords?: string;
+  /**
+   * One-line description (pre-resolved). Rendered in the composer `/`-command
+   * overlay (road-to-composer-intelligence P1, S10) — NOT in the Cmd-K palette.
+   */
+  description?: string;
+  /**
+   * Inline argument hint, e.g. `<message>` (pre-resolved). Shown after the
+   * label in the `/`-overlay (S10, local heuristic tier — no model). Commands
+   * without arguments leave this undefined and render no hint.
+   */
+  argHint?: string;
   run: () => void;
 }
 

@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { getProviders } from "@/lib/desktop-shell";
 import { useAutocompleteEngine, type MentionFieldElement } from "@/lib/autocomplete/engine";
 import { makeProjectProvider } from "@/lib/autocomplete/providers/project-provider";
+import type { AutocompleteItem, AutocompleteProvider } from "@/lib/autocomplete/types";
 
 /**
  * `@project` mention autocomplete (road-to-cross-project-knowledge P1, re-mounted
@@ -48,6 +49,12 @@ export interface MentionAutocompleteProps extends Omit<
   multiline?: boolean;
   /** Textarea row count when `multiline` (default 3). */
   rows?: number;
+  /**
+   * Providers beyond the built-in `@project` one (e.g. the `/`-command provider
+   * the composer passes). Memoize the array at the call site so the engine does
+   * not re-query on every render. `@project`-only callers omit it.
+   */
+  extraProviders?: AutocompleteProvider<AutocompleteItem>[];
 }
 
 export const MentionAutocomplete = React.forwardRef<
@@ -62,6 +69,7 @@ export const MentionAutocomplete = React.forwardRef<
       className,
       multiline,
       rows = 3,
+      extraProviders,
       ...inputProps
     },
     forwardedRef,
@@ -91,7 +99,16 @@ export const MentionAutocomplete = React.forwardRef<
       [projects, currentProject, onOpenReference],
     );
 
-    const engine = useAutocompleteEngine(innerRef, [provider], {
+    // `@project` first, then any caller-supplied providers (e.g. `/` commands).
+    const providers = React.useMemo<AutocompleteProvider<AutocompleteItem>[]>(
+      () =>
+        extraProviders && extraProviders.length > 0
+          ? [provider as AutocompleteProvider<AutocompleteItem>, ...extraProviders]
+          : [provider as AutocompleteProvider<AutocompleteItem>],
+      [provider, extraProviders],
+    );
+
+    const engine = useAutocompleteEngine(innerRef, providers, {
       onBeforeQuery: ensureLoaded,
       onKeyDownPassthrough: onKeyDown as
         | ((e: React.KeyboardEvent<MentionFieldElement>) => void)
@@ -133,7 +150,9 @@ export const MentionAutocomplete = React.forwardRef<
           >
             {engine.items.map((item, i) => (
               <li key={item.id} role="presentation">
-                {provider.renderItem(item, {
+                {/* Dispatch to the ACTIVE token's provider (@project or /command),
+                    never a hardcoded one — required once >1 provider is mounted. */}
+                {engine.provider?.renderItem(item, {
                   highlighted: i === engine.highlight,
                   index: i,
                   onChoose: engine.choose,
