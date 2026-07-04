@@ -8,6 +8,11 @@ import { buildSessionHandoff } from "./handoff";
 /** Per-agent-run lifecycle state (drives loading / error / ready transcripts). */
 export type RunState = "ready" | "loading" | "error";
 
+/** Maximum number of sent prompts kept per session (FIFO ring). */
+const MAX_PROMPT_LOG_SIZE = 100;
+/** Maximum characters stored for an unsent composer draft. */
+const MAX_DRAFT_CHARS = 10_000;
+
 /** Which workspace a store instance backs — `agents` (full: subagents +
  * tool-actions) or `chat` (quick chat · no tools). Design-Sync P3. */
 export type WorkspaceKind = "agents" | "chat";
@@ -56,6 +61,21 @@ interface AgentsState {
   routingEnabled: boolean;
   modelOverrides: Record<string, string>;
 
+  /**
+   * Per-session sent-prompt history (input reliability P4). Capped at
+   * MAX_PROMPT_LOG_SIZE entries, FIFO. Entries are appended by `appendPrompt`
+   * after the composer sends; the history-recall hook reads this log. PERSISTED
+   * (cross-boot recall is a key UX feature). Most-recent-LAST order.
+   */
+  promptLogs: Record<string, string[]>;
+
+  /**
+   * Per-session unsent composer body (input reliability P4). The key is absent
+   * (never "") when there is nothing to restore — `saveDraft` deletes the key on
+   * empty/whitespace input. PERSISTED (a crash-recovery / tab-switch feature).
+   */
+  draftBodies: Record<string, string>;
+
   /** Context-budget warn threshold in tokens (Design-Sync P4). The meter turns
    * green < 60% · orange < 85% · red otherwise of this budget. PURE projection:
    * setting it only moves the warning line; no behaviour is wired here (the
@@ -88,6 +108,20 @@ interface AgentsState {
   setRoutingEnabled: (on: boolean) => void;
   /** Per-session human override (the human always wins over routing). Empty string clears. */
   setModelOverride: (sessionId: string, model: string) => void;
+  /**
+   * Append a sent prompt to the session's log (input reliability P4). Silently
+   * drops blank text. The log is capped at MAX_PROMPT_LOG_SIZE entries (FIFO).
+   */
+  appendPrompt: (sessionId: string, text: string) => void;
+  /**
+   * Persist a draft body for the session (input reliability P4). Empty or
+   * whitespace-only body DELETES the key — never stores "". Bodies are
+   * truncated to MAX_DRAFT_CHARS before storage.
+   */
+  saveDraft: (sessionId: string, body: string) => void;
+  /** Remove a session's draft (called after successful send). */
+  clearDraft: (sessionId: string) => void;
+
   setBackendKind: (kind: "api" | "cli") => void;
   setSelectedBackend: (id: string) => void;
   setRunState: (id: string, run: RunState) => void;
@@ -125,6 +159,8 @@ function createAgentsStore(opts: StoreOpts): UseBoundStore<StoreApi<AgentsState>
         activeId: base[0]?.id ?? "",
         runStates: {},
         handoffSeeds: {},
+        promptLogs: {},
+        draftBodies: {},
 
         model: defaultModel,
         effort: 3,
@@ -199,6 +235,34 @@ function createAgentsStore(opts: StoreOpts): UseBoundStore<StoreApi<AgentsState>
             else delete next[sessionId];
             return { modelOverrides: next };
           }),
+        appendPrompt: (sessionId, text) => {
+          if (!text.trim()) return;
+          set((s) => {
+            const prev = s.promptLogs[sessionId] ?? [];
+            const next = [...prev, text].slice(-MAX_PROMPT_LOG_SIZE);
+            return { promptLogs: { ...s.promptLogs, [sessionId]: next } };
+          });
+        },
+
+        saveDraft: (sessionId, body) =>
+          set((s) => {
+            const next = { ...s.draftBodies };
+            const trimmed = body.slice(0, MAX_DRAFT_CHARS);
+            if (trimmed.trim()) {
+              next[sessionId] = trimmed;
+            } else {
+              delete next[sessionId];
+            }
+            return { draftBodies: next };
+          }),
+
+        clearDraft: (sessionId) =>
+          set((s) => {
+            const next = { ...s.draftBodies };
+            delete next[sessionId];
+            return { draftBodies: next };
+          }),
+
         setBackendKind: (backendKind) => set({ backendKind }),
         setSelectedBackend: (selectedBackendId) => set({ selectedBackendId }),
         setRunState: (id, run) => set((s) => ({ runStates: { ...s.runStates, [id]: run } })),
@@ -226,6 +290,8 @@ function createAgentsStore(opts: StoreOpts): UseBoundStore<StoreApi<AgentsState>
           terseHintSeen: s.terseHintSeen,
           routingEnabled: s.routingEnabled,
           modelOverrides: s.modelOverrides,
+          promptLogs: s.promptLogs,
+          draftBodies: s.draftBodies,
         }),
       },
     ),
@@ -327,4 +393,23 @@ export function effectiveModel(
   modelOverrides: Record<string, string>,
 ): string {
   return modelOverrides[session.id] ?? session.model;
+}
+
+/**
+ * Full sent-prompt history for a session (input reliability P4). Most-recent-LAST
+ * order (matches append order). Returns an empty array when nothing has been
+ * sent. PURE.
+ */
+export function sessionPromptLog(store: AgentsState, sessionId: string): string[] {
+  return store.promptLogs[sessionId] ?? [];
+}
+
+/**
+ * Last `n` sent prompts for a session (input reliability P4). Most-recent-FIRST
+ * (history-recall natural order — pressing ↑ shows the most-recent entry first).
+ * PURE.
+ */
+export function recentPrompts(store: AgentsState, sessionId: string, n = 5): string[] {
+  const log = store.promptLogs[sessionId] ?? [];
+  return log.slice(-n).reverse();
 }
