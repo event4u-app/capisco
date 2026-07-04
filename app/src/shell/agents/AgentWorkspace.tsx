@@ -33,6 +33,9 @@ import {
  * subagents / tool-actions (status "quick chat · no tools"). Rendered in the
  * shell center for `mode === "agents"` (kind agents) / `"chat"` (kind chat).
  */
+/** Stable empty prompt-log reference (avoids a new [] each render → no churn). */
+const EMPTY_LOG: string[] = [];
+
 export function AgentWorkspace({ kind = "agents" }: { kind?: WorkspaceKind } = {}) {
   const { t } = useTranslation();
   const isChat = kind === "chat";
@@ -69,6 +72,12 @@ export function AgentWorkspace({ kind = "agents" }: { kind?: WorkspaceKind } = {
   const settingsOpen = useStore((s) => s.settingsOpen);
   const toggleSettings = useStore((s) => s.toggleSettings);
   const setSettingsOpen = useStore((s) => s.setSettingsOpen);
+  // P4 input-reliability: per-session prompt-log + draft persistence.
+  const appendPrompt = useStore((s) => s.appendPrompt);
+  const saveDraft = useStore((s) => s.saveDraft);
+  const clearDraft = useStore((s) => s.clearDraft);
+  const promptLogs = useStore((s) => s.promptLogs);
+  const draftBodies = useStore((s) => s.draftBodies);
 
   const register = usePalette((s) => s.register);
   const openProjectByPath = useOpenProject((s) => s.open);
@@ -120,6 +129,9 @@ export function AgentWorkspace({ kind = "agents" }: { kind?: WorkspaceKind } = {
   const sessions = visibleSessions(extra, closed, baseSessions);
   const cur = sessions.find((s) => s.id === activeId) ?? sessions[0];
   const backend = agentSnapshot.backend;
+  // P4: the active session's prompt-log (history-recall) + restored draft.
+  const promptLog = cur ? (promptLogs[cur.id] ?? EMPTY_LOG) : EMPTY_LOG;
+  const initialDraft = cur ? (draftBodies[cur.id] ?? "") : "";
 
   // P2 — the REAL selected backend + USD cost over the live sidecar. In the
   // browser (mock) path these stay null and the deterministic labels below are
@@ -165,6 +177,12 @@ export function AgentWorkspace({ kind = "agents" }: { kind?: WorkspaceKind } = {
     const el = composerRef.current;
     // Capture the typed turn BEFORE clearing — a live run needs the text.
     const text = el?.value?.trim();
+    // P4: log the sent prompt (history-recall / future ghost-text) + drop the
+    // now-obsolete draft, before the buffer is cleared.
+    if (text && cur) {
+      appendPrompt(cur.id, text);
+      clearDraft(cur.id);
+    }
     if (el) el.value = "";
     // Start the run (P3): the session goes `loading`, which drives the
     // composer's Stop affordance. The real stream lands on the AgentProvider;
@@ -325,6 +343,11 @@ export function AgentWorkspace({ kind = "agents" }: { kind?: WorkspaceKind } = {
             onStop={() => cancelRun(cur.id)}
             currentProject={mockWorktrees[0]?.name}
             onOpenReference={openReference}
+            sessionId={cur.id}
+            promptLog={promptLog}
+            initialDraft={initialDraft}
+            saveDraft={saveDraft}
+            clearDraft={clearDraft}
           />
         </div>
       </div>
