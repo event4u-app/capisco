@@ -12,6 +12,7 @@ import type { SecretStore, SignalItem, SignalSeverity } from "@/contracts";
 import type { SentryIssue, SentryLevel, SentryProvider, SentryStatus } from "@/contracts";
 import { bearerTokenAuth, type ProviderAuth } from "../auth/provider-auth.ts";
 import { sentryIssues } from "./sentry-http.ts";
+import { sanitizeIssueTitle, sanitizeTag } from "@/lib/sentry-sanitize.ts";
 
 const DEFAULT_BASE = "https://sentry.io";
 
@@ -61,15 +62,20 @@ export function toIssue(row: Record<string, unknown>, nowMs: number = Date.now()
   };
 }
 
-/** Pure: a SentryIssue → a shared-rail SignalItem (source `observability`). */
+/**
+ * Pure: a SentryIssue → a shared-rail SignalItem (source `observability`).
+ * Untrusted issue strings are sanitized here (GATE G-SENTRY-SANITIZE) so the
+ * shared signal rail — a non-Sentry-aware sink — never receives raw markup,
+ * an executable scheme, or an unbounded title.
+ */
 export function toSignal(issue: SentryIssue): SignalItem {
   const sev: SignalSeverity = issue.level === "info" ? "idle" : "warning";
   return {
     id: `sentry:${issue.id}`,
     sev,
     source: "observability",
-    title: issue.title,
-    sub: `${issue.project} · ${issue.events} events · ${issue.users} users · ${issue.lastSeen}`,
+    title: sanitizeIssueTitle(issue.title),
+    sub: `${sanitizeTag(issue.project)} · ${issue.events} events · ${issue.users} users · ${sanitizeTag(issue.lastSeen)}`,
   };
 }
 

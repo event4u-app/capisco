@@ -3,16 +3,32 @@
  *
  * Proves road-to-real-runtime P0's core: real `docker ps` + `docker stats`
  * replace the fabricated FakeRuntimeProvider frames. Skips cleanly when docker
- * is unreachable (CI without a daemon); runs for real where it is up.
+ * is unreachable (CI without a daemon) OR reachable but with no running
+ * containers (a standard CI runner) — the container assertions need a real
+ * container to be true; they run for real on a host that has one (local /
+ * nightly real-dependency). The port-allocator test is pure and always runs.
  */
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import { dockerAvailable } from "../runtime/docker-exec.ts";
+import { dockerAvailable, dockerExec } from "../runtime/docker-exec.ts";
 import { RealRuntimeProvider } from "../runtime/real-runtime-provider.ts";
 
+/** True when the daemon reports at least one running container (`docker ps -q`). */
+async function hasRunningContainers(): Promise<boolean> {
+  try {
+    const out = await dockerExec(["ps", "-q"]);
+    return out.split("\n").some((line) => line.trim().length > 0);
+  } catch {
+    return false;
+  }
+}
+
 const available = await dockerAvailable();
-const run = available ? it : it.skip;
+// The container-shape assertions below require a live container. Gate on its
+// presence so a daemon-without-containers runner skips instead of failing on
+// `expected 0 to be greater than 0`.
+const run = available && (await hasRunningContainers()) ? it : it.skip;
 
 let provider: RealRuntimeProvider | undefined;
 afterEach(() => {
@@ -69,9 +85,19 @@ describe("RealRuntimeProvider ↔ real docker daemon", () => {
     const b = p.ports().allocate("sess-b");
     expect(a.port).not.toBe(b.port);
     expect(a.owner).toBe("sess-a");
-    expect(p.ports().reservations().map((r) => r.port)).toContain(a.port);
+    expect(
+      p
+        .ports()
+        .reservations()
+        .map((r) => r.port),
+    ).toContain(a.port);
     a.release();
-    expect(p.ports().reservations().map((r) => r.port)).not.toContain(a.port);
+    expect(
+      p
+        .ports()
+        .reservations()
+        .map((r) => r.port),
+    ).not.toContain(a.port);
     p.dispose();
   });
 });

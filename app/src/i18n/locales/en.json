@@ -53,7 +53,8 @@
     "chat": "Chat",
     "editor": "Editor",
     "git": "Git",
-    "tasks": "Tasks"
+    "tasks": "Tasks",
+    "sentry": "Sentry"
   },
   "workspace": {
     "placeholder": "{{mode}} workspace"
@@ -338,6 +339,7 @@
       "planMode": "Plan mode — reply without modifying code",
       "attach": "Attach files",
       "contextAdd": "Add file or folder as context",
+      "contextAddDesc": "Attach a file or folder to this message",
       "contextRemove": "Remove from context",
       "rulesWarn": "Loaded rules and workspace guidelines ({{chars}} chars) exceed the {{limit}} character limit. Remove some rules or shorten your guidelines.",
       "model": "Model",
@@ -608,6 +610,73 @@
     },
     "command": {
       "open": "Open Tasks workspace"
+    }
+  },
+  "sentry": {
+    "title": "Sentry",
+    "command": {
+      "open": "Open Sentry workspace"
+    },
+    "tabs": {
+      "issues": "Issues",
+      "crons": "Cron Monitors",
+      "performance": "Performance",
+      "alerts": "Alerts"
+    },
+    "stats": {
+      "errors24h": "errors 24h",
+      "crashFree": "crash-free",
+      "cronsFailing": "crons failing",
+      "p95": "p95"
+    },
+    "filter": {
+      "allEnvironments": "All environments",
+      "production": "production",
+      "staging": "staging",
+      "searchPlaceholder": "is:unresolved level:error …"
+    },
+    "issuesHead": {
+      "issue": "Issue",
+      "trend": "Trend",
+      "events": "Events",
+      "users": "Users",
+      "age": "Age",
+      "lastSeen": "Last seen"
+    },
+    "crons": {
+      "monitor": "Monitor",
+      "status": "Status",
+      "checkins": "Recent check-ins",
+      "alerts": "Alerts",
+      "healthy": "healthy"
+    },
+    "perf": {
+      "p95": "p95 transaction duration",
+      "apdex": "Apdex score",
+      "throughput": "Throughput (req/min)",
+      "crashFree": "Crash-free sessions"
+    },
+    "alerts": {
+      "hint": "New errors and missed crons surface as IDE notifications. Configure rules below.",
+      "newRule": "New alert rule"
+    },
+    "detail": {
+      "back": "Issues",
+      "events": "Events",
+      "users": "Users",
+      "age": "Age",
+      "lastSeen": "Last seen",
+      "tags": "Tags",
+      "stacktrace": "Stacktrace",
+      "breadcrumbs": "Breadcrumbs",
+      "noStacktrace": "No stacktrace captured in this fixture. Live stacktraces arrive with the real provider (roadmap P1).",
+      "actions": {
+        "resolve": "Resolve",
+        "ignore": "Ignore",
+        "assign": "Assign",
+        "openInSentry": "Open in Sentry"
+      },
+      "actionsNote": "Actions are wired through the broker in roadmap P2 — disabled in this fixture-only view."
     }
   }
 }
