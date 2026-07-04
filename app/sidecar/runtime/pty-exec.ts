@@ -13,9 +13,22 @@
  * restart, idle reap, health) drives a terminal exactly as it drives an LSP.
  */
 
+import { createRequire } from "node:module";
 import { constants as osConstants } from "node:os";
 
-import { spawn as ptySpawn, type IPty } from "node-pty";
+import type { IPty } from "node-pty";
+
+// node-pty is a native (CJS) addon whose `pty.node` binding has no prebuild on
+// the Linux CI runner. Load it LAZILY — a type-only import above erases at
+// runtime, and the binding is required on first real spawn — so merely importing
+// this module (e.g. from a fake-backend test, or any transitive consumer) never
+// triggers the native load. Only an actual `spawnPty` call touches node-pty.
+const requireCjs = createRequire(import.meta.url);
+let ptySpawnFn: typeof import("node-pty").spawn | undefined;
+function ptySpawn(...args: Parameters<typeof import("node-pty").spawn>): IPty {
+  ptySpawnFn ??= (requireCjs("node-pty") as typeof import("node-pty")).spawn;
+  return ptySpawnFn(...args);
+}
 
 import {
   sealedEnv,
