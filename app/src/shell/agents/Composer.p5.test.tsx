@@ -57,6 +57,7 @@ function baseState(overrides: Record<string, unknown> = {}) {
     draftBodies: {},
     messageQueues: {},
     runCompletions: {},
+    checkpoints: {},
     ...overrides,
   };
 }
@@ -166,5 +167,27 @@ describe("Composer P5-A — message queue", () => {
       expect(useAgents.getState().messageQueues.s1).toBeUndefined();
       expect(useAgents.getState().promptLogs.s1 ?? []).toContain("queued turn");
     });
+  });
+});
+
+describe("Composer P5-A — checkpoint / branch switcher (S8)", () => {
+  it("no branch-switcher at boot (no checkpoints)", () => {
+    renderWorkspace();
+    expect(screen.queryByTestId("branch-switcher")).not.toBeInTheDocument();
+  });
+
+  it("shows the switcher once a checkpoint exists and jumps via branch()", async () => {
+    const user = userEvent.setup();
+    useAgents.setState(
+      baseState({
+        checkpoints: { s1: [{ id: "cp1", label: "before refactor", leafId: "n3", seq: 1 }] },
+      }),
+    );
+    renderWorkspace();
+    await user.click(screen.getByTestId("branch-switcher"));
+    await user.click(screen.getByTestId("branch-item-cp1"));
+    // Jump forks from the checkpoint's leaf via the existing branch primitive.
+    await waitFor(() => expect(branch).toHaveBeenCalledTimes(1));
+    expect(branch).toHaveBeenCalledWith("s1", "n3", "before refactor");
   });
 });

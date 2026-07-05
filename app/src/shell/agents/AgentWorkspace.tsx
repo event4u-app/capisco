@@ -1,7 +1,7 @@
 import * as React from "react";
 import { useTranslation } from "react-i18next";
 
-import { Bot, Settings as SettingsIcon } from "lucide-react";
+import { Bot, GitBranch, Settings as SettingsIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { agentSnapshot, chatSnapshot, mockWorktrees } from "@/mocks";
@@ -24,6 +24,7 @@ import {
   contextUsed,
   storeForKind,
   visibleSessions,
+  type CheckpointEntry,
   type QueuedMessage,
   type WorkspaceKind,
 } from "./store";
@@ -40,6 +41,8 @@ import {
 const EMPTY_LOG: string[] = [];
 /** Stable empty message-queue reference (P5-A — same no-churn rationale). */
 const EMPTY_QUEUE: QueuedMessage[] = [];
+/** Stable empty checkpoints reference (S8 — same no-churn rationale). */
+const EMPTY_CHECKPOINTS: CheckpointEntry[] = [];
 
 export function AgentWorkspace({ kind = "agents" }: { kind?: WorkspaceKind } = {}) {
   const { t } = useTranslation();
@@ -82,6 +85,8 @@ export function AgentWorkspace({ kind = "agents" }: { kind?: WorkspaceKind } = {
   const removeQueued = useStore((s) => s.removeQueued);
   const reorderQueued = useStore((s) => s.reorderQueued);
   const editQueued = useStore((s) => s.editQueued);
+  const checkpoints = useStore((s) => s.checkpoints);
+  const addCheckpoint = useStore((s) => s.addCheckpoint);
   const settingsOpen = useStore((s) => s.settingsOpen);
   const toggleSettings = useStore((s) => s.toggleSettings);
   const setSettingsOpen = useStore((s) => s.setSettingsOpen);
@@ -135,11 +140,41 @@ export function AgentWorkspace({ kind = "agents" }: { kind?: WorkspaceKind } = {
       label: t(isChat ? "chat.command.settings" : "agents.command.settings"),
       run: () => setSettingsOpen(true),
     });
+    // Checkpoint the active session's current tree leaf (S8). Palette-only
+    // (escalation ladder) so the composer gains no boot-visible button; the
+    // branch-switcher chip surfaces once a checkpoint exists. Reads the active
+    // session fresh at run time.
+    const unCheckpoint = register({
+      id: `${kind}:checkpoint`,
+      group: "view",
+      icon: GitBranch,
+      label: t(isChat ? "chat.command.checkpoint" : "agents.command.checkpoint"),
+      run: () => {
+        const activeId = useStore.getState().activeId;
+        if (!activeId) return;
+        const agent = getProviders().agent;
+        if (!agent?.getTree) return;
+        void agent
+          .getTree(activeId)
+          .then((tree) => addCheckpoint(activeId, "", tree.activeLeaf));
+      },
+    });
     return () => {
       unNew();
       unSettings();
+      unCheckpoint();
     };
-  }, [register, t, createSession, model, setSettingsOpen, kind, isChat]);
+  }, [
+    register,
+    t,
+    createSession,
+    model,
+    setSettingsOpen,
+    addCheckpoint,
+    useStore,
+    kind,
+    isChat,
+  ]);
 
   const baseSessions = isChat ? chatSnapshot.sessions : agentSnapshot.sessions;
   const sessions = visibleSessions(extra, closed, baseSessions);
@@ -410,6 +445,13 @@ export function AgentWorkspace({ kind = "agents" }: { kind?: WorkspaceKind } = {
             onRemoveQueued={(itemId) => removeQueued(cur.id, itemId)}
             onReorderQueued={(from, to) => reorderQueued(cur.id, from, to)}
             onEditQueued={(itemId, text) => editQueued(cur.id, itemId, text)}
+            checkpoints={cur ? (checkpoints[cur.id] ?? EMPTY_CHECKPOINTS) : EMPTY_CHECKPOINTS}
+            onJumpCheckpoint={(entry) => {
+              // Jump to a checkpoint's divergent line: fork from its leaf via the
+              // existing branch primitive (non-destructive, same as Edit-&-Rerun).
+              const agent = getProviders().agent;
+              if (agent?.branch) void agent.branch(cur.id, entry.leafId, entry.label);
+            }}
           />
         </div>
       </div>
