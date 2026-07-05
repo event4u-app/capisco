@@ -11,7 +11,7 @@ import { describe, expect, it, beforeEach } from "vitest";
 import { useAgents } from "./store.ts";
 
 beforeEach(() => {
-  useAgents.setState({ messageQueues: {}, runCompletions: {}, runStates: {} });
+  useAgents.setState({ messageQueues: {}, runCompletions: {}, runStates: {}, checkpoints: {} });
 });
 
 describe("message queue actions", () => {
@@ -111,5 +111,26 @@ describe("run-completion seam (drain vs. Stop)", () => {
     s.cancelRun("s1");
     expect(useAgents.getState().runStates["s1"]).toBe("ready");
     expect(useAgents.getState().runCompletions["s1"] ?? 0).toBe(0);
+  });
+});
+
+describe("checkpoints (S8)", () => {
+  it("names a leaf and appends per session", () => {
+    const s = useAgents.getState();
+    s.addCheckpoint("s1", "before refactor", "n3");
+    s.addCheckpoint("s1", "", "n7"); // blank → auto-labelled
+    const list = useAgents.getState().checkpoints["s1"];
+    expect(list.map((c) => c.leafId)).toEqual(["n3", "n7"]);
+    expect(list[0].label).toBe("before refactor");
+    expect(list[1].label).toMatch(/^checkpoint 2$/); // auto-label from count
+    expect(list[1].id).toMatch(/^cp\d+$/);
+  });
+
+  it("isolates checkpoints per session", () => {
+    const s = useAgents.getState();
+    s.addCheckpoint("s1", "a", "n1");
+    s.addCheckpoint("s2", "b", "n2");
+    expect(useAgents.getState().checkpoints["s1"]).toHaveLength(1);
+    expect(useAgents.getState().checkpoints["s2"]).toHaveLength(1);
   });
 });

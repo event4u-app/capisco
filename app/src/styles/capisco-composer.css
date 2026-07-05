@@ -157,6 +157,60 @@
   color: var(--ds-text-primary);
 }
 
+/* Branch-switcher (S8) — below-bar chip listing session checkpoints; renders
+   only once a checkpoint exists (boot-invisible → golden-safe). */
+.cmp-branch {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 22px;
+  padding: 0 7px;
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-1);
+  background: transparent;
+  color: var(--ds-text-secondary);
+  cursor: pointer;
+}
+.cmp-branch:hover,
+.cmp-branch.active {
+  background: var(--ds-bg-hover);
+  color: var(--ds-text-primary);
+  border-color: var(--ds-accent-muted);
+}
+.cmp-branch-count {
+  font-family: var(--ds-font-mono);
+  font-size: 11px;
+}
+.branch-pop {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  z-index: 45;
+  min-width: 200px;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.branch-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  text-align: left;
+  padding: 5px 8px;
+  border: none;
+  border-radius: var(--ds-radius-1);
+  background: transparent;
+  color: var(--ds-text-primary);
+  font-family: var(--ds-font-sans);
+  font-size: 11.5px;
+  cursor: pointer;
+}
+.branch-item:hover {
+  background: var(--ds-bg-hover);
+}
+
 /* Message queue (P5-A) — pending messages shown while a run is in flight;
    editable / removable / reorderable chips that fire on run completion. */
 .cmp-queue {

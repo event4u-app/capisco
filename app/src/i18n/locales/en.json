@@ -348,6 +348,8 @@
       "placeholder": "Message Capisco…",
       "send": "Send",
       "stop": "Stop",
+      "branches": "{{count}} checkpoint(s) — jump between branches",
+      "branchesTitle": "Checkpoints",
       "auto": "Auto",
       "autoRoute": "Auto model routing",
       "planMode": "Plan mode — reply without modifying code",
@@ -435,13 +437,15 @@
     },
     "command": {
       "newSession": "New agent session",
-      "settings": "Open agent backend settings"
+      "settings": "Open agent backend settings",
+      "checkpoint": "Checkpoint this session"
     }
   },
   "chat": {
     "command": {
       "newSession": "New chat",
-      "settings": "Open chat settings"
+      "settings": "Open chat settings",
+      "checkpoint": "Checkpoint this chat"
     }
   },
   "chart": {

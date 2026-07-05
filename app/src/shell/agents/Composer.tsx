@@ -25,7 +25,8 @@ import {
   makeCommandProvider,
 } from "@/lib/autocomplete/providers/command-provider";
 import { MentionAutocomplete, type MentionFieldElement } from "./MentionAutocomplete";
-import { budgetTone, type QueuedMessage } from "./store";
+import { budgetTone, type CheckpointEntry, type QueuedMessage } from "./store";
+import { BranchSwitcher } from "./BranchSwitcher";
 import { useHistoryRecall } from "./use-history-recall";
 import { useDraft } from "./use-draft";
 import { useAutoGrow } from "./use-auto-grow";
@@ -107,6 +108,8 @@ export function Composer({
   onRemoveQueued,
   onReorderQueued,
   onEditQueued,
+  checkpoints = [],
+  onJumpCheckpoint,
 }: {
   isChat: boolean;
   effort: number;
@@ -149,6 +152,10 @@ export function Composer({
   onReorderQueued?: (from: number, to: number) => void;
   /** Edit a queued message's text (P5-A). */
   onEditQueued?: (itemId: string, text: string) => void;
+  /** Named checkpoints for the active session (S8) — feeds the branch-switcher. */
+  checkpoints?: CheckpointEntry[];
+  /** Jump to a checkpoint's divergent line (S8) — forks from its leaf. */
+  onJumpCheckpoint?: (entry: CheckpointEntry) => void;
 }) {
   const { t } = useTranslation();
   const levels = agentSnapshot.effortLevels;
@@ -738,6 +745,9 @@ export function Composer({
       </div>
 
       <div className="cmp-belowbar">
+        {/* Branch-switcher (S8) — renders only once a checkpoint exists, so the
+            below-bar is byte-identical at boot. */}
+        <BranchSwitcher checkpoints={checkpoints} onJump={onJumpCheckpoint ?? (() => {})} />
         <span className="cmp-ctx-wrap">
           <button
             type="button"
