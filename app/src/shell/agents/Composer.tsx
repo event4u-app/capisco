@@ -30,6 +30,7 @@ import { useHistoryRecall } from "./use-history-recall";
 import { useDraft } from "./use-draft";
 import { useAutoGrow } from "./use-auto-grow";
 import { useSmartPaste } from "./use-smart-paste";
+import { useEmptyStateSuggestions } from "./use-empty-state-suggestions";
 
 /** Prototype fmtK — verbatim (agent.jsx). */
 const fmtK = (n: number) =>
@@ -99,6 +100,7 @@ export function Composer({
   saveDraft,
   clearDraft,
   projectRoot,
+  promptLogs = {},
 }: {
   isChat: boolean;
   effort: number;
@@ -129,6 +131,8 @@ export function Composer({
   clearDraft?: (id: string) => void;
   /** Absolute project root — enables `@file`/`@folder`/`@symbol` (P2). */
   projectRoot?: string;
+  /** Per-session prompt-log map (P4) — feeds the empty-state suggestions (P3). */
+  promptLogs?: Record<string, string[]>;
 }) {
   const { t } = useTranslation();
   const levels = agentSnapshot.effortLevels;
@@ -295,12 +299,37 @@ export function Composer({
         },
       ]),
   });
-  // Compose the textarea onInput: auto-grow measurement + debounced draft save.
-  // (MentionAutocomplete composes this with the engine's own token-refresh.)
+  // ---- P3 empty-state next-task suggestions -------------------------------
+  // Whether the (uncontrolled) textarea is empty. Starts `true` — a fresh
+  // composer boots empty; a restored draft fires a synthetic input that flips
+  // this to false via `handleInput`. The suggestions block renders only while
+  // empty (an empty field can never carry an `@`/`/` trigger, so the
+  // autocomplete overlay is structurally closed → no collision).
+  const [composerEmpty, setComposerEmpty] = React.useState(true);
+  const suggestions = useEmptyStateSuggestions({ promptLogs, sessionId: sid, isChat });
+  // Click a suggestion → write it into the composer and re-run the input
+  // pipeline (engine token-detect, draft autosave, auto-grow, empty-state).
+  // NEVER sends — this is a fill, not a submit.
+  const fillComposer = React.useCallback(
+    (text: string) => {
+      const el = composerRef.current;
+      if (!el) return;
+      el.value = text;
+      el.setSelectionRange(text.length, text.length);
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+      el.focus();
+    },
+    [composerRef],
+  );
+
+  // Compose the textarea onInput: auto-grow measurement + debounced draft save
+  // + empty-state sync (P3, read straight off the uncontrolled value).
   const handleInput = React.useCallback(() => {
     autoGrow.measure();
     draft.onInput();
-  }, [autoGrow, draft]);
+    const el = composerRef.current;
+    setComposerEmpty(el ? el.value === "" : true);
+  }, [autoGrow, draft, composerRef]);
 
   const ratio = budget > 0 ? used / budget : 0;
   const tone = budgetTone(used, budget); // ok | warn | crit
@@ -454,6 +483,37 @@ export function Composer({
             if (recall.onKeyDown(e, el, el.value)) return;
           }}
         />
+
+        {/* Empty-State next-task suggestions (P3) — deterministic, mode-filtered
+            rows shown only while the composer is empty. Click fills the composer
+            (never auto-sends); typing hides them, clearing brings them back. */}
+        {composerEmpty && suggestions.length > 0 && (
+          <div
+            className="cmp-suggest"
+            data-testid="composer-empty-suggestions"
+            role="listbox"
+            aria-label={t("agents.composer.suggestionsLabel")}
+          >
+            {suggestions.map((s) => (
+              <button
+                type="button"
+                key={s.id}
+                role="option"
+                aria-selected={false}
+                className="cmp-suggest-row"
+                data-testid={`composer-suggestion-${s.id}`}
+                data-kind={s.kind}
+                // mousedown (not click) fills before the textarea blurs.
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  fillComposer(s.fill);
+                }}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+        )}
 
         <div className="cmp-controls">
           <div className="cmp-left">
