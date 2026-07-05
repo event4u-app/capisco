@@ -33,6 +33,18 @@ test.describe("matrix workspace — routing + structure", () => {
     await expect(page.getByTestId("matrix-node-s1")).toBeVisible();
     await expect(page.getByTestId("matrix-count")).toContainText("sessions");
   });
+
+  test("broker-ticker shows decisions and expands to the full trail (secret as ref, never value)", async ({
+    page,
+  }) => {
+    await gotoMatrix(page);
+    await expect(page.getByTestId("broker-ticker")).toBeVisible();
+    await page.getByTestId("broker-toggle").click();
+    const list = page.getByTestId("broker-audit-list");
+    await expect(list).toBeVisible();
+    await expect(list).toContainText("credential: staging-admin"); // secret as NAME
+    await expect(list).not.toContainText(/sk-|ghp_|AKIA/);
+  });
 });
 
 test.describe("matrix workspace — fidelity golden", () => {

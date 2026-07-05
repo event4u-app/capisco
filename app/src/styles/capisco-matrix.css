@@ -47,6 +47,96 @@
   font-family: var(--ds-font-sans);
 }
 
+/* Broker-ticker + audit-viewer (P0) — footer strip over the append-only
+   broker-decision stream; expandable to the full trail. */
+.matrix-broker {
+  flex-shrink: 0;
+  border-top: 1px solid var(--ds-border);
+  background: var(--ds-bg-raised, var(--ds-bg-base));
+  font-family: var(--ds-font-sans);
+  font-size: 11px;
+}
+.matrix-broker-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 12px;
+}
+.matrix-broker-title {
+  font-weight: 600;
+  color: var(--ds-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 10px;
+}
+.matrix-broker-toggle {
+  border: none;
+  background: transparent;
+  color: var(--ds-accent);
+  font-family: var(--ds-font-sans);
+  font-size: 10.5px;
+  cursor: pointer;
+}
+.matrix-broker-toggle:hover {
+  text-decoration: underline;
+}
+.broker-rows,
+.broker-full {
+  display: flex;
+  flex-direction: column;
+}
+.broker-full {
+  max-height: 200px;
+  overflow-y: auto;
+  border-top: 1px solid var(--ds-border);
+}
+.broker-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 12px;
+  white-space: nowrap;
+}
+.broker-row:hover {
+  background: var(--ds-bg-hover);
+}
+.broker-actor {
+  color: var(--ds-text-tertiary);
+  flex-shrink: 0;
+}
+.broker-cap {
+  font-family: var(--ds-font-mono);
+  color: var(--ds-text-secondary);
+  flex-shrink: 0;
+}
+.broker-target {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--ds-text-primary);
+}
+.broker-cred {
+  font-family: var(--ds-font-mono);
+  font-size: 10px;
+  color: var(--ds-text-tertiary);
+  flex-shrink: 0;
+}
+.broker-untrusted {
+  font-size: 9.5px;
+  color: var(--ds-warning);
+  border: 1px solid var(--ds-warning);
+  border-radius: var(--ds-radius-1);
+  padding: 0 4px;
+  flex-shrink: 0;
+}
+.broker-outcome {
+  font-family: var(--ds-font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
 /* Degradation tree (>150 nodes). */
 .matrix-tree {
   flex: 1;
