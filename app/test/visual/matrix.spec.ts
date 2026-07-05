@@ -45,6 +45,13 @@ test.describe("matrix workspace — routing + structure", () => {
     await expect(list).toContainText("credential: staging-admin"); // secret as NAME
     await expect(list).not.toContainText(/sk-|ghp_|AKIA/);
   });
+
+  test("container strip shows per-container runtime stats (ctop slice)", async ({ page }) => {
+    await gotoMatrix(page);
+    await expect(page.getByTestId("container-strip")).toBeVisible();
+    await expect(page.getByTestId("container-web")).toBeVisible();
+    await expect(page.getByTestId("container-postgres")).toBeVisible();
+  });
 });
 
 test.describe("matrix workspace — fidelity golden", () => {
