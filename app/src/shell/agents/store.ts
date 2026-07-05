@@ -21,6 +21,23 @@ export interface QueuedMessage {
 /** Monotonic id source for queued messages (per module load; deterministic). */
 let queueSeq = 0;
 
+/**
+ * A named checkpoint on a session's branching tree (Agent-Cockpit P5-A / S8).
+ * Names the `SessionTree` leaf active at checkpoint time so the branch-switcher
+ * can jump back to that divergent prompt line. `id`/`seq` are deterministic
+ * per-store handles (no timestamp / random).
+ */
+export interface CheckpointEntry {
+  id: string;
+  label: string;
+  /** The `SessionTree.activeLeaf` captured when the checkpoint was named. */
+  leafId: string;
+  seq: number;
+}
+
+/** Monotonic id source for checkpoints (per module load; deterministic). */
+let checkpointSeq = 0;
+
 /** Maximum number of sent prompts kept per session (FIFO ring). */
 const MAX_PROMPT_LOG_SIZE = 100;
 /** Maximum characters stored for an unsent composer draft. */
@@ -97,6 +114,14 @@ interface AgentsState {
    * boots), so NOT persisted.
    */
   messageQueues: Record<string, QueuedMessage[]>;
+  /**
+   * Per-session named checkpoints (Agent-Cockpit P5-A / S8). The branch-switcher
+   * lists these; jumping to one forks from its leaf via `SessionTree.branch()`.
+   * Empty (key absent) until the user names one → the switcher is invisible at
+   * boot (golden-safe). Ephemeral — leaf ids are in-memory tree pointers that do
+   * not survive a restart — so NOT persisted.
+   */
+  checkpoints: Record<string, CheckpointEntry[]>;
   /**
    * Per-session run-completion counter (Agent-Cockpit P5-A). Bumped ONLY by
    * `completeRun` (a natural run finish), never by `cancelRun` (Stop). The
@@ -177,6 +202,8 @@ interface AgentsState {
   reorderQueued: (sessionId: string, from: number, to: number) => void;
   /** Replace a queued message's text (P5-A inline edit). Blank text removes it. */
   editQueued: (sessionId: string, itemId: string, text: string) => void;
+  /** Name the given SessionTree leaf as a checkpoint on the session (S8). */
+  addCheckpoint: (sessionId: string, label: string, leafId: string) => void;
   setSettingsOpen: (open: boolean) => void;
   toggleSettings: () => void;
 }
@@ -211,6 +238,7 @@ function createAgentsStore(opts: StoreOpts): UseBoundStore<StoreApi<AgentsState>
         promptLogs: {},
         draftBodies: {},
         messageQueues: {},
+        checkpoints: {},
         runCompletions: {},
 
         model: defaultModel,
@@ -384,6 +412,17 @@ function createAgentsStore(opts: StoreOpts): UseBoundStore<StoreApi<AgentsState>
             if (mapped.length) next[sessionId] = mapped;
             else delete next[sessionId];
             return { messageQueues: next };
+          }),
+        addCheckpoint: (sessionId, label, leafId) =>
+          set((s) => {
+            const prev = s.checkpoints[sessionId] ?? [];
+            const entry: CheckpointEntry = {
+              id: `cp${++checkpointSeq}`,
+              label: label.trim() || `checkpoint ${prev.length + 1}`,
+              leafId,
+              seq: checkpointSeq,
+            };
+            return { checkpoints: { ...s.checkpoints, [sessionId]: [...prev, entry] } };
           }),
         setSettingsOpen: (settingsOpen) => set({ settingsOpen }),
         toggleSettings: () => set((s) => ({ settingsOpen: !s.settingsOpen })),
