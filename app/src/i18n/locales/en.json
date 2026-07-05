@@ -68,6 +68,9 @@
       "title": "Broker",
       "viewAll": "view all ({{count}})",
       "collapse": "collapse"
+    },
+    "containers": {
+      "title": "Containers"
     }
   },
   "panel": {

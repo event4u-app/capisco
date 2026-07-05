@@ -137,6 +137,66 @@
   flex-shrink: 0;
 }
 
+/* Container / ctop strip (P0) — compact per-container runtime stats footer. */
+.matrix-containers {
+  flex-shrink: 0;
+  border-top: 1px solid var(--ds-border);
+  background: var(--ds-bg-raised, var(--ds-bg-base));
+  font-family: var(--ds-font-sans);
+  font-size: 11px;
+}
+.matrix-broker-count {
+  font-family: var(--ds-font-mono);
+  font-size: 10px;
+  color: var(--ds-text-tertiary);
+}
+.ctr-rows {
+  display: flex;
+  flex-direction: column;
+}
+.ctr-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 3px 12px;
+  white-space: nowrap;
+}
+.ctr-row:hover {
+  background: var(--ds-bg-hover);
+}
+.ctr-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+.ctr-name {
+  font-family: var(--ds-font-mono);
+  color: var(--ds-text-primary);
+  min-width: 80px;
+}
+.ctr-image {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--ds-text-tertiary);
+}
+.ctr-cpu,
+.ctr-mem {
+  font-family: var(--ds-font-mono);
+  font-size: 10px;
+  flex-shrink: 0;
+  min-width: 40px;
+  text-align: right;
+}
+.ctr-ports {
+  font-family: var(--ds-font-mono);
+  font-size: 10px;
+  color: var(--ds-text-tertiary);
+  flex-shrink: 0;
+}
+
 /* Degradation tree (>150 nodes). */
 .matrix-tree {
   flex: 1;
