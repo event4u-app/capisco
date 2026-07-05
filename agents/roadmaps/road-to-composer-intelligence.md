@@ -23,18 +23,20 @@ wird der Composer zum Cockpit (Edit-&-Rerun als Branch, Message-Queue,
 Mid-Run-Steering); und eine abschaltbare ML-Schicht obendrauf rankt, vervollständigt
 und schärft Prompts — jeder Assist mit deterministischem Fallback.
 
-> **Implementierungsstand (2026-06-30 / 07-04, autonome Läufe):** **Phase 0, 1
-> + 4 erledigt & verifiziert** (tsc, eslint 0 Fehler, prettier, 982 Vitest grün,
+> **Implementierungsstand (2026-06-30 … 07-05, autonome Läufe):** **Phase 0, 1,
+> 2 + 4 erledigt & verifiziert** (tsc, eslint 0 Fehler, prettier, 998 Vitest grün,
 > build, ladle:build). P0: geteiltes Autocomplete-Overlay-Primitiv (Tokenizer
-> `@`+`/`, Provider-Engine, `@project` re-mounted ohne Verhaltens-/DOM-Change,
-> MRU + Fuzzy). P1: `/`-Slash-Commands (gleiche `registered`-Quelle wie Cmd-K,
-> Accept=ausführen, mode-aware Filter, S10-Arg-Hints-Teil-Slice). P4: Input-
-> Reliability (per-session Prompt-Log + ↑/↓-History-Recall, Draft-Persistenz +
-> Restore-Affordance, Auto-Grow, Smart-Paste-Collapse) — alles boot-unsichtbar →
-> Goldens intakt. **Deferred:** S9 Saved-Prompts (braucht das jetzt gebaute Log —
-> Fast-Follow), Ghost-Text/Lints (S2/S3, Fast-Follow), Expand-Fullscreen (Golden-
-> Drift), `Cmd+R`-History-Overlay, S10-Modell + S14-Diktat. **P2 (`@file`) + P3
-> (Empty-State) + P5/P6 bleiben offen.** Getrennte PRs pro Phase (Council-Vorgabe).
+> `@`+`/`, Provider-Engine, `@project`, MRU + Fuzzy). P1: `/`-Slash-Commands
+> (gleiche `registered`-Quelle wie Cmd-K, Accept=ausführen, mode-aware Filter,
+> S10-Arg-Hints-Teil-Slice). P2: Multi-`@`-Mentions — **Engine-Merge** (mehrere
+> Provider je Trigger, `TaggedItem`, providerübergreifendes Ranking, per-Item-
+> Dispatch), `@file`/`@folder` aus `getTree` mit Broker-Ingest bei File-Pick,
+> `@symbol` als leer-aber-stabiles LSP-Skelett. P4: Input-Reliability (Prompt-Log
+> + ↑/↓-Recall, Draft-Persistenz, Auto-Grow, Smart-Paste) — boot-unsichtbar,
+> Goldens intakt. **Deferred:** S9 Saved-Prompts, Ghost-Text/Lints (S2/S3),
+> Expand-Fullscreen, `Cmd+R`-Overlay, S10-Modell, S14-Diktat, `@symbol`-Real-
+> Fetch (gegated auf LSP), Chip→`@name`-Rückwärts-Sync (S13/controlled editor).
+> **P3 (Empty-State) + P5/P6 bleiben offen.** Getrennte PRs pro Phase.
 >
 > **AI-Council-Konvergenz (2026-06-29, 3 Sonnet-Lenses: Scope · Architektur ·
 > Critical-Challenger, einstimmig):** Erste autonome PR = **nur P0**; P1 nicht
@@ -181,10 +183,12 @@ self-registriert; dazu Template-/Argument-Komfort obendrauf.
 sichtbar als entfernbarer Chip mit ehrlichem Security-Tag — über **einen**
 bewährten Pfad, nicht über eine neue Ingestion.
 
-- [ ] **`@file` / `@folder`-Provider** aus `ProjectFsProvider.getTree`, Typ-Icon pro Zeile, optionaler `@file:`-Kategorie-Prefix; gleiche Arrow/Enter/Tab/Esc-Keys.
-- [ ] **Datei-Pick durch den existierenden Broker-Gate** (`ingest.ts` · `ingestFile`): prod → read-only-Tag, Secret-Form → Refusal-Chip; wird als Kontext-Chip in der `cmp-context`-Reihe angehängt. Ordner-Pick fügt eine Referenz ein. <!-- kein zweiter Ingestion-Pfad -->
-- [ ] **Chip ↔ Referenz-Round-Trip:** aufgelöste `@`-Mention spiegelt als entfernbarer Chip; Chip entfernen streicht die Inline-Referenz. `@name`-Text bleibt menschenlesbares Token, Chip ist der Attachment-Handle. Macht das Attachment **legible** statt stiller Anhang.
-- [ ] **`@symbol`-Provider (LSP-backed)** als **eigener gegateter Slice am Tail**: Quelle `LspProvider` (`lsp.ts`, completion/hover); Pick fügt `file:line`-Referenz ein; gegated auf LSP-Verfügbarkeit, leer wenn kein Server (Contract-Fallback). Honoriert die „later phase"-Notiz (`mention-query.ts:8-10`) — **nicht** mit `@file` bündeln.
+- [x] **`@file` / `@folder`-Provider** aus `ProjectFsProvider.getTree`, Typ-Icon (File/Folder) pro Zeile; gleiche Arrow/Enter/Tab/Esc-Keys. <!-- done: makeFsProvider (fs-provider.tsx), Tree pro Instanz gecacht (getTree einmal, nicht pro Tastendruck), leer bei fehlendem projectRoot. **Engine-Merge (Kern-Entscheidung):** mehrere Provider teilen `@` — engine sammelt ALLE Provider je Trigger, taggt jedes Item mit seinem Provider (`TaggedItem`), `filterAndRankTagged` rankt providerübergreifend, `renderItem`/`onSelect` dispatchen pro-Item. `@project` unverändert (Tests grün); `/`-Command (Einzel-Provider) unverändert. Kein `@file:`-Prefix nötig (gemischte Liste mit Icons). -->
+- [x] **Datei-Pick durch den existierenden Broker-Gate** (`ingest.ts` · `ingestFile`): prod → read-only-Tag, Secret-Form → Refusal-Chip; Kontext-Chip in `cmp-context`. Ordner-Pick fügt eine Referenz ein (kein Ingest). <!-- done: File-onSelect → `@name ` + sideEffect `onAttach(absPath)` → Composer.ingestPaths (derselbe Chokepoint wie +Add/Drop, kein zweiter Pfad). Folder-onSelect → nur Referenz, kein sideEffect. Integrationstest deckt beide + Broker-Chip ab. -->
+- [~] **Chip ↔ Referenz-Round-Trip — Teil-Slice:** Pick → `@name`-Token + Chip; Chip entfernen = Attachment lösen; `@name`-Text bleibt menschenlesbares Token. <!-- done: Insert→Chip + Chip-Removal=Detach (einseitig). DEFERRED (Council, beide Lenses): „Chip entfernen streicht die Inline-`@name`" (Rückwärts-Sync) ist mit dem UNKONTROLLIERTEN Textarea nicht sauber machbar — gehört zu S13 (Rich-Inline-Mentions / controlled editor), P5+. -->
+- [~] **`@symbol`-Provider (LSP-backed) — leer-aber-stabiles Skelett:** `makeSymbolProvider`, triggerChar `@`, gegated auf `lsp.available()`. <!-- done: Skelett erfüllt das Akzeptanzkriterium „leer-aber-stabil ohne LSP" (gibt [] zurück wenn kein Server, wirft nie). DEFERRED: der echte Symbol-Fetch (`file:line`-Referenzen) — gegated auf die LSP-Plumbing (existiert noch nicht; `mention-query.ts` „later phase"). -->
+- [x] **Multi-`@`-Engine-Merge (Fundament für alle `@`-Quellen):** `collectProviders` (filter statt find), Fan-out via `Promise.all`, `TaggedItem[]`, `choose` dispatcht über das Item-Tag. <!-- done: additive Engine-Änderung; 42 Autocomplete/Mention-Tests grün → @project + / + @file koexistieren; Stale-Drop (genRef) über alle Provider erhalten. -->
+
 
 ## Phase 3 — Empty-State-Next-Task-Vorschläge (deterministisch)
 
