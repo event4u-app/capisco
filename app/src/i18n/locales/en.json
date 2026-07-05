@@ -63,7 +63,12 @@
   "matrix": {
     "title": "Agent Matrix",
     "sessionCount": "{{count}} sessions",
-    "empty": "No active sessions."
+    "empty": "No active sessions.",
+    "broker": {
+      "title": "Broker",
+      "viewAll": "view all ({{count}})",
+      "collapse": "collapse"
+    }
   },
   "panel": {
     "close": "Close panel",

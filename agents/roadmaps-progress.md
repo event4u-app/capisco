@@ -6,10 +6,10 @@
 
 ## Overall
 
-**101 / 228 steps done · 44%**
+**102 / 228 steps done · 45%**
 
 ```text
-██████████████████░░░░░░░░░░░░░░░░░░░░░░   44%
+██████████████████░░░░░░░░░░░░░░░░░░░░░░   45%
 ```
 
 ## Open roadmaps
@@ -17,7 +17,7 @@
 | # | Roadmap | Phases | Steps | Open | Done | Deferred | Cancelled | Progress |
 |---|---|---:|---:|---:|---:|---:|---:|---|
 | 1 | [road-to-actually-works.md](roadmaps/road-to-actually-works.md) | 9 | 54 | 18 | 36 | 0 | 0 | ███████░░░ 67% |
-| 2 | [road-to-agent-matrix-and-ambient.md](roadmaps/road-to-agent-matrix-and-ambient.md) | 7 | 39 | 33 | 6 | 0 | 0 | ██░░░░░░░░ 15% |
+| 2 | [road-to-agent-matrix-and-ambient.md](roadmaps/road-to-agent-matrix-and-ambient.md) | 7 | 39 | 32 | 7 | 0 | 0 | ██░░░░░░░░ 18% |
 | 3 | [road-to-composer-intelligence.md](roadmaps/road-to-composer-intelligence.md) | 7 | 33 | 8 | 18 | 7 | 0 | ██████░░░░ 55% |
 | 4 | [road-to-desktop-release.md](roadmaps/road-to-desktop-release.md) | 6 | 14 | 14 | 0 | 0 | 0 | ░░░░░░░░░░ 0% |
 | 5 | [road-to-real-breadth.md](roadmaps/road-to-real-breadth.md) | 5 | 30 | 22 | 8 | 0 | 0 | ███░░░░░░░ 27% |
@@ -46,11 +46,11 @@
 
 ### [road-to-agent-matrix-and-ambient.md](roadmaps/road-to-agent-matrix-and-ambient.md)
 
-**Road to Agent-Matrix & Ambient — das Hirn und die Nachtschicht** — 6 / 39 done (15%)
+**Road to Agent-Matrix & Ambient — das Hirn und die Nachtschicht** — 7 / 39 done (18%)
 
 | # | Phase | State | Open | Done | Deferred | Cancelled | % |
 |---|---|---|---:|---:|---:|---:|---:|
-| 0 | Agent-Matrix v1 (das „Hirn"; schließt zugleich offene Observability-UI-Schuld) | 🟡 in progress | 3 | 6 | 0 | 0 | 67% |
+| 0 | Agent-Matrix v1 (das „Hirn"; schließt zugleich offene Observability-UI-Schuld) | 🟡 in progress | 2 | 7 | 0 | 0 | 78% |
 | 0b | Matrix-Federation (jede IDE eine universelle Zentrale) | ⬜ not started | 7 | 0 | 0 | 0 | 0% |
 | 1 | Scoped-Grant-Primitiv (Council #2 einlösen; Gate für P2) | ⬜ not started | 5 | 0 | 0 | 0 | 0% |
 | 2 | Hintergrund-Läufe + Morning-Digest (Konsument von P1) | ⬜ not started | 8 | 0 | 0 | 0 | 0% |

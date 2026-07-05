@@ -6,6 +6,7 @@ import { mockAgentProvider } from "@/mocks";
 import { countNodes, layoutGraph } from "./graph-layout";
 import { MatrixGraphView } from "./MatrixGraphView";
 import { MatrixTreeFallback } from "./MatrixTreeFallback";
+import { BrokerTicker } from "./BrokerTicker";
 
 export interface MatrixWorkspaceProps {
   /** Session stream source — the deterministic mock in the browser/test path. */
@@ -82,6 +83,9 @@ export function MatrixWorkspace({
       ) : (
         <MatrixGraphView graph={graph} />
       )}
+      {/* Broker-ticker + audit-viewer (P0): the live broker-decision stream as a
+          footer strip, expandable to the full append-only trail. */}
+      <BrokerTicker />
     </div>
   );
 }
