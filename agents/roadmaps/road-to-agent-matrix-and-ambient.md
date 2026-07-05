@@ -218,11 +218,11 @@ PROD-READ-ONLY UND SECRETS-NIE-IM-CONTEXT GELTEN UNVERÄNDERT.
 > Fallback statt Kill: die Grant-Achse existiert bereits im Contract;
 > schlimmster Fall ist „manuelle Grants pro Datei" (hässlich, kein Blocker).
 
-- [ ] Design-Dokument Scoped-Grant-UX (gated: erst Review, dann Bau):
+- [~] Design-Dokument Scoped-Grant-UX (gated: erst Review, dann Bau):
       Grant-Shape (`writes unter src/ für diesen Task`), Anzeige, Widerruf,
       Ablauf (Task-Ende = Grant-Ende), Interaktion mit der bestehenden
       Grant-Achse (`once/session/scoped/deny`) — konservativ, human-authored
-      Allowlist, kein Wildcard-Default.
+      Allowlist, kein Wildcard-Default. <!-- Entwurf gelandet: agents/design-gates/scoped-grant-ux.md (autonom gezeichnet, geerdet an policy-engine.ts/broker.ts: Grant-Shape mit realpath-kanonisiertem pathPrefix + Task-Bindung als scoped-Variante ohne neue Achse, Threat-Model A1–A7 deckt Z. 232 ab, Gate-pro-Aktion-Matrix, offene Fragen Q1–Q5). GATE bleibt: wartet auf Design-Review durch Matze (+ Council) → erst dann der Bau-Schritt unten. -->
 - [ ] Broker: `scoped`-Grants mit Pfad-/Kommandomuster-Scope + Task-Bindung
       im Policy-Engine umsetzen; Audit-Log trägt den aktiven Grant sichtbar
       (und damit sofort in der P0-Matrix).
@@ -248,11 +248,11 @@ PROD-READ-ONLY UND SECRETS-NIE-IM-CONTEXT GELTEN UNVERÄNDERT.
 > Council-Korrektur eingearbeitet: Headless-Sessions sind ein NEUER
 > Lifecycle — Design-Schritt vor Bau, nicht „Semantik nebenbei".
 
-- [ ] Design-Schritt Headless-Lifecycle (gated vor den Bau-Schritten):
+- [~] Design-Schritt Headless-Lifecycle (gated vor den Bau-Schritten):
       Terminierungs-Kriterien (Task fertig · Grant abgelaufen · manueller
       Stopp · Idle-Timeout), Persistenz (in-memory Store überlebt keinen
       Restart — was übersteht die Nacht, was nicht, ehrlich benannt),
-      Ressourcen-Limits (max. Laufzeit, Token-Budget pro Lauf).
+      Ressourcen-Limits (max. Laufzeit, Token-Budget pro Lauf). <!-- Entwurf gelandet: agents/design-gates/headless-lifecycle.md (autonom gezeichnet, geerdet an stall-watchdog.ts/reconnecting-client.ts/in-memory-session-store.ts: 6 Terminierungs-Kriterien, ehrliche Persistenz-Tabelle (nur der Digest übersteht die Nacht), Ressourcen-Limits, Pausiert-nie-eskaliert-Invariante). GATE bleibt: wartet auf Design-Review durch Matze (+ Council) UND blockiert auf P1-Scoped-Grant → erst dann der Bau-Schritt unten. -->
 - [ ] Headless-Session-Semantik bauen: Session ohne gebundenen Editor/
       PTY-Fokus; nutzt bestehende Recovery-Primitive (Stall-Watchdog,
       Reconnect); Zustand jederzeit in der Matrix sichtbar (P0 ist das

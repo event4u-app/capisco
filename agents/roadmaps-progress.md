@@ -17,7 +17,7 @@
 | # | Roadmap | Phases | Steps | Open | Done | Deferred | Cancelled | Progress |
 |---|---|---:|---:|---:|---:|---:|---:|---|
 | 1 | [road-to-actually-works.md](roadmaps/road-to-actually-works.md) | 9 | 55 | 18 | 37 | 0 | 0 | ███████░░░ 67% |
-| 2 | [road-to-agent-matrix-and-ambient.md](roadmaps/road-to-agent-matrix-and-ambient.md) | 7 | 39 | 31 | 8 | 0 | 0 | ██░░░░░░░░ 21% |
+| 2 | [road-to-agent-matrix-and-ambient.md](roadmaps/road-to-agent-matrix-and-ambient.md) | 7 | 39 | 29 | 8 | 2 | 0 | ██░░░░░░░░ 21% |
 | 3 | [road-to-composer-intelligence.md](roadmaps/road-to-composer-intelligence.md) | 7 | 33 | 7 | 21 | 5 | 0 | ██████░░░░ 64% |
 | 4 | [road-to-desktop-release.md](roadmaps/road-to-desktop-release.md) | 6 | 14 | 14 | 0 | 0 | 0 | ░░░░░░░░░░ 0% |
 | 5 | [road-to-real-breadth.md](roadmaps/road-to-real-breadth.md) | 5 | 30 | 22 | 8 | 0 | 0 | ███░░░░░░░ 27% |
@@ -52,8 +52,8 @@
 |---|---|---|---:|---:|---:|---:|---:|
 | 0 | Agent-Matrix v1 (das „Hirn"; schließt zugleich offene Observability-UI-Schuld) | 🟡 in progress | 1 | 8 | 0 | 0 | 89% |
 | 0b | Matrix-Federation (jede IDE eine universelle Zentrale) | ⬜ not started | 7 | 0 | 0 | 0 | 0% |
-| 1 | Scoped-Grant-Primitiv (Council #2 einlösen; Gate für P2) | ⬜ not started | 5 | 0 | 0 | 0 | 0% |
-| 2 | Hintergrund-Läufe + Morning-Digest (Konsument von P1) | ⬜ not started | 8 | 0 | 0 | 0 | 0% |
+| 1 | Scoped-Grant-Primitiv (Council #2 einlösen; Gate für P2) | ⬜ not started | 4 | 0 | 1 | 0 | 0% |
+| 2 | Hintergrund-Läufe + Morning-Digest (Konsument von P1) | ⬜ not started | 7 | 0 | 1 | 0 | 0% |
 | 3 | Trace-Lernschleife (Routing-Kalibrierung aus echten Läufen) | ⬜ not started | 5 | 0 | 0 | 0 | 0% |
 | 4 | Voice-I/O (opt-in, lokal, spät — mit eigenem Bleibt-oder-fliegt-Gate) | ⬜ not started | 4 | 0 | 0 | 0 | 0% |
 | 5 | Ehrlichkeits-Review (leichtgewichtig, lokal — kein Produkt-Telemetrie-Programm) | ⬜ not started | 1 | 0 | 0 | 0 | 0% |
