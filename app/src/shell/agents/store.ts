@@ -8,6 +8,19 @@ import { buildSessionHandoff } from "./handoff";
 /** Per-agent-run lifecycle state (drives loading / error / ready transcripts). */
 export type RunState = "ready" | "loading" | "error";
 
+/**
+ * A message queued while a run is in flight (Agent-Cockpit P5-A). Fired in FIFO
+ * order when the run completes. `id` is a stable per-store monotonic handle (not
+ * a timestamp / random — keeps the store deterministic).
+ */
+export interface QueuedMessage {
+  id: string;
+  text: string;
+}
+
+/** Monotonic id source for queued messages (per module load; deterministic). */
+let queueSeq = 0;
+
 /** Maximum number of sent prompts kept per session (FIFO ring). */
 const MAX_PROMPT_LOG_SIZE = 100;
 /** Maximum characters stored for an unsent composer draft. */
@@ -76,6 +89,23 @@ interface AgentsState {
    */
   draftBodies: Record<string, string>;
 
+  /**
+   * Per-session message queue (Agent-Cockpit P5-A). Messages appended via
+   * `Cmd+Enter` while a run is in flight; drained FIFO on run COMPLETION (never
+   * on cancel). The key is absent (never []) when the queue is empty — an empty
+   * queue renders nothing. Ephemeral (a pending queue is meaningless across
+   * boots), so NOT persisted.
+   */
+  messageQueues: Record<string, QueuedMessage[]>;
+  /**
+   * Per-session run-completion counter (Agent-Cockpit P5-A). Bumped ONLY by
+   * `completeRun` (a natural run finish), never by `cancelRun` (Stop). The
+   * queue-drain hook watches this counter so a Stop never fires the queue —
+   * `runState` alone can't distinguish the two (both settle to "ready").
+   * Ephemeral (not persisted).
+   */
+  runCompletions: Record<string, number>;
+
   /** Context-budget warn threshold in tokens (Design-Sync P4). The meter turns
    * green < 60% · orange < 85% · red otherwise of this budget. PURE projection:
    * setting it only moves the warning line; no behaviour is wired here (the
@@ -126,8 +156,27 @@ interface AgentsState {
   setSelectedBackend: (id: string) => void;
   setRunState: (id: string, run: RunState) => void;
   /** Cancel a session's run (P3 / B3): set it ready, never mutate the parent,
-   * never auto-resume. */
+   * never auto-resume. Does NOT drain the message queue (a Stop is not a
+   * completion). */
   cancelRun: (id: string) => void;
+  /**
+   * Mark a session's run COMPLETE (Agent-Cockpit P5-A): set it ready AND bump
+   * `runCompletions[id]` so the queue-drain hook fires the next queued message.
+   * Distinct from `cancelRun` (Stop) precisely so a cancel never drains. The
+   * live `subscribe('done') → completeRun` wire lands with the real-runtime
+   * track; at this layer `completeRun` is the honest drain seam.
+   */
+  completeRun: (id: string) => void;
+  /** Append a message to a session's queue (P5-A). Drops blank text. */
+  enqueueMessage: (sessionId: string, text: string) => void;
+  /** Remove the head of a session's queue and return it (P5-A drain step). */
+  dequeueMessage: (sessionId: string) => QueuedMessage | undefined;
+  /** Remove a queued message by id (P5-A). */
+  removeQueued: (sessionId: string, itemId: string) => void;
+  /** Move a queued message from one index to another (P5-A reorder). */
+  reorderQueued: (sessionId: string, from: number, to: number) => void;
+  /** Replace a queued message's text (P5-A inline edit). Blank text removes it. */
+  editQueued: (sessionId: string, itemId: string, text: string) => void;
   setSettingsOpen: (open: boolean) => void;
   toggleSettings: () => void;
 }
@@ -161,6 +210,8 @@ function createAgentsStore(opts: StoreOpts): UseBoundStore<StoreApi<AgentsState>
         handoffSeeds: {},
         promptLogs: {},
         draftBodies: {},
+        messageQueues: {},
+        runCompletions: {},
 
         model: defaultModel,
         effort: 3,
@@ -272,6 +323,68 @@ function createAgentsStore(opts: StoreOpts): UseBoundStore<StoreApi<AgentsState>
         // The live stream abort rides the AgentProvider unsubscribe when the
         // real run-loop subscribes; at this layer the run-state IS the signal.
         cancelRun: (id) => set((s) => ({ runStates: { ...s.runStates, [id]: "ready" } })),
+        // Natural completion (P5-A): settle to ready AND bump the completion
+        // counter so the queue-drain hook fires the next queued message. A Stop
+        // (`cancelRun`) settles to ready WITHOUT bumping — so it never drains.
+        completeRun: (id) =>
+          set((s) => ({
+            runStates: { ...s.runStates, [id]: "ready" },
+            runCompletions: { ...s.runCompletions, [id]: (s.runCompletions[id] ?? 0) + 1 },
+          })),
+        enqueueMessage: (sessionId, text) => {
+          const body = text.trim();
+          if (!body) return;
+          set((s) => {
+            const prev = s.messageQueues[sessionId] ?? [];
+            const item: QueuedMessage = { id: `q${++queueSeq}`, text: body };
+            return { messageQueues: { ...s.messageQueues, [sessionId]: [...prev, item] } };
+          });
+        },
+        dequeueMessage: (sessionId) => {
+          const prev = get().messageQueues[sessionId] ?? [];
+          if (!prev.length) return undefined;
+          const [head, ...rest] = prev;
+          set((s) => {
+            const next = { ...s.messageQueues };
+            if (rest.length) next[sessionId] = rest;
+            else delete next[sessionId];
+            return { messageQueues: next };
+          });
+          return head;
+        },
+        removeQueued: (sessionId, itemId) =>
+          set((s) => {
+            const prev = s.messageQueues[sessionId];
+            if (!prev) return {};
+            const kept = prev.filter((x) => x.id !== itemId);
+            const next = { ...s.messageQueues };
+            if (kept.length) next[sessionId] = kept;
+            else delete next[sessionId];
+            return { messageQueues: next };
+          }),
+        reorderQueued: (sessionId, from, to) =>
+          set((s) => {
+            const prev = s.messageQueues[sessionId];
+            if (!prev || from === to) return {};
+            if (from < 0 || from >= prev.length || to < 0 || to >= prev.length) return {};
+            const next = [...prev];
+            const [item] = next.splice(from, 1);
+            next.splice(to, 0, item!);
+            return { messageQueues: { ...s.messageQueues, [sessionId]: next } };
+          }),
+        editQueued: (sessionId, itemId, text) =>
+          set((s) => {
+            const prev = s.messageQueues[sessionId];
+            if (!prev) return {};
+            const body = text.trim();
+            const mapped = body
+              ? prev.map((x) => (x.id === itemId ? { ...x, text: body } : x))
+              : prev.filter((x) => x.id !== itemId);
+            const next = { ...s.messageQueues };
+            if (mapped.length) next[sessionId] = mapped;
+            else delete next[sessionId];
+            return { messageQueues: next };
+          }),
         setSettingsOpen: (settingsOpen) => set({ settingsOpen }),
         toggleSettings: () => set((s) => ({ settingsOpen: !s.settingsOpen })),
       }),
