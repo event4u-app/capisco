@@ -37,8 +37,14 @@ export interface HistoryRecallHandle {
  * `log` is the full prompt history in **most-recent-LAST** order (matches the
  * `sessionPromptLog` selector). `onExit` is called whenever recall mode exits
  * (so the caller can dismiss a "browsing history" indicator, for example).
+ * `onEnter` is called when recall mode is entered (↑ on an empty field) — the
+ * Edit-&-Rerun flag (P5-A) uses it to mark the buffer as a recalled prompt.
  */
-export function useHistoryRecall(log: string[], onExit?: () => void): HistoryRecallHandle {
+export function useHistoryRecall(
+  log: string[],
+  onExit?: () => void,
+  onEnter?: () => void,
+): HistoryRecallHandle {
   /** Current cursor into `log`. null = not in recall mode. */
   const cursorRef = useRef<number | null>(null);
   /** Buffer saved when recall starts so we can restore it on Escape / ↓ past end. */
@@ -64,6 +70,7 @@ export function useHistoryRecall(log: string[], onExit?: () => void): HistoryRec
             el.value = log[cursorRef.current]!;
             // Move caret to end.
             el.setSelectionRange(el.value.length, el.value.length);
+            onEnter?.();
             e.preventDefault();
             return true;
           } else {
@@ -130,6 +137,6 @@ export function useHistoryRecall(log: string[], onExit?: () => void): HistoryRec
     // The handle is referentially stable across re-renders unless `log` changes.
     // `log` is the live dependency: a new array reference (on each store update)
     // intentionally replaces the handle so callers always see the freshest log.
-    [log, onExit],
+    [log, onExit, onEnter],
   );
 }
