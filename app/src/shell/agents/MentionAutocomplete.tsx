@@ -5,6 +5,8 @@ import { Input } from "@/components/ui/input";
 import { getProviders } from "@/lib/desktop-shell";
 import { useAutocompleteEngine, type MentionFieldElement } from "@/lib/autocomplete/engine";
 import { makeProjectProvider } from "@/lib/autocomplete/providers/project-provider";
+import { makeFsProvider } from "@/lib/autocomplete/providers/fs-provider";
+import { makeSymbolProvider } from "@/lib/autocomplete/providers/symbol-provider";
 import type { AutocompleteItem, AutocompleteProvider } from "@/lib/autocomplete/types";
 
 /**
@@ -55,6 +57,17 @@ export interface MentionAutocompleteProps extends Omit<
    * not re-query on every render. `@project`-only callers omit it.
    */
   extraProviders?: AutocompleteProvider<AutocompleteItem>[];
+  /**
+   * Absolute project root — enables `@file`/`@folder` (+ the `@symbol` skeleton)
+   * on the shared `@` trigger, sourced from `ProjectFsProvider.getTree`. Omit to
+   * disable the file providers (`@project`-only callers).
+   */
+  projectRoot?: string;
+  /**
+   * Attach a picked file through the broker ingest chokepoint (P2 `@file`).
+   * Required alongside `projectRoot` for `@file` to ingest on select.
+   */
+  onAttachFile?: (absPath: string) => void;
 }
 
 export const MentionAutocomplete = React.forwardRef<
@@ -70,6 +83,8 @@ export const MentionAutocomplete = React.forwardRef<
       multiline,
       rows = 3,
       extraProviders,
+      projectRoot,
+      onAttachFile,
       ...inputProps
     },
     forwardedRef,
@@ -99,14 +114,32 @@ export const MentionAutocomplete = React.forwardRef<
       [projects, currentProject, onOpenReference],
     );
 
-    // `@project` first, then any caller-supplied providers (e.g. `/` commands).
-    const providers = React.useMemo<AutocompleteProvider<AutocompleteItem>[]>(
+    // `@file`/`@folder` (P2) — enabled only when a project root + attach hook are
+    // given (the composer). Both share the `@` trigger with `@project`; the
+    // engine merges their items into one ranked overlay.
+    const fsProvider = React.useMemo(
       () =>
-        extraProviders && extraProviders.length > 0
-          ? [provider as AutocompleteProvider<AutocompleteItem>, ...extraProviders]
-          : [provider as AutocompleteProvider<AutocompleteItem>],
-      [provider, extraProviders],
+        projectRoot && onAttachFile
+          ? makeFsProvider({ projectRoot, onAttach: onAttachFile })
+          : null,
+      [projectRoot, onAttachFile],
     );
+    // `@symbol` (P2 tail) — LSP-gated skeleton; empty-but-stable without a server.
+    const symbolProvider = React.useMemo(
+      () => (projectRoot ? makeSymbolProvider() : null),
+      [projectRoot],
+    );
+
+    // `@project` first, then `@file`/`@symbol`, then caller-supplied providers.
+    const providers = React.useMemo<AutocompleteProvider<AutocompleteItem>[]>(() => {
+      const list: AutocompleteProvider<AutocompleteItem>[] = [
+        provider as AutocompleteProvider<AutocompleteItem>,
+      ];
+      if (fsProvider) list.push(fsProvider as AutocompleteProvider<AutocompleteItem>);
+      if (symbolProvider) list.push(symbolProvider as AutocompleteProvider<AutocompleteItem>);
+      if (extraProviders?.length) list.push(...extraProviders);
+      return list;
+    }, [provider, fsProvider, symbolProvider, extraProviders]);
 
     const engine = useAutocompleteEngine(innerRef, providers, {
       onBeforeQuery: ensureLoaded,
@@ -161,9 +194,10 @@ export const MentionAutocomplete = React.forwardRef<
           >
             {engine.items.map((item, i) => (
               <li key={item.id} role="presentation">
-                {/* Dispatch to the ACTIVE token's provider (@project or /command),
-                    never a hardcoded one — required once >1 provider is mounted. */}
-                {engine.provider?.renderItem(item, {
+                {/* Dispatch to the provider that PRODUCED this item — several
+                    providers can share `@` (project + file + folder + symbol),
+                    so render per-item, not per-trigger. */}
+                {engine.tagged[i]?.provider.renderItem(item, {
                   highlighted: i === engine.highlight,
                   index: i,
                   onChoose: engine.choose,

@@ -98,6 +98,7 @@ export function Composer({
   initialDraft = "",
   saveDraft,
   clearDraft,
+  projectRoot,
 }: {
   isChat: boolean;
   effort: number;
@@ -126,6 +127,8 @@ export function Composer({
   saveDraft?: (id: string, body: string) => void;
   /** Clear the persisted draft (P4). */
   clearDraft?: (id: string) => void;
+  /** Absolute project root — enables `@file`/`@folder`/`@symbol` (P2). */
+  projectRoot?: string;
 }) {
   const { t } = useTranslation();
   const levels = agentSnapshot.effortLevels;
@@ -182,6 +185,12 @@ export function Composer({
       });
     });
   }, []);
+
+  // `@file` pick → the SAME broker chokepoint as `+`-Add / drop (no second path).
+  const attachFile = React.useCallback(
+    (absPath: string) => ingestPaths([absPath]),
+    [ingestPaths],
+  );
 
   // `+`-Add / attach / palette all funnel through the DesktopShell file-dialog
   // seam (never a raw input.click in the component). Files with a real path
@@ -425,6 +434,8 @@ export function Composer({
           currentProject={currentProject}
           onOpenReference={onOpenReference}
           extraProviders={extraProviders}
+          projectRoot={projectRoot}
+          onAttachFile={attachFile}
           placeholder={t("agents.composer.placeholder")}
           aria-label={t("agents.composer.placeholder")}
           onInput={handleInput}
