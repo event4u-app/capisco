@@ -38,6 +38,20 @@ export interface CheckpointEntry {
 /** Monotonic id source for checkpoints (per module load; deterministic). */
 let checkpointSeq = 0;
 
+/**
+ * A saved prompt / template (composer-intelligence S9). Persisted, cross-session
+ * — the `/`-provider surfaces these for fill-or-rerun. `id` is a deterministic
+ * per-store monotonic handle (no timestamp / random).
+ */
+export interface SavedPrompt {
+  id: string;
+  label: string;
+  body: string;
+}
+
+/** Monotonic id source for saved prompts (per module load; deterministic). */
+let savedPromptSeq = 0;
+
 /** Maximum number of sent prompts kept per session (FIFO ring). */
 const MAX_PROMPT_LOG_SIZE = 100;
 /** Maximum characters stored for an unsent composer draft. */
@@ -123,6 +137,11 @@ interface AgentsState {
    */
   checkpoints: Record<string, CheckpointEntry[]>;
   /**
+   * Saved prompts / templates (composer-intelligence S9). Cross-session,
+   * PERSISTED — surfaced by the `/`-autocomplete provider for fill-or-rerun.
+   */
+  savedPrompts: SavedPrompt[];
+  /**
    * Per-session run-completion counter (Agent-Cockpit P5-A). Bumped ONLY by
    * `completeRun` (a natural run finish), never by `cancelRun` (Stop). The
    * queue-drain hook watches this counter so a Stop never fires the queue —
@@ -204,6 +223,10 @@ interface AgentsState {
   editQueued: (sessionId: string, itemId: string, text: string) => void;
   /** Name the given SessionTree leaf as a checkpoint on the session (S8). */
   addCheckpoint: (sessionId: string, label: string, leafId: string) => void;
+  /** Save a prompt template (S9). Blank body is ignored; dedupes identical bodies. */
+  savePrompt: (body: string, label?: string) => void;
+  /** Delete a saved prompt template by id (S9). */
+  deleteSavedPrompt: (id: string) => void;
   setSettingsOpen: (open: boolean) => void;
   toggleSettings: () => void;
 }
@@ -239,6 +262,7 @@ function createAgentsStore(opts: StoreOpts): UseBoundStore<StoreApi<AgentsState>
         draftBodies: {},
         messageQueues: {},
         checkpoints: {},
+        savedPrompts: [],
         runCompletions: {},
 
         model: defaultModel,
@@ -424,6 +448,21 @@ function createAgentsStore(opts: StoreOpts): UseBoundStore<StoreApi<AgentsState>
             };
             return { checkpoints: { ...s.checkpoints, [sessionId]: [...prev, entry] } };
           }),
+        savePrompt: (body, label) =>
+          set((s) => {
+            const trimmed = body.trim();
+            if (!trimmed) return {};
+            // Dedupe identical bodies — saving the same prompt twice is a no-op.
+            if (s.savedPrompts.some((p) => p.body === trimmed)) return {};
+            const entry: SavedPrompt = {
+              id: `sp${++savedPromptSeq}`,
+              label: (label ?? "").trim() || trimmed.split("\n")[0]!.slice(0, 60),
+              body: trimmed,
+            };
+            return { savedPrompts: [...s.savedPrompts, entry] };
+          }),
+        deleteSavedPrompt: (id) =>
+          set((s) => ({ savedPrompts: s.savedPrompts.filter((p) => p.id !== id) })),
         setSettingsOpen: (settingsOpen) => set({ settingsOpen }),
         toggleSettings: () => set((s) => ({ settingsOpen: !s.settingsOpen })),
       }),
@@ -443,6 +482,7 @@ function createAgentsStore(opts: StoreOpts): UseBoundStore<StoreApi<AgentsState>
           routingEnabled: s.routingEnabled,
           modelOverrides: s.modelOverrides,
           promptLogs: s.promptLogs,
+          savedPrompts: s.savedPrompts,
           draftBodies: s.draftBodies,
         }),
       },
