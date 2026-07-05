@@ -35,3 +35,4 @@ export { mockIngestProvider } from "./ingest";
 export { mockRevertProvider } from "./revert";
 export { sentrySnapshot, mockSentryProvider } from "./sentry";
 export { mockAuditStore, createMockAuditStore } from "./audit";
+export { mockSupervisorProvider, createMockSupervisor } from "./supervisor";
