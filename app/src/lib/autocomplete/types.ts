@@ -52,3 +52,14 @@ export interface AutocompleteProvider<T extends AutocompleteItem = AutocompleteI
   /** Compute the buffer mutation when an item is accepted. */
   onSelect(item: T, token: ActiveToken, bufferText: string): SelectResult;
 }
+
+/**
+ * An item paired with the provider that produced it. When several providers
+ * share a trigger (e.g. `@project` + `@file` + `@symbol`), the engine merges
+ * their items into one ranked list and carries each item's owning provider so
+ * `renderItem` / `onSelect` dispatch per-item, not per-trigger.
+ */
+export interface TaggedItem<T extends AutocompleteItem = AutocompleteItem> {
+  item: T;
+  provider: AutocompleteProvider<T>;
+}

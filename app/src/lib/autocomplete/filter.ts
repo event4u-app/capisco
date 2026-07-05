@@ -8,7 +8,7 @@
  * re-rank that never surfaces a non-substring item. Pure + deterministic.
  */
 
-import type { AutocompleteItem } from "./types";
+import type { AutocompleteItem, TaggedItem } from "./types";
 
 export interface FilterOptions {
   /** Enable fuzzy re-rank as a secondary key. Default false (substring + MRU only). */
@@ -63,6 +63,35 @@ export function filterAndRank<T extends AutocompleteItem>(
       if (fa !== fb) return fb - fa;
     }
     return a.label.localeCompare(b.label);
+  });
+
+  return filtered;
+}
+
+/**
+ * Same filter+rank as {@link filterAndRank}, but over `TaggedItem`s from
+ * multiple providers sharing a trigger — items rank against each other by the
+ * same rules (substring floor, MRU, optional fuzzy), regardless of which
+ * provider produced them.
+ */
+export function filterAndRankTagged<T extends AutocompleteItem>(
+  tagged: TaggedItem<T>[],
+  query: string,
+  options?: FilterOptions,
+): TaggedItem<T>[] {
+  const q = query.trim().toLowerCase();
+  const filtered =
+    q === "" ? tagged.slice() : tagged.filter((ti) => ti.item.label.toLowerCase().includes(q));
+
+  filtered.sort((a, b) => {
+    const mru = b.item.mruScore - a.item.mruScore;
+    if (mru !== 0) return mru;
+    if (options?.fuzzy && q !== "") {
+      const fa = fuzzyScore(a.item.label, q);
+      const fb = fuzzyScore(b.item.label, q);
+      if (fa !== fb) return fb - fa;
+    }
+    return a.item.label.localeCompare(b.item.label);
   });
 
   return filtered;
