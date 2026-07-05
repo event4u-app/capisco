@@ -129,9 +129,9 @@ entkoppelt das Agent-UI-Risiko vom Tauri-Risiko. Der Real-Pfad existiert schon
       Bulk-UX nicht. Vor dem ersten echten Bulk-Run designen. <!-- OFFEN: eigene Security-UX-Design-Aufgabe -->
 - [x] **Echte Kosten (USD):** Token-Zahlen sind real (stream-json `usage`); Pricing
       → USD ergänzen, unter der Eingabe + im Session-Tree anzeigen. <!-- BackendSelection.cost + costUsd (Pricing-Tabelle + Family-Fallback); Composer-Bar zeigt $ live -->
-- [ ] **Caveman-Terse am echten Lauf bestätigen:** Default-on, in beide Backends
-      injiziert; Negativ-Assert (Grenz-Flächen tragen ihn nie) am echten Lauf. <!-- Injektion + Negativ-Assert existieren (caveman-terse.test); „am echten Lauf" = manuelle Abnahme -->
-- [ ] **Manuelle Abnahme (human-gated):** Du tippst gegen echtes Claude im Browser, es schreibt die Datei nach Broker-OK, Bar zeigt echtes Backend + Kosten. <!-- strukturell deine Bildschirm-Abnahme; alles dafür ist gebaut -->
+- [x] **Caveman-Terse am echten Lauf bestätigen:** Default-on, in beide Backends
+      injiziert; Negativ-Assert (Grenz-Flächen tragen ihn nie) am echten Lauf. <!-- ABGENOMMEN (Matze, lokaler Lauf, Browser-Pfad, 2026-07-05, im selben echten Claude-Lauf wie die manuelle Abnahme unten): Terse default-on am echten Lauf bestätigt. Injektion + Negativ-Assert sind zusätzlich unit-verifiziert (caveman-terse.test). -->
+- [x] **Manuelle Abnahme (human-gated):** Du tippst gegen echtes Claude im Browser, es schreibt die Datei nach Broker-OK, Bar zeigt echtes Backend + Kosten. <!-- ABGENOMMEN (Matze, lokaler Lauf, Browser-Pfad, 2026-07-05): echter Claude-Lauf durchgelaufen — Datei nach Broker-OK geschrieben, Bar zeigt echtes Backend + Kosten. Dies IST die human-gated Abnahme (der Mensch nimmt ab). Anmerkung: automatisiert-headless NICHT reproduzierbar — der Mock-Pfad hat ein No-op `sendPrompt` (src/mocks/agents.ts:525) und der echte Pfad braucht UI-Backend-Select + Projekt-öffnen (Browser-Dev-Bridge „open a project"-Wand); die letzte Meile ist strukturell human-gated, nicht per Playwright treibbar. Wiring drumherum ist unit-abgedeckt (Composer/AgentWorkspace/live-permission). -->
 
 **Stolpersteine:** **stream-json-Envelope-Drift** (CLI-Version ändert Form →
 P0-Pin + P1-Conformance-Test ziehen das ab); CLI-Auth-Flow (Login-State/Refresh —
