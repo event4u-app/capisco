@@ -25,12 +25,13 @@ import {
   makeCommandProvider,
 } from "@/lib/autocomplete/providers/command-provider";
 import { MentionAutocomplete, type MentionFieldElement } from "./MentionAutocomplete";
-import { budgetTone } from "./store";
+import { budgetTone, type QueuedMessage } from "./store";
 import { useHistoryRecall } from "./use-history-recall";
 import { useDraft } from "./use-draft";
 import { useAutoGrow } from "./use-auto-grow";
 import { useSmartPaste } from "./use-smart-paste";
 import { useEmptyStateSuggestions } from "./use-empty-state-suggestions";
+import type { EditRerunHandle } from "./use-edit-rerun";
 
 /** Prototype fmtK — verbatim (agent.jsx). */
 const fmtK = (n: number) =>
@@ -101,6 +102,11 @@ export function Composer({
   clearDraft,
   projectRoot,
   promptLogs = {},
+  editRerun,
+  queue = [],
+  onRemoveQueued,
+  onReorderQueued,
+  onEditQueued,
 }: {
   isChat: boolean;
   effort: number;
@@ -133,6 +139,16 @@ export function Composer({
   projectRoot?: string;
   /** Per-session prompt-log map (P4) — feeds the empty-state suggestions (P3). */
   promptLogs?: Record<string, string[]>;
+  /** Edit-&-Rerun handle (P5-A) — marks a recalled buffer for retry-branch. */
+  editRerun?: EditRerunHandle;
+  /** This session's message queue (P5-A) — shown while a run is in flight. */
+  queue?: QueuedMessage[];
+  /** Remove a queued message by id (P5-A). */
+  onRemoveQueued?: (itemId: string) => void;
+  /** Reorder a queued message (P5-A). */
+  onReorderQueued?: (from: number, to: number) => void;
+  /** Edit a queued message's text (P5-A). */
+  onEditQueued?: (itemId: string, text: string) => void;
 }) {
   const { t } = useTranslation();
   const levels = agentSnapshot.effortLevels;
@@ -272,7 +288,9 @@ export function Composer({
     saveDraft: saveDraft ?? (() => {}),
   });
   const autoGrow = useAutoGrow(composerRef as React.RefObject<HTMLTextAreaElement | null>);
-  const recall = useHistoryRecall(promptLog);
+  // History-recall (P4) wired to the Edit-&-Rerun flag (P5-A): entering recall
+  // marks the buffer as a recalled prompt; exiting recall clears the mark.
+  const recall = useHistoryRecall(promptLog, editRerun?.onRecallExit, editRerun?.onRecallEnter);
   const safeHost = (url: string): string => {
     try {
       return new URL(url).hostname;
@@ -328,8 +346,11 @@ export function Composer({
     autoGrow.measure();
     draft.onInput();
     const el = composerRef.current;
-    setComposerEmpty(el ? el.value === "" : true);
-  }, [autoGrow, draft, composerRef]);
+    const empty = el ? el.value === "" : true;
+    setComposerEmpty(empty);
+    // Emptying the field ends any rerun-edit (P5-A) — the next buffer is fresh.
+    if (empty) editRerun?.onRecallExit();
+  }, [autoGrow, draft, composerRef, editRerun]);
 
   const ratio = budget > 0 ? used / budget : 0;
   const tone = budgetTone(used, budget); // ok | warn | crit
@@ -428,6 +449,67 @@ export function Composer({
           </button>
         </div>
 
+        {/* Message queue (P5-A) — visible only while THIS session's run is in
+            flight and at least one message is queued. Each chip is editable /
+            removable / reorderable before it fires. Empty queue → no row
+            (boot-invisible → golden-safe). */}
+        {running && queue.length > 0 && (
+          <div className="cmp-queue" data-testid="composer-queue" role="list">
+            {queue.map((item, i) => (
+              <span
+                key={item.id}
+                className="cmp-queue-chip"
+                data-testid={`queue-chip-${item.id}`}
+                role="listitem"
+              >
+                <span className="cmp-queue-pos" aria-hidden>
+                  {i + 1}
+                </span>
+                <span
+                  className="cmp-queue-text"
+                  contentEditable
+                  suppressContentEditableWarning
+                  role="textbox"
+                  aria-label={t("agents.composer.queueEdit")}
+                  data-testid={`queue-text-${item.id}`}
+                  onBlur={(e) => onEditQueued?.(item.id, e.currentTarget.textContent ?? "")}
+                >
+                  {item.text}
+                </span>
+                <button
+                  type="button"
+                  className="cmp-queue-btn"
+                  data-testid={`queue-up-${item.id}`}
+                  aria-label={t("agents.composer.queueUp")}
+                  disabled={i === 0}
+                  onClick={() => onReorderQueued?.(i, i - 1)}
+                >
+                  ↑
+                </button>
+                <button
+                  type="button"
+                  className="cmp-queue-btn"
+                  data-testid={`queue-down-${item.id}`}
+                  aria-label={t("agents.composer.queueDown")}
+                  disabled={i === queue.length - 1}
+                  onClick={() => onReorderQueued?.(i, i + 1)}
+                >
+                  ↓
+                </button>
+                <button
+                  type="button"
+                  className="cmp-queue-x"
+                  data-testid={`queue-remove-${item.id}`}
+                  aria-label={t("agents.composer.queueRemove")}
+                  onClick={() => onRemoveQueued?.(item.id)}
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+
         {draft.draftRestored && (
           <div
             className="cmp-draft-restored"
@@ -473,7 +555,10 @@ export function Composer({
             if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
               e.preventDefault();
               recall.reset();
-              send();
+              // Always the send path — while a run is in flight, AgentWorkspace
+              // enqueues instead of starting a competing run (P5-A). The Stop
+              // affordance stays on the send BUTTON (never on Cmd+Enter).
+              onSend();
               return;
             }
             // History-recall (↑/↓ on an empty composer). Reaches here only when

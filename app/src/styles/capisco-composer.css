@@ -156,6 +156,70 @@
   background: var(--ds-bg-hover);
   color: var(--ds-text-primary);
 }
+
+/* Message queue (P5-A) — pending messages shown while a run is in flight;
+   editable / removable / reorderable chips that fire on run completion. */
+.cmp-queue {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 6px;
+  border-bottom: 1px solid var(--ds-border);
+}
+.cmp-queue-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 6px;
+  background: var(--ds-bg-tool);
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-1);
+  font-size: 11.5px;
+  color: var(--ds-text-primary);
+}
+.cmp-queue-pos {
+  flex-shrink: 0;
+  min-width: 14px;
+  height: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--ds-bg-raised);
+  color: var(--ds-text-tertiary);
+  font-size: 9.5px;
+}
+.cmp-queue-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  outline: none;
+}
+.cmp-queue-text:focus {
+  white-space: normal;
+  overflow: visible;
+}
+.cmp-queue-btn,
+.cmp-queue-x {
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  color: var(--ds-text-tertiary);
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1;
+  padding: 0 2px;
+}
+.cmp-queue-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.cmp-queue-btn:not(:disabled):hover,
+.cmp-queue-x:hover {
+  color: var(--ds-text-primary);
+}
 .cmp-ico {
   display: inline-flex;
   align-items: center;
