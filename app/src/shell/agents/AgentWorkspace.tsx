@@ -16,12 +16,15 @@ import { SubagentRow } from "./SubagentRow";
 import { Transcript } from "./Transcript";
 import { Composer } from "./Composer";
 import { AgentSettings } from "./AgentSettings";
+import { useEditRerun } from "./use-edit-rerun";
+import { useQueueDrain } from "./use-queue-drain";
 import { TriangleAlert } from "lucide-react";
 import {
   budgetTone,
   contextUsed,
   storeForKind,
   visibleSessions,
+  type QueuedMessage,
   type WorkspaceKind,
 } from "./store";
 
@@ -35,6 +38,8 @@ import {
  */
 /** Stable empty prompt-log reference (avoids a new [] each render → no churn). */
 const EMPTY_LOG: string[] = [];
+/** Stable empty message-queue reference (P5-A — same no-churn rationale). */
+const EMPTY_QUEUE: QueuedMessage[] = [];
 
 export function AgentWorkspace({ kind = "agents" }: { kind?: WorkspaceKind } = {}) {
   const { t } = useTranslation();
@@ -69,6 +74,14 @@ export function AgentWorkspace({ kind = "agents" }: { kind?: WorkspaceKind } = {
   const setBackendKind = useStore((s) => s.setBackendKind);
   const setRunState = useStore((s) => s.setRunState);
   const cancelRun = useStore((s) => s.cancelRun);
+  // P5-A cockpit control-flow: per-session message queue + run-completion seam.
+  const messageQueues = useStore((s) => s.messageQueues);
+  const runCompletions = useStore((s) => s.runCompletions);
+  const enqueueMessage = useStore((s) => s.enqueueMessage);
+  const dequeueMessage = useStore((s) => s.dequeueMessage);
+  const removeQueued = useStore((s) => s.removeQueued);
+  const reorderQueued = useStore((s) => s.reorderQueued);
+  const editQueued = useStore((s) => s.editQueued);
   const settingsOpen = useStore((s) => s.settingsOpen);
   const toggleSettings = useStore((s) => s.toggleSettings);
   const setSettingsOpen = useStore((s) => s.setSettingsOpen);
@@ -83,6 +96,9 @@ export function AgentWorkspace({ kind = "agents" }: { kind?: WorkspaceKind } = {
   const openProjectByPath = useOpenProject((s) => s.open);
   const worktreeCwd = useWorktrees((s) => s.activePath);
   const composerRef = React.useRef<MentionFieldElement>(null);
+  // P5-A Edit-&-Rerun: tracks whether the buffer is a recalled prompt (↑) being
+  // edited — a send then forks a "retry · edited" branch instead of overwriting.
+  const editRerun = useEditRerun();
 
   // Clickable @-reference: open the referenced project through the existing
   // open-project flow (mid lesart — "Klick öffnet das Projekt / springt
@@ -173,34 +189,73 @@ export function AgentWorkspace({ kind = "agents" }: { kind?: WorkspaceKind } = {
   // persisted `terseHintSeen` so it shows exactly once — and only on a real send
   // (never on the pre-seeded mock transcript → visual harness goldens intact).
   const [terseHintOpen, setTerseHintOpen] = React.useState(false);
-  const send = () => {
-    const el = composerRef.current;
-    // Capture the typed turn BEFORE clearing — a live run needs the text.
-    const text = el?.value?.trim();
-    // P4: log the sent prompt (history-recall / future ghost-text) + drop the
-    // now-obsolete draft, before the buffer is cleared.
-    if (text && cur) {
-      appendPrompt(cur.id, text);
-      clearDraft(cur.id);
-    }
-    if (el) el.value = "";
-    // Start the run (P3): the session goes `loading`, which drives the
-    // composer's Stop affordance. The real stream lands on the AgentProvider;
-    // here the run-state is the in-flight signal a Stop can cancel.
-    if (cur) setRunState(cur.id, "loading");
+  // The actual send of a concrete text — composer-independent, so both the
+  // composer send and the P5-A queue-drain reuse it. `branchLabel` (set when a
+  // recalled prompt was edited) forks a retry sibling via the existing
+  // `SessionTree.branch()` — pure tree bookkeeping, never overwrites, both paths.
+  const runSend = (text: string, branchLabel?: string | null) => {
+    if (!cur) return;
+    // Start the run (P3): the session goes `loading`, which drives the composer's
+    // Stop affordance. Preserved on an empty send (the pre-existing behaviour).
+    setRunState(cur.id, "loading");
     if (terseEnabled && !terseHintSeen) {
       setTerseHintOpen(true);
       markTerseHintSeen();
+    }
+    if (!text) return;
+    // P4: log the sent prompt + drop the now-obsolete draft.
+    appendPrompt(cur.id, text);
+    clearDraft(cur.id);
+    const agent = getProviders().agent;
+    // P5-A: a recalled-then-edited prompt forks a retry sibling via the existing
+    // `SessionTree.branch()` — pure tree bookkeeping, never overwrites, both paths.
+    if (branchLabel && agent?.getTree && agent?.branch) {
+      const sid = cur.id;
+      void agent.getTree(sid).then((tree) => agent.branch(sid, tree.activeLeaf, branchLabel));
     }
     // Live agent run (road-to-agent-backend-enablement): only when a desktop
     // bridge is present AND this is the agents kind. No bridge → mock path is
     // untouched (the browser/visual harness never reaches this). Chat has no
     // tools / live run, so it stays mock-only too.
-    if (text && cur && !isChat && isDesktop()) {
-      void getProviders().agent.sendPrompt(cur.id, text);
+    if (!isChat && isDesktop()) {
+      void agent.sendPrompt(cur.id, text);
     }
   };
+  const send = () => {
+    const el = composerRef.current;
+    // Capture the typed turn BEFORE clearing — a live run needs the text.
+    const text = el?.value?.trim();
+    if (!cur) return;
+    // P5-A: while THIS session's run is in flight, a send appends to a visible
+    // per-session queue instead of starting a competing run (text only — an
+    // empty send while running is a no-op, never a phantom queue entry).
+    if (text && (runStates[cur.id] ?? "ready") === "loading") {
+      enqueueMessage(cur.id, text);
+      if (el) el.value = "";
+      clearDraft(cur.id);
+      return;
+    }
+    // P5-A: a recalled-then-edited prompt forks a "retry · edited" branch.
+    const branchLabel = text ? editRerun.branchLabel() : null;
+    editRerun.onSend();
+    if (el) el.value = "";
+    runSend(text ?? "", branchLabel);
+  };
   const dismissTerseHint = () => setTerseHintOpen(false);
+
+  // P5-A queue-drain: fire the head of the active session's queue when its run
+  // completes (`completeRun` bumps `runCompletions`; a Stop/`cancelRun` does
+  // not, so a Stop never drains). Hook runs unconditionally (before the `cur`
+  // guard); a missing session is a no-op baseline.
+  const fireNext = React.useCallback(() => {
+    if (!cur) return;
+    const item = dequeueMessage(cur.id);
+    if (item) runSend(item.text);
+    // runSend is recreated each render but reads current closures; deps kept
+    // minimal to the identity that matters (the active session + dequeue).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cur?.id, dequeueMessage]);
+  useQueueDrain(cur?.id ?? "", cur ? (runCompletions[cur.id] ?? 0) : 0, fireNext);
 
   if (!cur) return null;
 
@@ -350,6 +405,11 @@ export function AgentWorkspace({ kind = "agents" }: { kind?: WorkspaceKind } = {
             clearDraft={clearDraft}
             projectRoot={worktreeCwd}
             promptLogs={promptLogs}
+            editRerun={editRerun}
+            queue={cur ? (messageQueues[cur.id] ?? EMPTY_QUEUE) : EMPTY_QUEUE}
+            onRemoveQueued={(itemId) => removeQueued(cur.id, itemId)}
+            onReorderQueued={(from, to) => reorderQueued(cur.id, from, to)}
+            onEditQueued={(itemId, text) => editQueued(cur.id, itemId, text)}
           />
         </div>
       </div>
