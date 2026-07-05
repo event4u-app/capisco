@@ -4371,3 +4371,119 @@
   font-size: 11.5px;
   color: var(--ds-text-tertiary);
 }
+
+/* ── Composer expand-to-fullscreen (C-2) ────────────────────────────────
+   Boot state is collapsed; the `cmp-expanded` class is added only on toggle,
+   so the default composer goldens are unchanged. Expanded grows the editing
+   surface; Esc collapses (handled in Composer's onKeyDown). */
+.cmp.cmp-expanded .cmp-ta {
+  min-height: 40vh;
+  max-height: 62vh;
+}
+
+/* ── Heuristic prompt-lint hints (composer-intelligence S3) ─────────────
+   Boot-invisible: renders only when `lintPrompt` returns rows (never on an
+   empty buffer), so the composer goldens are untouched. Purely advisory. */
+.cmp-lints {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 4px 10px 6px;
+}
+.cmp-lint {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--ds-radius-1);
+  border: 1px solid var(--ds-border);
+  background: var(--ds-bg-raised);
+  color: var(--ds-text-secondary);
+  font-family: var(--ds-font-sans);
+  font-size: 11px;
+  line-height: 1.4;
+}
+.cmp-lint[data-severity="warn"] {
+  border-color: var(--ds-warning);
+  background: var(--ds-warning-tint);
+  color: var(--ds-text-primary);
+}
+
+/* ── Cmd+R prompt-history overlay (composer-intelligence P4 fast-follow) ──
+   Boot-hidden modal — only mounts when opened, so the composer goldens are
+   unaffected. Filter-as-you-type over the session prompt log; picking fills
+   the composer (never auto-sends). */
+.history-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 14vh;
+  background: rgba(0, 0, 0, 0.32);
+}
+.history-pop {
+  width: min(560px, 90vw);
+  max-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--ds-surface-panel);
+  border: 1px solid var(--ds-border-strong);
+  border-radius: var(--ds-radius-2);
+  box-shadow: var(--ds-shadow-popup);
+  overflow: hidden;
+}
+.history-search-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--ds-border);
+  color: var(--ds-text-tertiary);
+}
+.history-search {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--ds-text-primary);
+  font-family: var(--ds-font-sans);
+  font-size: 13px;
+}
+.history-search::placeholder {
+  color: var(--ds-text-tertiary);
+}
+.history-list {
+  overflow-y: auto;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.history-item {
+  width: 100%;
+  text-align: left;
+  padding: 6px 8px;
+  border: none;
+  border-radius: var(--ds-radius-1);
+  background: transparent;
+  color: var(--ds-text-primary);
+  font-family: var(--ds-font-mono);
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+.history-item:hover,
+.history-item.sel {
+  background: var(--ds-accent-tint);
+}
+.history-empty {
+  padding: 14px 12px;
+  color: var(--ds-text-tertiary);
+  font-family: var(--ds-font-sans);
+  font-size: 12px;
+  text-align: center;
+}

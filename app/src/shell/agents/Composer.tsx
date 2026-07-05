@@ -25,8 +25,17 @@ import {
   makeCommandProvider,
 } from "@/lib/autocomplete/providers/command-provider";
 import { MentionAutocomplete, type MentionFieldElement } from "./MentionAutocomplete";
-import { budgetTone, type CheckpointEntry, type QueuedMessage } from "./store";
+import {
+  budgetTone,
+  type CheckpointEntry,
+  type QueuedMessage,
+  type SavedPrompt,
+} from "./store";
 import { BranchSwitcher } from "./BranchSwitcher";
+import { HistoryOverlay } from "./HistoryOverlay";
+import { LintHints } from "./LintHints";
+import { makeSavedPromptsProvider } from "@/lib/autocomplete/providers/saved-prompts-provider";
+import { Maximize2, Minimize2 } from "lucide-react";
 import { useHistoryRecall } from "./use-history-recall";
 import { useDraft } from "./use-draft";
 import { useAutoGrow } from "./use-auto-grow";
@@ -110,6 +119,8 @@ export function Composer({
   onEditQueued,
   checkpoints = [],
   onJumpCheckpoint,
+  getSavedPrompts = () => [],
+  onSavePrompt,
 }: {
   isChat: boolean;
   effort: number;
@@ -156,6 +167,11 @@ export function Composer({
   checkpoints?: CheckpointEntry[];
   /** Jump to a checkpoint's divergent line (S8) — forks from its leaf. */
   onJumpCheckpoint?: (entry: CheckpointEntry) => void;
+  /** Live snapshot of the saved prompt templates (S9) — read at `/`-query time
+      by the saved-prompts provider (store-getState getter, kept stable). */
+  getSavedPrompts?: () => SavedPrompt[];
+  /** Save the current buffer as a template (S9, Cmd+S). */
+  onSavePrompt?: (body: string) => void;
 }) {
   const { t } = useTranslation();
   const levels = agentSnapshot.effortLevels;
@@ -284,7 +300,18 @@ export function Composer({
       }),
     [isChat],
   );
-  const extraProviders = React.useMemo(() => [commandProvider], [commandProvider]);
+  // Saved-prompts `/`-provider (S9) — co-exists with commands on `/` via the
+  // multi-provider merge. Sources a live snapshot via the `getSavedPrompts`
+  // getter (same store-getState idiom as `commandProvider` above), so the
+  // provider stays stable while the list stays fresh — no ref-read in render.
+  const savedPromptsProvider = React.useMemo(
+    () => makeSavedPromptsProvider({ getSaved: () => getSavedPrompts() }),
+    [getSavedPrompts],
+  );
+  const extraProviders = React.useMemo(
+    () => [commandProvider, savedPromptsProvider],
+    [commandProvider, savedPromptsProvider],
+  );
 
   // ---- P4 input-reliability: draft, auto-grow, history-recall, smart-paste ----
   const sid = sessionId ?? "";
@@ -331,6 +358,13 @@ export function Composer({
   // empty (an empty field can never carry an `@`/`/` trigger, so the
   // autocomplete overlay is structurally closed → no collision).
   const [composerEmpty, setComposerEmpty] = React.useState(true);
+  // Current buffer value, read one-way off the uncontrolled textarea for the
+  // lint hints (S3). The textarea stays uncontrolled — we never write el.value
+  // from this state, so there is no caret/controlled-component issue.
+  const [composerValue, setComposerValue] = React.useState("");
+  // Cmd+R searchable history overlay (P4 fast-follow); Expand-to-Fullscreen (S).
+  const [historyOpen, setHistoryOpen] = React.useState(false);
+  const [expanded, setExpanded] = React.useState(false);
   const suggestions = useEmptyStateSuggestions({ promptLogs, sessionId: sid, isChat });
   // Click a suggestion → write it into the composer and re-run the input
   // pipeline (engine token-detect, draft autosave, auto-grow, empty-state).
@@ -353,11 +387,22 @@ export function Composer({
     autoGrow.measure();
     draft.onInput();
     const el = composerRef.current;
-    const empty = el ? el.value === "" : true;
+    const value = el ? el.value : "";
+    const empty = value === "";
     setComposerEmpty(empty);
+    setComposerValue(value); // one-way read for the lint hints (S3)
     // Emptying the field ends any rerun-edit (P5-A) — the next buffer is fresh.
     if (empty) editRerun?.onRecallExit();
   }, [autoGrow, draft, composerRef, editRerun]);
+
+  // Fill the composer from the history overlay (S-fast-follow) — never sends.
+  const fillFromHistory = React.useCallback(
+    (text: string) => {
+      fillComposer(text);
+      setHistoryOpen(false);
+    },
+    [fillComposer],
+  );
 
   const ratio = budget > 0 ? used / budget : 0;
   const tone = budgetTone(used, budget); // ok | warn | crit
@@ -372,9 +417,23 @@ export function Composer({
 
   return (
     <>
+      {historyOpen && (
+        <HistoryOverlay
+          log={promptLog}
+          onPick={fillFromHistory}
+          onClose={() => setHistoryOpen(false)}
+        />
+      )}
       <div
-        className={"cmp" + (dragOver ? " cmp-drag" : "")}
+        className={"cmp" + (dragOver ? " cmp-drag" : "") + (expanded ? " cmp-expanded" : "")}
         data-testid="composer-box"
+        data-expanded={expanded || undefined}
+        onKeyDown={(e) => {
+          if (e.key === "Escape" && expanded) {
+            e.preventDefault();
+            setExpanded(false);
+          }
+        }}
         onDragOver={(e) => {
           e.preventDefault();
           setDragOver(true);
@@ -568,6 +627,19 @@ export function Composer({
               onSend();
               return;
             }
+            // Cmd/Ctrl+R — open the searchable prompt-history overlay (S).
+            if ((e.key === "r" || e.key === "R") && (e.metaKey || e.ctrlKey)) {
+              e.preventDefault();
+              if (promptLog.length > 0) setHistoryOpen(true);
+              return;
+            }
+            // Cmd/Ctrl+S — save the current buffer as a prompt template (S9).
+            if ((e.key === "s" || e.key === "S") && (e.metaKey || e.ctrlKey)) {
+              e.preventDefault();
+              const body = e.currentTarget.value.trim();
+              if (body) onSavePrompt?.(body);
+              return;
+            }
             // History-recall (↑/↓ on an empty composer). Reaches here only when
             // the autocomplete overlay is closed (the engine consumes arrows
             // while open), so an empty-value guard inside the hook is sufficient.
@@ -607,6 +679,10 @@ export function Composer({
           </div>
         )}
 
+        {/* Heuristic prompt-lint hints (composer-intelligence S3). Boot-invisible:
+            an empty buffer yields no lints, so the composer goldens are untouched. */}
+        <LintHints value={composerValue} hasAttachments={chips.length > 0} />
+
         <div className="cmp-controls">
           <div className="cmp-left">
             <button
@@ -635,6 +711,23 @@ export function Composer({
                 <MessageSquare size={15} strokeWidth={1.6} />
               </button>
             )}
+            {/* Expand the composer to a full-height editing surface (C-2). Boot
+                state is collapsed → the `cmp-expanded` class is absent → goldens
+                unchanged. Esc collapses (handled on the box onKeyDown). */}
+            <button
+              type="button"
+              className={"cmp-plan" + (expanded ? " active" : "")}
+              data-testid="composer-expand"
+              aria-pressed={expanded}
+              title={t(expanded ? "agents.composer.collapse" : "agents.composer.expand")}
+              onClick={() => setExpanded((v) => !v)}
+            >
+              {expanded ? (
+                <Minimize2 size={15} strokeWidth={1.6} />
+              ) : (
+                <Maximize2 size={15} strokeWidth={1.6} />
+              )}
+            </button>
             {/* No model dropdown here: "Auto" is the routing control, not a model
                 selector (token-economy definition). The effective model is the
                 ModelBadge on the session tab; the override lives in

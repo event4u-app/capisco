@@ -6,19 +6,19 @@
 
 ## Overall
 
-**104 / 228 steps done · 46%**
+**107 / 229 steps done · 47%**
 
 ```text
-██████████████████░░░░░░░░░░░░░░░░░░░░░░   46%
+███████████████████░░░░░░░░░░░░░░░░░░░░░   47%
 ```
 
 ## Open roadmaps
 
 | # | Roadmap | Phases | Steps | Open | Done | Deferred | Cancelled | Progress |
 |---|---|---:|---:|---:|---:|---:|---:|---|
-| 1 | [road-to-actually-works.md](roadmaps/road-to-actually-works.md) | 9 | 54 | 18 | 36 | 0 | 0 | ███████░░░ 67% |
+| 1 | [road-to-actually-works.md](roadmaps/road-to-actually-works.md) | 9 | 55 | 18 | 37 | 0 | 0 | ███████░░░ 67% |
 | 2 | [road-to-agent-matrix-and-ambient.md](roadmaps/road-to-agent-matrix-and-ambient.md) | 7 | 39 | 31 | 8 | 0 | 0 | ██░░░░░░░░ 21% |
-| 3 | [road-to-composer-intelligence.md](roadmaps/road-to-composer-intelligence.md) | 7 | 33 | 7 | 19 | 7 | 0 | ██████░░░░ 58% |
+| 3 | [road-to-composer-intelligence.md](roadmaps/road-to-composer-intelligence.md) | 7 | 33 | 7 | 21 | 5 | 0 | ██████░░░░ 64% |
 | 4 | [road-to-desktop-release.md](roadmaps/road-to-desktop-release.md) | 6 | 14 | 14 | 0 | 0 | 0 | ░░░░░░░░░░ 0% |
 | 5 | [road-to-real-breadth.md](roadmaps/road-to-real-breadth.md) | 5 | 30 | 22 | 8 | 0 | 0 | ███░░░░░░░ 27% |
 | 6 | [road-to-real-runtime.md](roadmaps/road-to-real-runtime.md) | 5 | 29 | 4 | 25 | 0 | 0 | █████████░ 86% |
@@ -30,14 +30,14 @@
 
 ### [road-to-actually-works.md](roadmaps/road-to-actually-works.md)
 
-**Road to Actually Works — die Spine zur gefühlten IDE** — 36 / 54 done (67%)
+**Road to Actually Works — die Spine zur gefühlten IDE** — 37 / 55 done (67%)
 
 | # | Phase | State | Open | Done | Deferred | Cancelled | % |
 |---|---|---|---:|---:|---:|---:|---:|
 | 0 | Reality-Gate als ausführbarer `doctor` | ✅ done | 0 | 7 | 0 | 0 | 100% |
 | 1 | Fundament-Primitive + Test-Spine (einmal, trägt alles) | ✅ done | 0 | 6 | 0 | 0 | 100% |
 | 2 | Echter Agent end-to-end, IM BROWSER bewiesen (gefühlte Scheibe #1) | 🟡 in progress | 3 | 6 | 0 | 0 | 67% |
-| 3 | Minimal-Observability in der Spine (Council #5) | 🟡 in progress | 2 | 2 | 0 | 0 | 50% |
+| 3 | Minimal-Observability in der Spine (Council #5) | 🟡 in progress | 2 | 3 | 0 | 0 | 60% |
 | 4 | Editor fertig (Grammatik · File-Watch · Folding — KEIN LSP) | 🟡 in progress | 1 | 3 | 0 | 0 | 75% |
 | 5 | LSP-Basis (Diagnostics · Hover · Autovervollständigung) | ✅ done | 0 | 6 | 0 | 0 | 100% |
 | 6 | Echtes Terminal (PTY) | ✅ done | 0 | 6 | 0 | 0 | 100% |
@@ -60,15 +60,15 @@
 
 ### [road-to-composer-intelligence.md](roadmaps/road-to-composer-intelligence.md)
 
-**Road to Composer-Intelligence — der Input, der mitdenkt** — 19 / 33 done (58%)
+**Road to Composer-Intelligence — der Input, der mitdenkt** — 21 / 33 done (64%)
 
 | # | Phase | State | Open | Done | Deferred | Cancelled | % |
 |---|---|---|---:|---:|---:|---:|---:|
 | 0 | Shared-Autocomplete-Overlay-Primitiv | ✅ done | 0 | 6 | 0 | 0 | 100% |
-| 1 | `/`-Slash-Commands (+ Arg-Hints, Saved Prompts) | ✅ done | 0 | 2 | 2 | 0 | 50% |
+| 1 | `/`-Slash-Commands (+ Arg-Hints, Saved Prompts) | ✅ done | 0 | 3 | 1 | 0 | 75% |
 | 2 | Multi-Source-`@`-Mentions (Datei / Ordner / Symbol) | ✅ done | 0 | 3 | 2 | 0 | 60% |
 | 3 | Empty-State-Next-Task-Vorschläge (deterministisch) | ✅ done | 0 | 2 | 0 | 0 | 100% |
-| 4 | Input-Reliability & -Qualität (History / Drafts / Paste / Diktat + Heuristik-Assists) | ✅ done | 0 | 3 | 3 | 0 | 50% |
+| 4 | Input-Reliability & -Qualität (History / Drafts / Paste / Diktat + Heuristik-Assists) | ✅ done | 0 | 4 | 2 | 0 | 67% |
 | 5 | Agent-Cockpit-Control-Flow | 🟡 in progress | 3 | 3 | 0 | 0 | 50% |
 | 6 | Aktive ML-Input-Intelligenz (per Setting, token-bewusst) | ⬜ not started | 4 | 0 | 0 | 0 | 0% |
 
