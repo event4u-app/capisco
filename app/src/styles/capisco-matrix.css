@@ -197,6 +197,29 @@
   flex-shrink: 0;
 }
 
+/* Process-health strip (P0) — reuses the container row layout (.ctr-*). */
+.matrix-procs {
+  flex-shrink: 0;
+  border-top: 1px solid var(--ds-border);
+  background: var(--ds-bg-raised, var(--ds-bg-base));
+  font-family: var(--ds-font-sans);
+  font-size: 11px;
+}
+.proc-pid {
+  font-family: var(--ds-font-mono);
+  font-size: 10px;
+  color: var(--ds-text-tertiary);
+  flex-shrink: 0;
+  min-width: 56px;
+  text-align: right;
+}
+.proc-restarts {
+  font-family: var(--ds-font-mono);
+  font-size: 10px;
+  color: var(--ds-warning);
+  flex-shrink: 0;
+}
+
 /* Degradation tree (>150 nodes). */
 .matrix-tree {
   flex: 1;

@@ -52,6 +52,13 @@ test.describe("matrix workspace — routing + structure", () => {
     await expect(page.getByTestId("container-web")).toBeVisible();
     await expect(page.getByTestId("container-postgres")).toBeVisible();
   });
+
+  test("process strip shows supervised process health with restarts marked", async ({ page }) => {
+    await gotoMatrix(page);
+    await expect(page.getByTestId("process-strip")).toBeVisible();
+    await expect(page.getByTestId("process-pty:term-1")).toBeVisible();
+    await expect(page.getByTestId("process-restarts-lsp:php:/repo")).toBeVisible();
+  });
 });
 
 test.describe("matrix workspace — fidelity golden", () => {

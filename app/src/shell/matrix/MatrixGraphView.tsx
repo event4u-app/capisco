@@ -69,14 +69,17 @@ function MatrixNodeEl({ node }: { node: MatrixNode }) {
  */
 export function MatrixGraphView({ graph }: { graph: MatrixGraph }) {
   return (
-    <div className="matrix-graph-scroll" data-testid="matrix-graph-scroll">
-      <svg
-        data-testid="matrix-graph"
-        width={graph.width}
-        height={graph.height}
-        role="img"
-        aria-label="Agent session graph"
-      >
+    <div
+      className="matrix-graph-scroll"
+      data-testid="matrix-graph-scroll"
+      // A keyboard-scrollable region must be focusable (axe
+      // scrollable-region-focusable) — the graph can overflow the panel.
+      tabIndex={0}
+      role="region"
+      aria-label="Agent session graph"
+    >
+      <svg data-testid="matrix-graph" width={graph.width} height={graph.height} role="img">
+        <title>Agent session graph</title>
         {graph.edges.map((e) => {
           const from = graph.nodes.find((n) => n.id === e.fromId);
           const to = graph.nodes.find((n) => n.id === e.toId);
