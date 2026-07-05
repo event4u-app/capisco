@@ -6,6 +6,7 @@ import {
   GitGraph,
   Kanban,
   MessageSquare,
+  Network,
   SquareCode,
   SquareTerminal,
   type LucideIcon,
@@ -23,6 +24,7 @@ const MODES: { id: WorkspaceMode; icon: LucideIcon; labelKey: string }[] = [
   { id: "git", icon: GitGraph, labelKey: "mode.git" },
   { id: "tasks", icon: Kanban, labelKey: "mode.tasks" },
   { id: "sentry", icon: Bug, labelKey: "mode.sentry" },
+  { id: "matrix", icon: Network, labelKey: "mode.matrix" },
 ];
 
 /**

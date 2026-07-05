@@ -11,6 +11,7 @@ import { EditorWorkspace } from "./editor/EditorWorkspace";
 import { GitWorkspace } from "./git/GitWorkspace";
 import { TasksWorkspace } from "./tasks/TasksWorkspace";
 import { SentryWorkspace } from "./sentry/SentryWorkspace";
+import { MatrixWorkspace } from "./matrix/MatrixWorkspace";
 import { CommandPalette } from "./CommandPalette";
 import { usePaletteShortcut } from "./command-registry";
 import { FlyoutOverlay } from "./signals/FlyoutOverlay";
@@ -117,6 +118,8 @@ export function Shell() {
               <TasksWorkspace />
             ) : mode === "sentry" ? (
               <SentryWorkspace />
+            ) : mode === "matrix" ? (
+              <MatrixWorkspace />
             ) : (
               <div className="flex flex-1 items-center justify-center">
                 <span className="font-mono text-code lowercase text-muted-foreground">
