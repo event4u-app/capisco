@@ -23,15 +23,18 @@ wird der Composer zum Cockpit (Edit-&-Rerun als Branch, Message-Queue,
 Mid-Run-Steering); und eine abschaltbare ML-Schicht obendrauf rankt, vervollständigt
 und schärft Prompts — jeder Assist mit deterministischem Fallback.
 
-> **Implementierungsstand (2026-06-29, autonomer Lauf):** **Phase 0 + Phase 1
-> erledigt & verifiziert** (tsc, eslint 0 Fehler, prettier, 741 Vitest grün,
-> build, ladle:build). P0: geteiltes Autocomplete-Overlay-Primitiv (ein
-> Tokenizer für `@`+`/`, Provider-Engine, `@project` re-mounted ohne
-> Verhaltens-/DOM-Change, MRU + zuschaltbares Fuzzy). P1: `/`-Slash-Commands
-> (gleiche `registered`-Quelle wie Cmd-K, Accept=ausführen, mode-aware Filter,
-> S10-Arg-Hints als additives Teil-Slice). **S9 (Saved-Prompts) → P4**, **S10-
-> Modell-Variante → P6**. **P2–P6 bleiben offen.** Als getrennte PRs (PR2 = P1,
-> stacked auf PR1=P0) — Council-Vorgabe: nicht bündeln.
+> **Implementierungsstand (2026-06-30 / 07-04, autonome Läufe):** **Phase 0, 1
+> + 4 erledigt & verifiziert** (tsc, eslint 0 Fehler, prettier, 982 Vitest grün,
+> build, ladle:build). P0: geteiltes Autocomplete-Overlay-Primitiv (Tokenizer
+> `@`+`/`, Provider-Engine, `@project` re-mounted ohne Verhaltens-/DOM-Change,
+> MRU + Fuzzy). P1: `/`-Slash-Commands (gleiche `registered`-Quelle wie Cmd-K,
+> Accept=ausführen, mode-aware Filter, S10-Arg-Hints-Teil-Slice). P4: Input-
+> Reliability (per-session Prompt-Log + ↑/↓-History-Recall, Draft-Persistenz +
+> Restore-Affordance, Auto-Grow, Smart-Paste-Collapse) — alles boot-unsichtbar →
+> Goldens intakt. **Deferred:** S9 Saved-Prompts (braucht das jetzt gebaute Log —
+> Fast-Follow), Ghost-Text/Lints (S2/S3, Fast-Follow), Expand-Fullscreen (Golden-
+> Drift), `Cmd+R`-History-Overlay, S10-Modell + S14-Diktat. **P2 (`@file`) + P3
+> (Empty-State) + P5/P6 bleiben offen.** Getrennte PRs pro Phase (Council-Vorgabe).
 >
 > **AI-Council-Konvergenz (2026-06-29, 3 Sonnet-Lenses: Scope · Architektur ·
 > Critical-Challenger, einstimmig):** Erste autonome PR = **nur P0**; P1 nicht
@@ -198,12 +201,12 @@ Discoverability für `/` und `@`. **Rein deterministisch** — die ML-Rankung is
 heuristisch, kein Modell-Roundtrip**. Die Heuristik-Legs hier sind zugleich der
 Fallback, auf den die ML-Schicht (P6) aufsetzt.
 
-- [ ] **Prompt-History-Recall:** bei leerem Composer ↑ läuft rückwärts durch die gesendeten Prompts dieser Session (↓ vorwärts), jeder lädt zum Re-Edit; Prefix/`Cmd+R` öffnet eine durchsuchbare History im Shared-Overlay. Persistiert per Session via vorhandene persist-Middleware. <!-- erzeugt das Per-Session-Prompt-Log, das P3, P1-Saved-Prompts (S9) und P6 konsumieren -->
-- [ ] **Draft-Persistenz pro Session:** debounced Autosave des ungesendeten Composer-Bodys, restore bei Tab-Rückkehr/Relaunch, dezente „restored draft"-Affordance + 1-Klick-Clear; getrennt je Chat/Agent-Session (gleiche persist-Slice wie backend/terse-Prefs).
-- [ ] **Smart-Paste-Heuristiken:** Paste prüft Clipboard billig (URL-Regex, MIME, Länge): bare URL → „fetch & attach"-Chip, Bild → Attachment-Chip, Paste > ~N Zeilen → „collapse into context chip" statt Textarea-Flut — alles durch den **existierenden** `ingestFile`-Gate (prod/secret-Regeln greifen); Raw-Paste-as-Text bleibt 1 Klick entfernt.
-- [ ] **Textarea-Auto-Grow + Expand-to-Fullscreen + Diktat (S14):** Auto-Grow + Expand-Toggle (billig, deterministisch, golden-bewusst) zuerst; danach Mic-Button (Push-to-Talk) fügt OS-transkribierten Text am Caret ein. <!-- User-Vorgabe einbauen. Diktat hängt an OS-Speech-Dependency → eigener Commit nach dem Auto-Grow/Expand-Teil. -->
-- [ ] **History-gestütztes Ghost-Text (S2 · Heuristik-Leg):** graue Inline-Completion des wahrscheinlich nächsten Prompts **nur aus dem Per-Session-Prompt-Log** (kein Modell, deterministisch); Tab/→ akzeptiert; rendert nur auf Tipp-Transition (Golden-Disziplin). <!-- Modell-gestützte Fortsetzung = P6. -->
-- [ ] **Heuristik-Prompt-Lints (S3 · Heuristik-Leg):** deterministische, verwerfbare Hinweise (vager Ask, keine Akzeptanzkriterien, fehlende Datei-Referenz) — **kein** Modell-Roundtrip. <!-- Modell-Rewrite „improve this prompt" = P6. -->
+- [x] **Prompt-History-Recall:** bei leerem Composer ↑ rückwärts durch die gesendeten Prompts der Session (↓ vorwärts), jeder lädt zum Re-Edit; persistiert per Session. <!-- done: `promptLogs` (FIFO cap 100) in der persist-Slice; `useHistoryRecall` (↑/↓, guard `el.value===""` → stiehlt nie die Caret-Nav in mehrzeiligem Text); AgentWorkspace.send loggt. Erzeugt das Per-Session-Prompt-Log für P3/S9/Ghost-Text. DEFERRED: `Cmd+R`-durchsuchbares History-Overlay (Fast-Follow; ↑/↓ liefert den Kernwert). -->
+- [x] **Draft-Persistenz pro Session:** debounced Autosave des ungesendeten Bodys, restore bei Tab-Rückkehr/Relaunch, dezente „restored draft"-Affordance + 1-Klick-Clear; getrennt je Chat/Agent-Session. <!-- done: `draftBodies` (10k cap, Key gelöscht wenn leer → nie ""); `useDraft` (useLayoutEffect-Restore, 400ms-debounced Save); Affordance rendert NUR nach non-empty Restore → Boot-Golden intakt. Uncontrolled-Sync: dispatch `input` nach jedem programmatischen `el.value=`. -->
+- [x] **Smart-Paste-Heuristiken:** bare URL → Chip, Bild → Attachment-Chip, Paste > 30 Z./2000 Zeichen → „collapse into context chip" statt Textarea-Flut. <!-- done: `useSmartPaste` → `onPaste` → Chip-Varianten (`url-fetch`/`collapsed-text`, closable, tragen `url`/`content` für den Backend-Fetch). Kurze Pastes gehen unverändert durch (Raw-as-Text-Escape via Schwelle). -->
+- [~] **Textarea-Auto-Grow (done) + Expand-to-Fullscreen + Diktat (S14):** <!-- done: `useAutoGrow` (measure nur auf Input, kein JS-min-height → Boot-Höhe rein CSS/golden-safe). DEFERRED: Expand-to-Fullscreen (immer-sichtbarer Button → würde die Composer-Golden verschieben; eigener Slice mit bewusstem Golden-Update); Diktat/S14 (OS-Speech-Dep, Council-deferred). -->
+- [~] **History-gestütztes Ghost-Text (S2 · Heuristik-Leg):** **deferred (Fast-Follow).** <!-- Council: konsumiert das Prompt-Log, das DIESE PR erst baut; Overlay-über-`cmp-ta`-Render braucht eigene Golden-Behandlung. Erst Log, dann Ghost-Text. -->
+- [~] **Heuristik-Prompt-Lints (S3 · Heuristik-Leg):** **deferred (Fast-Follow).** <!-- Council: un-kalibrierte Lints, die bei jeder zweiten Nachricht feuern, sind schlechtere UX als keine; brauchen Kalibrierung + eigene Golden-Behandlung. -->
 
 ## Phase 5 — Agent-Cockpit-Control-Flow
 

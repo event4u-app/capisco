@@ -132,6 +132,13 @@ export const MentionAutocomplete = React.forwardRef<
             className={className}
             {...(engine.inputProps as React.ComponentProps<"textarea">)}
             {...(inputProps as React.ComponentProps<"textarea">)}
+            // Compose: the engine's token-refresh MUST run, plus the caller's
+            // onInput (draft autosave / auto-grow) — the spread order would
+            // otherwise let one clobber the other.
+            onInput={(e) => {
+              engine.inputProps.onInput();
+              (inputProps as React.ComponentProps<"textarea">).onInput?.(e);
+            }}
           />
         ) : (
           <Input
@@ -139,6 +146,10 @@ export const MentionAutocomplete = React.forwardRef<
             className={className}
             {...engine.inputProps}
             {...inputProps}
+            onInput={(e) => {
+              engine.inputProps.onInput();
+              (inputProps as React.ComponentProps<"input">).onInput?.(e);
+            }}
           />
         )}
         {engine.open && (

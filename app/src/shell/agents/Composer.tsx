@@ -4,6 +4,7 @@ import {
   FileText,
   FolderGit2,
   Gauge,
+  Link as LinkIcon,
   MessageSquare,
   Paperclip,
   Plus,
@@ -25,15 +26,25 @@ import {
 } from "@/lib/autocomplete/providers/command-provider";
 import { MentionAutocomplete, type MentionFieldElement } from "./MentionAutocomplete";
 import { budgetTone } from "./store";
+import { useHistoryRecall } from "./use-history-recall";
+import { useDraft } from "./use-draft";
+import { useAutoGrow } from "./use-auto-grow";
+import { useSmartPaste } from "./use-smart-paste";
 
 /** Prototype fmtK — verbatim (agent.jsx). */
 const fmtK = (n: number) =>
   n >= 1000 ? (n / 1000).toFixed(n >= 10000 ? 0 : 1) + "k" : String(n);
 
 interface Chip {
-  icon: "folder-git-2" | "file-text" | "file";
+  icon: "folder-git-2" | "file-text" | "file" | "link";
   label: string;
   closable?: boolean;
+  /** Smart-paste chip class (P4): a fetched-URL ref or a collapsed long paste. */
+  kind?: "url-fetch" | "collapsed-text";
+  /** The URL for a `url-fetch` chip. */
+  url?: string;
+  /** The collapsed body for a `collapsed-text` chip (kept out of the textarea). */
+  content?: string;
   /** Absolute fs path of a picked file (desktop only) — the ingestion handle
    * (road-to-composer-context-runtime P2). Browser-picked files have none. */
   path?: string;
@@ -48,6 +59,7 @@ const CHIP_ICON = {
   "folder-git-2": FolderGit2,
   "file-text": FileText,
   file: FileText,
+  link: LinkIcon,
 } as const;
 
 const PLAN_COLOR: Record<string, string> = {
@@ -81,6 +93,11 @@ export function Composer({
   onStop,
   currentProject,
   onOpenReference,
+  sessionId,
+  promptLog = [],
+  initialDraft = "",
+  saveDraft,
+  clearDraft,
 }: {
   isChat: boolean;
   effort: number;
@@ -91,7 +108,7 @@ export function Composer({
   setBudget: (n: number) => void;
   routingEnabled: boolean;
   setRoutingEnabled: (on: boolean) => void;
-  composerRef: React.Ref<MentionFieldElement>;
+  composerRef: React.RefObject<MentionFieldElement | null>;
   onSend: () => void;
   /** Whether THIS session has a run in flight (drives Send↔Stop). */
   running?: boolean;
@@ -99,6 +116,16 @@ export function Composer({
   onStop?: () => void;
   currentProject?: string;
   onOpenReference?: (project: RecentProject) => Promise<boolean>;
+  /** Active session id — keys the per-session prompt-log + draft (P4). */
+  sessionId?: string;
+  /** This session's sent-prompt log, most-recent-LAST (P4 history-recall). */
+  promptLog?: string[];
+  /** Persisted unsent body restored on mount (P4 draft-persistence). */
+  initialDraft?: string;
+  /** Debounced draft autosave (P4). */
+  saveDraft?: (id: string, body: string) => void;
+  /** Clear the persisted draft (P4). */
+  clearDraft?: (id: string) => void;
 }) {
   const { t } = useTranslation();
   const levels = agentSnapshot.effortLevels;
@@ -223,6 +250,49 @@ export function Composer({
   );
   const extraProviders = React.useMemo(() => [commandProvider], [commandProvider]);
 
+  // ---- P4 input-reliability: draft, auto-grow, history-recall, smart-paste ----
+  const sid = sessionId ?? "";
+  const draft = useDraft({
+    ref: composerRef,
+    sessionId: sid,
+    initialDraft,
+    saveDraft: saveDraft ?? (() => {}),
+  });
+  const autoGrow = useAutoGrow(composerRef as React.RefObject<HTMLTextAreaElement | null>);
+  const recall = useHistoryRecall(promptLog);
+  const safeHost = (url: string): string => {
+    try {
+      return new URL(url).hostname;
+    } catch {
+      return url.slice(0, 40);
+    }
+  };
+  const smartPaste = useSmartPaste({
+    onImage: (name) => setChips((c) => [...c, { icon: "file", label: name, closable: true }]),
+    onUrl: (url) =>
+      setChips((c) => [
+        ...c,
+        { icon: "link", label: safeHost(url), closable: true, kind: "url-fetch", url },
+      ]),
+    onLongText: (text) =>
+      setChips((c) => [
+        ...c,
+        {
+          icon: "file-text",
+          label: t("agents.composer.pastedLines", { count: text.split("\n").length }),
+          closable: true,
+          kind: "collapsed-text",
+          content: text,
+        },
+      ]),
+  });
+  // Compose the textarea onInput: auto-grow measurement + debounced draft save.
+  // (MentionAutocomplete composes this with the engine's own token-refresh.)
+  const handleInput = React.useCallback(() => {
+    autoGrow.measure();
+    draft.onInput();
+  }, [autoGrow, draft]);
+
   const ratio = budget > 0 ? used / budget : 0;
   const tone = budgetTone(used, budget); // ok | warn | crit
   const toneColor =
@@ -320,6 +390,32 @@ export function Composer({
           </button>
         </div>
 
+        {draft.draftRestored && (
+          <div
+            className="cmp-draft-restored"
+            data-testid="composer-draft-restored"
+            role="status"
+          >
+            <span>{t("agents.composer.draftRestored")}</span>
+            <button
+              type="button"
+              className="cmp-draft-clear"
+              data-testid="composer-draft-clear"
+              onClick={() => {
+                const el = composerRef.current;
+                if (el) {
+                  el.value = "";
+                  el.dispatchEvent(new Event("input", { bubbles: true }));
+                }
+                clearDraft?.(sid);
+                draft.dismissRestored();
+              }}
+            >
+              {t("agents.composer.draftClear")}
+            </button>
+          </div>
+        )}
+
         <MentionAutocomplete
           ref={composerRef}
           multiline
@@ -331,11 +427,20 @@ export function Composer({
           extraProviders={extraProviders}
           placeholder={t("agents.composer.placeholder")}
           aria-label={t("agents.composer.placeholder")}
+          onInput={handleInput}
+          onPaste={smartPaste}
           onKeyDown={(e) => {
             if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
               e.preventDefault();
+              recall.reset();
               send();
+              return;
             }
+            // History-recall (↑/↓ on an empty composer). Reaches here only when
+            // the autocomplete overlay is closed (the engine consumes arrows
+            // while open), so an empty-value guard inside the hook is sufficient.
+            const el = e.currentTarget;
+            if (recall.onKeyDown(e, el, el.value)) return;
           }}
         />
 

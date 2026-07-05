@@ -101,6 +101,30 @@
   border-bottom: 1px solid var(--ds-border);
   flex-wrap: wrap;
 }
+
+/* Draft-restored affordance (P4) — renders only after a non-empty restore. */
+.cmp-draft-restored {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px;
+  font-size: 11.5px;
+  color: var(--ds-text-tertiary);
+  border-bottom: 1px solid var(--ds-border);
+  background: var(--ds-bg-raised);
+}
+.cmp-draft-clear {
+  margin-left: auto;
+  border: none;
+  background: transparent;
+  color: var(--ds-accent);
+  font-family: var(--ds-font-sans);
+  font-size: 11.5px;
+  cursor: pointer;
+}
+.cmp-draft-clear:hover {
+  text-decoration: underline;
+}
 .cmp-ico {
   display: inline-flex;
   align-items: center;
