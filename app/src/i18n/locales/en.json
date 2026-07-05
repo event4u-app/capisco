@@ -71,6 +71,10 @@
     },
     "containers": {
       "title": "Containers"
+    },
+    "processes": {
+      "title": "Processes",
+      "restarts": "{{count}} restart(s)"
     }
   },
   "panel": {

@@ -5,6 +5,7 @@ export * from "./fs-tree";
 export * from "./git-ops";
 export * from "./worktree";
 export * from "./runtime";
+export * from "./supervisor";
 export * from "./terminal";
 export * from "./editor";
 export * from "./tooling";

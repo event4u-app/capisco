@@ -8,6 +8,7 @@ import { MatrixGraphView } from "./MatrixGraphView";
 import { MatrixTreeFallback } from "./MatrixTreeFallback";
 import { BrokerTicker } from "./BrokerTicker";
 import { ContainerStrip } from "./ContainerStrip";
+import { ProcessStrip } from "./ProcessStrip";
 
 export interface MatrixWorkspaceProps {
   /** Session stream source — the deterministic mock in the browser/test path. */
@@ -84,8 +85,11 @@ export function MatrixWorkspace({
       ) : (
         <MatrixGraphView graph={graph} />
       )}
+      {/* Process-health strip (P0): the sidecar ProcessSupervisor snapshot —
+          PTY / LSP / DAP / agent, with restarts marked. */}
+      <ProcessStrip />
       {/* Container / ctop strip (P0): the runtime stats stream as a compact
-          footer (process-health is deferred — no frontend contract yet). */}
+          footer. */}
       <ContainerStrip />
       {/* Broker-ticker + audit-viewer (P0): the live broker-decision stream as a
           footer strip, expandable to the full append-only trail. */}
