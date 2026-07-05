@@ -87,6 +87,12 @@ export function AgentWorkspace({ kind = "agents" }: { kind?: WorkspaceKind } = {
   const editQueued = useStore((s) => s.editQueued);
   const checkpoints = useStore((s) => s.checkpoints);
   const addCheckpoint = useStore((s) => s.addCheckpoint);
+  const savePrompt = useStore((s) => s.savePrompt);
+  const savedPrompts = useStore((s) => s.savedPrompts);
+  // Plain getter — the React Compiler memoizes it (and the `/`-provider that
+  // closes over it) on `savedPrompts`, so it stays stable across renders that
+  // do not change the saved list while still reading the fresh one.
+  const getSavedPrompts = () => savedPrompts;
   const settingsOpen = useStore((s) => s.settingsOpen);
   const toggleSettings = useStore((s) => s.toggleSettings);
   const setSettingsOpen = useStore((s) => s.setSettingsOpen);
@@ -435,6 +441,8 @@ export function AgentWorkspace({ kind = "agents" }: { kind?: WorkspaceKind } = {
             onOpenReference={openReference}
             sessionId={cur.id}
             promptLog={promptLog}
+            getSavedPrompts={getSavedPrompts}
+            onSavePrompt={(body) => savePrompt(body)}
             initialDraft={initialDraft}
             saveDraft={saveDraft}
             clearDraft={clearDraft}
