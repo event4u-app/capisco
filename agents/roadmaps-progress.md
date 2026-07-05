@@ -2,14 +2,14 @@
 
 > Auto-generated — do not edit. Regenerate with `task roadmap-progress` or by running the `update_roadmap_progress` script for your install; rewritten on every roadmap create / execute / completion change (timestamp lives in git history).
 >
-> 6 open roadmaps · [roadmaps/](roadmaps/) · [archive/](roadmaps/archive/) · [skipped/](roadmaps/skipped/) · [later/](roadmaps/later/)
+> 7 open roadmaps · [roadmaps/](roadmaps/) · [archive/](roadmaps/archive/) · [skipped/](roadmaps/skipped/) · [later/](roadmaps/later/)
 
 ## Overall
 
-**69 / 188 steps done · 37%**
+**101 / 228 steps done · 44%**
 
 ```text
-███████████████░░░░░░░░░░░░░░░░░░░░░░░░░   37%
+██████████████████░░░░░░░░░░░░░░░░░░░░░░   44%
 ```
 
 ## Open roadmaps
@@ -17,11 +17,12 @@
 | # | Roadmap | Phases | Steps | Open | Done | Deferred | Cancelled | Progress |
 |---|---|---:|---:|---:|---:|---:|---:|---|
 | 1 | [road-to-actually-works.md](roadmaps/road-to-actually-works.md) | 9 | 54 | 18 | 36 | 0 | 0 | ███████░░░ 67% |
-| 2 | [road-to-composer-intelligence.md](roadmaps/road-to-composer-intelligence.md) | 7 | 32 | 32 | 0 | 0 | 0 | ░░░░░░░░░░ 0% |
-| 3 | [road-to-desktop-release.md](roadmaps/road-to-desktop-release.md) | 6 | 14 | 14 | 0 | 0 | 0 | ░░░░░░░░░░ 0% |
-| 4 | [road-to-real-breadth.md](roadmaps/road-to-real-breadth.md) | 5 | 30 | 22 | 8 | 0 | 0 | ███░░░░░░░ 27% |
-| 5 | [road-to-real-runtime.md](roadmaps/road-to-real-runtime.md) | 5 | 29 | 4 | 25 | 0 | 0 | █████████░ 86% |
-| 6 | [road-to-sentry-observability.md](roadmaps/road-to-sentry-observability.md) | 5 | 29 | 29 | 0 | 0 | 0 | ░░░░░░░░░░ 0% |
+| 2 | [road-to-agent-matrix-and-ambient.md](roadmaps/road-to-agent-matrix-and-ambient.md) | 7 | 39 | 33 | 6 | 0 | 0 | ██░░░░░░░░ 15% |
+| 3 | [road-to-composer-intelligence.md](roadmaps/road-to-composer-intelligence.md) | 7 | 33 | 8 | 18 | 7 | 0 | ██████░░░░ 55% |
+| 4 | [road-to-desktop-release.md](roadmaps/road-to-desktop-release.md) | 6 | 14 | 14 | 0 | 0 | 0 | ░░░░░░░░░░ 0% |
+| 5 | [road-to-real-breadth.md](roadmaps/road-to-real-breadth.md) | 5 | 30 | 22 | 8 | 0 | 0 | ███░░░░░░░ 27% |
+| 6 | [road-to-real-runtime.md](roadmaps/road-to-real-runtime.md) | 5 | 29 | 4 | 25 | 0 | 0 | █████████░ 86% |
+| 7 | [road-to-sentry-observability.md](roadmaps/road-to-sentry-observability.md) | 5 | 29 | 21 | 8 | 0 | 0 | ███░░░░░░░ 28% |
 
 ---
 
@@ -43,18 +44,32 @@
 | 7 | Tauri-Transport (gefühlte Scheibe #2: echte App) | ⬜ not started | 6 | 0 | 0 | 0 | 0% |
 | 8 | Fenster-Chrome + Config-Persistenz (Council #1 — W1b, floatbar) | ⬜ not started | 6 | 0 | 0 | 0 | 0% |
 
-### [road-to-composer-intelligence.md](roadmaps/road-to-composer-intelligence.md)
+### [road-to-agent-matrix-and-ambient.md](roadmaps/road-to-agent-matrix-and-ambient.md)
 
-**Road to Composer-Intelligence — der Input, der mitdenkt** — 0 / 32 done (0%)
+**Road to Agent-Matrix & Ambient — das Hirn und die Nachtschicht** — 6 / 39 done (15%)
 
 | # | Phase | State | Open | Done | Deferred | Cancelled | % |
 |---|---|---|---:|---:|---:|---:|---:|
-| 0 | Shared-Autocomplete-Overlay-Primitiv | ⬜ not started | 6 | 0 | 0 | 0 | 0% |
-| 1 | `/`-Slash-Commands (+ Arg-Hints, Saved Prompts) | ⬜ not started | 4 | 0 | 0 | 0 | 0% |
-| 2 | Multi-Source-`@`-Mentions (Datei / Ordner / Symbol) | ⬜ not started | 4 | 0 | 0 | 0 | 0% |
-| 3 | Empty-State-Next-Task-Vorschläge (deterministisch) | ⬜ not started | 2 | 0 | 0 | 0 | 0% |
-| 4 | Input-Reliability & -Qualität (History / Drafts / Paste / Diktat + Heuristik-Assists) | ⬜ not started | 6 | 0 | 0 | 0 | 0% |
-| 5 | Agent-Cockpit-Control-Flow | ⬜ not started | 6 | 0 | 0 | 0 | 0% |
+| 0 | Agent-Matrix v1 (das „Hirn"; schließt zugleich offene Observability-UI-Schuld) | 🟡 in progress | 3 | 6 | 0 | 0 | 67% |
+| 0b | Matrix-Federation (jede IDE eine universelle Zentrale) | ⬜ not started | 7 | 0 | 0 | 0 | 0% |
+| 1 | Scoped-Grant-Primitiv (Council #2 einlösen; Gate für P2) | ⬜ not started | 5 | 0 | 0 | 0 | 0% |
+| 2 | Hintergrund-Läufe + Morning-Digest (Konsument von P1) | ⬜ not started | 8 | 0 | 0 | 0 | 0% |
+| 3 | Trace-Lernschleife (Routing-Kalibrierung aus echten Läufen) | ⬜ not started | 5 | 0 | 0 | 0 | 0% |
+| 4 | Voice-I/O (opt-in, lokal, spät — mit eigenem Bleibt-oder-fliegt-Gate) | ⬜ not started | 4 | 0 | 0 | 0 | 0% |
+| 5 | Ehrlichkeits-Review (leichtgewichtig, lokal — kein Produkt-Telemetrie-Programm) | ⬜ not started | 1 | 0 | 0 | 0 | 0% |
+
+### [road-to-composer-intelligence.md](roadmaps/road-to-composer-intelligence.md)
+
+**Road to Composer-Intelligence — der Input, der mitdenkt** — 18 / 33 done (55%)
+
+| # | Phase | State | Open | Done | Deferred | Cancelled | % |
+|---|---|---|---:|---:|---:|---:|---:|
+| 0 | Shared-Autocomplete-Overlay-Primitiv | ✅ done | 0 | 6 | 0 | 0 | 100% |
+| 1 | `/`-Slash-Commands (+ Arg-Hints, Saved Prompts) | ✅ done | 0 | 2 | 2 | 0 | 50% |
+| 2 | Multi-Source-`@`-Mentions (Datei / Ordner / Symbol) | ✅ done | 0 | 3 | 2 | 0 | 60% |
+| 3 | Empty-State-Next-Task-Vorschläge (deterministisch) | ✅ done | 0 | 2 | 0 | 0 | 100% |
+| 4 | Input-Reliability & -Qualität (History / Drafts / Paste / Diktat + Heuristik-Assists) | ✅ done | 0 | 3 | 3 | 0 | 50% |
+| 5 | Agent-Cockpit-Control-Flow | 🟡 in progress | 4 | 2 | 0 | 0 | 33% |
 | 6 | Aktive ML-Input-Intelligenz (per Setting, token-bewusst) | ⬜ not started | 4 | 0 | 0 | 0 | 0% |
 
 ### [road-to-desktop-release.md](roadmaps/road-to-desktop-release.md)
@@ -96,13 +111,12 @@
 
 ### [road-to-sentry-observability.md](roadmaps/road-to-sentry-observability.md)
 
-**Road to Sentry Observability — die Sentry-Ansicht (4 Tabs, 1:1 ans Design)** — 0 / 29 done (0%)
+**Road to Sentry Observability — die Sentry-Ansicht (4 Tabs, 1:1 ans Design)** — 8 / 29 done (28%)
 
 | # | Phase | State | Open | Done | Deferred | Cancelled | % |
 |---|---|---|---:|---:|---:|---:|---:|
-| 0 | Contract + Fixture + Design 1:1 portiert (autonom-grün) | ⬜ not started | 8 | 0 | 0 | 0 | 0% |
+| 0 | Contract + Fixture + Design 1:1 portiert (autonom-grün) | ✅ done | 0 | 8 | 0 | 0 | 100% |
 | 1 | ProviderAuth + Real-Read (Token-first) + Kill-Switch | ⬜ not started | 7 | 0 | 0 | 0 | 0% |
 | 2 | Broker-gegatete Writes (anti-injection) | ⬜ not started | 6 | 0 | 0 | 0 | 0% |
 | 3 | Cron Monitors + Performance + Alerts + IDE-Notification | ⬜ not started | 5 | 0 | 0 | 0 | 0% |
 | 4 | Realtime (Webhooks) — optional, deferred | ⬜ not started | 3 | 0 | 0 | 0 | 0% |
-
