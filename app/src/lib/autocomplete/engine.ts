@@ -17,8 +17,8 @@
 
 import * as React from "react";
 import { detectToken, type ActiveToken, type TriggerChar } from "@/lib/mention/token-detector";
-import { filterAndRank } from "./filter";
-import type { AutocompleteItem, AutocompleteProvider } from "./types";
+import { filterAndRankTagged } from "./filter";
+import type { AutocompleteItem, AutocompleteProvider, TaggedItem } from "./types";
 
 export type MentionFieldElement = HTMLInputElement | HTMLTextAreaElement;
 
@@ -34,8 +34,11 @@ export interface AutocompleteEngineOptions {
 export interface AutocompleteEngine<T extends AutocompleteItem> {
   open: boolean;
   items: T[];
+  /** Items paired with their owning provider (same order/indices as `items`). */
+  tagged: TaggedItem<T>[];
   highlight: number;
   token: ActiveToken | null;
+  /** First provider matching the active trigger (back-compat; dispatch uses `tagged`). */
   provider: AutocompleteProvider<T> | null;
   choose: (item: T) => void;
   inputProps: {
@@ -55,7 +58,7 @@ export function useAutocompleteEngine<T extends AutocompleteItem>(
   options?: AutocompleteEngineOptions,
 ): AutocompleteEngine<T> {
   const [token, setToken] = React.useState<ActiveToken | null>(null);
-  const [items, setItems] = React.useState<T[]>([]);
+  const [tagged, setTagged] = React.useState<TaggedItem<T>[]>([]);
   const [highlight, setHighlight] = React.useState(0);
   const genRef = React.useRef(0);
 
@@ -63,32 +66,49 @@ export function useAutocompleteEngine<T extends AutocompleteItem>(
   const onBeforeQuery = options?.onBeforeQuery;
   const passthrough = options?.onKeyDownPassthrough;
 
+  // Every item the overlay shows, in rank order (derived from `tagged`).
+  const items = React.useMemo(() => tagged.map((t) => t.item), [tagged]);
+
   const pickProvider = React.useCallback(
     (trigger: TriggerChar): AutocompleteProvider<T> | null =>
       providers.find((p) => p.triggerChar === trigger) ?? null,
     [providers],
   );
 
+  const collectProviders = React.useCallback(
+    (trigger: TriggerChar): AutocompleteProvider<T>[] =>
+      providers.filter((p) => p.triggerChar === trigger),
+    [providers],
+  );
+
   const runQuery = React.useCallback(
     (tok: ActiveToken | null) => {
       if (!tok) {
-        setItems([]);
+        setTagged([]);
         return;
       }
-      const prov = pickProvider(tok.trigger);
-      if (!prov) {
-        setItems([]);
+      // Fan out to EVERY provider on this trigger (e.g. @project + @file +
+      // @symbol) and merge into one ranked list — one overlay, many sources.
+      const provs = collectProviders(tok.trigger);
+      if (provs.length === 0) {
+        setTagged([]);
         return;
       }
       onBeforeQuery?.();
       const gen = ++genRef.current;
-      void Promise.resolve(prov.getItems(tok.query)).then((raw) => {
+      void Promise.all(
+        provs.map((p) =>
+          Promise.resolve(p.getItems(tok.query)).then((raw) =>
+            raw.map((item) => ({ item, provider: p }) as TaggedItem<T>),
+          ),
+        ),
+      ).then((buckets) => {
         if (gen !== genRef.current) return; // stale result, dropped
-        setItems(filterAndRank(raw, tok.query, { fuzzy }));
+        setTagged(filterAndRankTagged(buckets.flat(), tok.query, { fuzzy }));
         setHighlight(0);
       });
     },
-    [pickProvider, onBeforeQuery, fuzzy],
+    [collectProviders, onBeforeQuery, fuzzy],
   );
 
   const refresh = React.useCallback(() => {
@@ -119,14 +139,16 @@ export function useAutocompleteEngine<T extends AutocompleteItem>(
 
   const close = React.useCallback(() => {
     setToken(null);
-    setItems([]);
+    setTagged([]);
   }, []);
 
   const choose = React.useCallback(
     (item: T) => {
       const el = ref.current;
       if (el && token) {
-        const prov = pickProvider(token.trigger);
+        // Dispatch to the provider that actually produced this item (not the
+        // first-match for the trigger) — required when @project + @file merge.
+        const prov = tagged.find((ti) => ti.item === item)?.provider;
         if (prov) {
           const res = prov.onSelect(item, token, el.value);
           el.value = res.text;
@@ -137,7 +159,7 @@ export function useAutocompleteEngine<T extends AutocompleteItem>(
       close();
       ref.current?.focus();
     },
-    [ref, token, pickProvider, close],
+    [ref, token, tagged, close],
   );
 
   const onKeyDown = (e: React.KeyboardEvent<MentionFieldElement>) => {
@@ -169,6 +191,7 @@ export function useAutocompleteEngine<T extends AutocompleteItem>(
   return {
     open,
     items,
+    tagged,
     highlight,
     token,
     provider,
