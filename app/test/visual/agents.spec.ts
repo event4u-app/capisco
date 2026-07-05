@@ -72,7 +72,9 @@ test.describe("agents workspace — structure (primary gate)", () => {
     await expect(note).toContainText("read-only");
   });
 
-  test("session tabs are a fixed 36px tall; long titles trim with an ellipsis", async ({ page }) => {
+  test("session tabs are a fixed 36px tall; long titles trim with an ellipsis", async ({
+    page,
+  }) => {
     await gotoAgents(page);
     const tab = page.getByTestId("session-tab-s1");
     const box = await tab.boundingBox();
@@ -86,7 +88,9 @@ test.describe("agents workspace — structure (primary gate)", () => {
     expect(ellipsis).toBe("ellipsis");
   });
 
-  test("composer bar exposes auto-routing, tune (effort+budget) and meter controls", async ({ page }) => {
+  test("composer bar exposes auto-routing, tune (effort+budget) and meter controls", async ({
+    page,
+  }) => {
     await gotoAgents(page);
     await expect(page.getByTestId("composer-input")).toBeVisible();
     await expect(page.getByTestId("composer-send")).toBeVisible();
@@ -138,6 +142,26 @@ test.describe("agents workspace — interactions", () => {
     await expect(page.getByTestId("transcript-empty")).toBeVisible();
   });
 
+  test("empty-state suggestions (P3): boot-visible, click fills without sending", async ({
+    page,
+  }) => {
+    await gotoAgents(page);
+    // Deterministic rows from the editor + git mocks on an empty composer.
+    await expect(page.getByTestId("composer-empty-suggestions")).toBeVisible();
+    await expect(page.getByTestId("composer-suggestion-open-file")).toBeVisible();
+    await expect(page.getByTestId("composer-suggestion-git-branch")).toBeVisible();
+
+    const input = page.getByTestId("composer-input");
+    await expect(input).toHaveValue("");
+    await page.getByTestId("composer-suggestion-open-file").click();
+
+    // Fills the composer — never sends (the send button is not in its
+    // running/Stop state, and the suggestions vanish once non-empty).
+    await expect(input).not.toHaveValue("");
+    await expect(page.getByTestId("composer-send")).not.toHaveAttribute("data-running", "true");
+    await expect(page.getByTestId("composer-empty-suggestions")).toHaveCount(0);
+  });
+
   test("tune popover opens the 6-step effort slider and lists plan rows", async ({ page }) => {
     await gotoAgents(page);
     await page.getByTestId("composer-tune").click();
@@ -152,7 +176,9 @@ test.describe("agents workspace — interactions", () => {
     await expect(page.getByTestId("agent-settings")).toBeVisible();
     await expect(page.getByTestId("agent-settings-api-body")).toBeVisible();
     await page.getByTestId("agent-settings-cli").click();
-    await expect(page.getByTestId("agent-settings-cli-body")).toContainText("/usr/local/bin/claude");
+    await expect(page.getByTestId("agent-settings-cli-body")).toContainText(
+      "/usr/local/bin/claude",
+    );
     // Esc closes (focus trap / keyboard).
     await page.keyboard.press("Escape");
     await expect(page.getByTestId("agent-settings")).toHaveCount(0);
@@ -176,7 +202,10 @@ test.describe("agents workspace — interactions", () => {
     await expect(page.getByTestId("agent-backend-codex")).toBeVisible();
 
     // Deterministic default: the stub is selected + "In use" (disabled).
-    await expect(page.getByTestId("agent-backend-stub")).toHaveAttribute("data-selected", "true");
+    await expect(page.getByTestId("agent-backend-stub")).toHaveAttribute(
+      "data-selected",
+      "true",
+    );
     await expect(page.getByTestId("agent-backend-stub-use")).toBeDisabled();
 
     // Install is broker-gated — clicking surfaces the exact audited command, never silent.

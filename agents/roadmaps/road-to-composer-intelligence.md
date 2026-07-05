@@ -36,7 +36,10 @@ und schärft Prompts — jeder Assist mit deterministischem Fallback.
 > Goldens intakt. **Deferred:** S9 Saved-Prompts, Ghost-Text/Lints (S2/S3),
 > Expand-Fullscreen, `Cmd+R`-Overlay, S10-Modell, S14-Diktat, `@symbol`-Real-
 > Fetch (gegated auf LSP), Chip→`@name`-Rückwärts-Sync (S13/controlled editor).
-> **P3 (Empty-State) + P5/P6 bleiben offen.** Getrennte PRs pro Phase.
+> **P3 (Empty-State) fertig** — deterministische, mode-gefilterte Vorschläge
+> (Prompts/Editor-Datei/Git-Branch/ToDo; „letzter Test" deferred bis synchrone
+> Quality-Snapshot), Klick füllt nie sendet, Goldens byte-identisch. **P5/P6
+> bleiben offen.** Getrennte PRs pro Phase.
 >
 > **AI-Council-Konvergenz (2026-06-29, 3 Sonnet-Lenses: Scope · Architektur ·
 > Critical-Challenger, einstimmig):** Erste autonome PR = **nur P0**; P1 nicht
@@ -196,8 +199,8 @@ bewährten Pfad, nicht über eine neue Ingestion.
 Startpunkte (Capisco kann das, wo Claude Desktop generisch ist) und dient als
 Discoverability für `/` und `@`. **Rein deterministisch** — die ML-Rankung ist S1/P6.
 
-- [ ] **3–5 deterministische, mode-gefilterte Vorschlags-Zeilen** in derselben Overlay-Shell, aus **echtem State**: letzte Prompts (Per-Session-Log aus P4), zuletzt editierte/offene Editor-Datei, aktueller Git-Branch/-Diff, letzter fehlgeschlagener Test, offene ToDos (todo-Contract). Klick **füllt** den Composer zum Editieren — **nie** Auto-Send; verschwindet beim Tippen, kommt beim Leeren zurück.
-- [ ] **Bewusstes Golden-Update** für den Empty-Input-Snapshot (die leere Box **ist** ein gefangenes Golden) — eigener, deliberater Golden statt versehentlicher Bruch.
+- [x] **3–5 deterministische, mode-gefilterte Vorschlags-Zeilen** in derselben Overlay-Shell, aus **echtem State**: letzte Prompts (Per-Session-Log aus P4), zuletzt editierte/offene Editor-Datei, aktueller Git-Branch/-Diff, letzter fehlgeschlagener Test, offene ToDos (todo-Contract). Klick **füllt** den Composer zum Editieren — **nie** Auto-Send; verschwindet beim Tippen, kommt beim Leeren zurück. <!-- done: reine `buildEmptyStateSuggestions` (empty-state-suggestions.ts) + `useEmptyStateSuggestions`-Hook; **alle Quellen synchron** (kein Boot-Flicker): `recentPrompts` (P4-Log, beide Modi), dirty/offene Editor-Datei + Git-Branch/Change-Count (nur Agent-Modus, aus `editorSnapshot`/`mockCurrentBranch`/`mockChangeSet`), 1 offener ToDo aus dem Frontdoc via `parseTodos` (beide Modi). Render in Composer zwischen Textarea und `.cmp-controls`, gated auf `composerEmpty` (leeres Feld kann strukturell keinen `@`/`/`-Trigger tragen → Overlay-Kollision unmöglich). Klick = `el.value=fill` + synthetisches `input`-Event (Engine/Draft/Auto-Grow/Empty-Sync) + `focus`, **nie** `send`. Chat-Modus filtert Datei-/Git-Zeilen aus → bei leerer History keine Zeilen. DEFERRED: „letzter fehlgeschlagener Test" — QualityProvider ist rein async ohne synchrone Snapshot-Facade; nicht gefälscht (bricht Determinismus). Landet, sobald ein `qualitySnapshot` existiert. -->
+- [x] **Bewusstes Golden-Update** für den Empty-Input-Snapshot (die leere Box **ist** ein gefangenes Golden) — eigener, deliberater Golden statt versehentlicher Bruch. <!-- done: Goldens (agents-dark/light, chat-dark) mit `--update-snapshots` regeneriert → **byte-identisch** (die Vorschlagszeilen sitzen im `shrink-0`-Composer unterhalb des Golden-Viewport-Ausschnitts, kein Pixel-Delta). Alle 24 Visual-Specs grün gegen die bestehenden Snapshots inkl. axe-a11y (neues `role=listbox`/`option`-Markup sauber). CI-neutral (Pixel-Goldens sind ohnehin darwin-only + grep-inverted). Neue Struktur-Spec „empty-state suggestions (P3)" (nicht-golden, läuft in CI) deckt Sichtbarkeit + Fill-ohne-Send ab. -->
 
 ## Phase 4 — Input-Reliability & -Qualität (History / Drafts / Paste / Diktat + Heuristik-Assists)
 

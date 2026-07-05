@@ -125,6 +125,37 @@
 .cmp-draft-clear:hover {
   text-decoration: underline;
 }
+
+/* Empty-State next-task suggestions (P3) — shown only while the composer is
+   empty; each row fills the composer on click (never auto-sends). */
+.cmp-suggest {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 6px 6px;
+  border-top: 1px solid var(--ds-border);
+}
+.cmp-suggest-row {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 5px 8px;
+  border: none;
+  border-radius: var(--ds-radius-1);
+  background: transparent;
+  color: var(--ds-text-secondary);
+  font-family: var(--ds-font-sans);
+  font-size: 11.5px;
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+.cmp-suggest-row:hover {
+  background: var(--ds-bg-hover);
+  color: var(--ds-text-primary);
+}
 .cmp-ico {
   display: inline-flex;
   align-items: center;

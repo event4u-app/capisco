@@ -340,6 +340,7 @@
       "attach": "Attach files",
       "draftRestored": "Draft restored",
       "draftClear": "Clear",
+      "suggestionsLabel": "Next task suggestions",
       "pastedLines": "Pasted text ({{count}} lines)",
       "contextAdd": "Add file or folder as context",
       "contextAddDesc": "Attach a file or folder to this message",

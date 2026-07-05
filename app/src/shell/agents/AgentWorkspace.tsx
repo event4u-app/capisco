@@ -349,6 +349,7 @@ export function AgentWorkspace({ kind = "agents" }: { kind?: WorkspaceKind } = {
             saveDraft={saveDraft}
             clearDraft={clearDraft}
             projectRoot={worktreeCwd}
+            promptLogs={promptLogs}
           />
         </div>
       </div>
