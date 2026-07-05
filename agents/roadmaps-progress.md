@@ -6,10 +6,10 @@
 
 ## Overall
 
-**103 / 228 steps done · 45%**
+**104 / 228 steps done · 46%**
 
 ```text
-██████████████████░░░░░░░░░░░░░░░░░░░░░░   45%
+██████████████████░░░░░░░░░░░░░░░░░░░░░░   46%
 ```
 
 ## Open roadmaps
@@ -18,7 +18,7 @@
 |---|---|---:|---:|---:|---:|---:|---:|---|
 | 1 | [road-to-actually-works.md](roadmaps/road-to-actually-works.md) | 9 | 54 | 18 | 36 | 0 | 0 | ███████░░░ 67% |
 | 2 | [road-to-agent-matrix-and-ambient.md](roadmaps/road-to-agent-matrix-and-ambient.md) | 7 | 39 | 31 | 8 | 0 | 0 | ██░░░░░░░░ 21% |
-| 3 | [road-to-composer-intelligence.md](roadmaps/road-to-composer-intelligence.md) | 7 | 33 | 8 | 18 | 7 | 0 | ██████░░░░ 55% |
+| 3 | [road-to-composer-intelligence.md](roadmaps/road-to-composer-intelligence.md) | 7 | 33 | 7 | 19 | 7 | 0 | ██████░░░░ 58% |
 | 4 | [road-to-desktop-release.md](roadmaps/road-to-desktop-release.md) | 6 | 14 | 14 | 0 | 0 | 0 | ░░░░░░░░░░ 0% |
 | 5 | [road-to-real-breadth.md](roadmaps/road-to-real-breadth.md) | 5 | 30 | 22 | 8 | 0 | 0 | ███░░░░░░░ 27% |
 | 6 | [road-to-real-runtime.md](roadmaps/road-to-real-runtime.md) | 5 | 29 | 4 | 25 | 0 | 0 | █████████░ 86% |
@@ -60,7 +60,7 @@
 
 ### [road-to-composer-intelligence.md](roadmaps/road-to-composer-intelligence.md)
 
-**Road to Composer-Intelligence — der Input, der mitdenkt** — 18 / 33 done (55%)
+**Road to Composer-Intelligence — der Input, der mitdenkt** — 19 / 33 done (58%)
 
 | # | Phase | State | Open | Done | Deferred | Cancelled | % |
 |---|---|---|---:|---:|---:|---:|---:|
@@ -69,7 +69,7 @@
 | 2 | Multi-Source-`@`-Mentions (Datei / Ordner / Symbol) | ✅ done | 0 | 3 | 2 | 0 | 60% |
 | 3 | Empty-State-Next-Task-Vorschläge (deterministisch) | ✅ done | 0 | 2 | 0 | 0 | 100% |
 | 4 | Input-Reliability & -Qualität (History / Drafts / Paste / Diktat + Heuristik-Assists) | ✅ done | 0 | 3 | 3 | 0 | 50% |
-| 5 | Agent-Cockpit-Control-Flow | 🟡 in progress | 4 | 2 | 0 | 0 | 33% |
+| 5 | Agent-Cockpit-Control-Flow | 🟡 in progress | 3 | 3 | 0 | 0 | 50% |
 | 6 | Aktive ML-Input-Intelligenz (per Setting, token-bewusst) | ⬜ not started | 4 | 0 | 0 | 0 | 0% |
 
 ### [road-to-desktop-release.md](roadmaps/road-to-desktop-release.md)
