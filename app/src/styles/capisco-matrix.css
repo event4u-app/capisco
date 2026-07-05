@@ -1,0 +1,106 @@
+/* Agent-Matrix (road-to-agent-matrix-and-ambient P0) — the read-only "brain"
+   view. Greenfield surface (no prototype), built directly on --ds-* tokens. */
+
+.matrix-workspace {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+  background: var(--ds-bg-editor, var(--ds-bg-base));
+  color: var(--ds-text-primary);
+}
+
+.matrix-header {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--ds-border);
+  flex-shrink: 0;
+}
+.matrix-title {
+  font-family: var(--ds-font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ds-text-primary);
+}
+.matrix-count {
+  font-family: var(--ds-font-mono);
+  font-size: 11.5px;
+  color: var(--ds-text-tertiary);
+}
+
+.matrix-empty {
+  padding: 24px 16px;
+  font-family: var(--ds-font-sans);
+  font-size: 12px;
+  color: var(--ds-text-tertiary);
+}
+
+.matrix-graph-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 4px;
+}
+.matrix-graph-scroll svg text {
+  font-family: var(--ds-font-sans);
+}
+
+/* Degradation tree (>150 nodes). */
+.matrix-tree {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 8px 16px;
+  font-family: var(--ds-font-sans);
+  font-size: 12px;
+}
+.matrix-tree ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.matrix-tree ul ul {
+  padding-left: 18px;
+}
+.matrix-tree-node {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px;
+}
+.matrix-tree-sub {
+  color: var(--ds-text-secondary);
+}
+.matrix-tree-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.matrix-tree-model {
+  font-family: var(--ds-font-mono);
+  font-size: 10.5px;
+  color: var(--ds-text-tertiary);
+}
+.matrix-tree-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  flex-shrink: 0;
+  background: var(--ds-text-tertiary);
+}
+.matrix-tree-dot[data-status="running"] {
+  background: var(--ds-accent);
+}
+.matrix-tree-dot[data-status="waiting"] {
+  background: var(--ds-warning);
+}
+.matrix-tree-dot[data-status="error"] {
+  background: var(--ds-error);
+}
+.matrix-tree-dot[data-status="done"] {
+  background: var(--ds-success);
+}

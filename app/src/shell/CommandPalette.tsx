@@ -10,6 +10,7 @@ import {
   GitBranch,
   LayoutGrid,
   MessageSquare,
+  Network,
   Pin,
   PinOff,
   SquareKanban,
@@ -36,6 +37,7 @@ const MODE_ICONS: Record<Exclude<WorkspaceMode, "diff">, typeof Bot> = {
   git: GitBranch,
   tasks: SquareKanban,
   sentry: Bug,
+  matrix: Network,
 };
 
 export function CommandPalette() {

@@ -54,10 +54,16 @@
     "editor": "Editor",
     "git": "Git",
     "tasks": "Tasks",
-    "sentry": "Sentry"
+    "sentry": "Sentry",
+    "matrix": "Matrix"
   },
   "workspace": {
     "placeholder": "{{mode}} workspace"
+  },
+  "matrix": {
+    "title": "Agent Matrix",
+    "sessionCount": "{{count}} sessions",
+    "empty": "No active sessions."
   },
   "panel": {
     "close": "Close panel",
