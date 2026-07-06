@@ -63,14 +63,14 @@ Sidecar `select()` nie → jeder Lauf läuft gegen „no backend".
 Mock/Chat wird `sendPrompt` nie gerufen und `completeRun` **nie** — der Spinner dreht
 für immer, der Stop-Button erscheint. Das ist ein Hauptgrund für „Chats gehen nicht".
 
-- [ ] `loading` nur setzen, wenn ein echter Lauf dispatcht wird (oder Stream-Completion
-      an `completeRun` verdrahten). <!-- AgentWorkspace.tsx:241; store.ts:388 (C1) -->
-- [ ] Queue-Drain: hängt an `completeRun` (nie gerufen) → gequeuete Nachrichten feuern
-      nie im Browser; mit C1 mitfixen. <!-- AgentWorkspace.tsx:291-299 (C2) -->
+- [x] `loading` nur setzen, wenn ein echter Lauf dispatcht wird. <!-- done: runSend setzt loading NACH dem `if(!text) return`; leerer Send spinnt nicht mehr; der Mock-Pfad completet via `completeRun` (AgentWorkspace.tsx runSend). -->
+- [x] Queue-Drain: `completeRun` auf dem Mock-Pfad gerufen → `runCompletions` bumpt →
+      `useQueueDrain` feuert; gequeuete Nachrichten draint im Browser. <!-- done (Browser); der echte Desktop-Pfad completet weiter via Real-Stream (real-runtime). -->
 - [ ] Live-Label-Effekt-Deps (`AgentWorkspace.tsx:220`) um Bridge-Install/`isDesktop`
-      ergänzen, damit das Backend-Label nach Bridge-Swap nicht stale ist. <!-- (C4) -->
-- [ ] Tests: Playwright — im Browser eine Nachricht senden → **kein** Endlos-Spinner,
-      Zustand settelt sauber; vitest — loading nur bei Dispatch, Queue draint.
+      ergänzen, damit das Backend-Label nach Bridge-Swap nicht stale ist. <!-- (C4) offen; landet mit P1 (detect/select). -->
+- [x] Tests: Playwright (`test/visual/agent-send.spec.ts` — senden → Antwort + Settle,
+      selbst gefahren, grün) + vitest (Composer.send Case B: Mock dispatcht + settelt;
+      Empty-Send spinnt nicht). <!-- done -->
 
 ## Phase 3 — Per-Session-Backend + Mid-Chat-Agent/CLI-Wechsel
 
@@ -99,10 +99,13 @@ einen interaktiven Composer, der still no-oppt — vom „kaputt" ununterscheidb
 tot an. Ein deterministischer Fake-Stream (User-Turn → gestreamte Agent-Antwort →
 Completion) macht die App im Browser demonstrierbar + testbar, ohne echtes Backend.
 
-- [ ] `mockAgentProvider.sendPrompt` streamt eine deterministische Antwort in den
-      Session-Tree + settelt via `completeRun` (schließt auch C1 im Browser). <!-- mocks/agents.ts:526 (A1) -->
-- [ ] Tests: Playwright — Browser-Chat: tippen → senden → gestreamte Mock-Antwort
-      erscheint → Zustand settelt. (Der ECHTE Claude-Lauf bleibt real-runtime + 238.)
+- [x] `mockAgentProvider.sendPrompt` hängt User+Agent-Block an `BLOCKS[id]` an +
+      notifiziert Live-Subscriber (Listener-Registry) → Transcript zeigt die Antwort,
+      der Lauf settelt via `completeRun` (schließt auch C1 im Browser). Die Antwort
+      ist klar als Mock gelabelt. <!-- done: mocks/agents.ts sendPrompt + subscribe-Registry -->
+- [x] Tests: Playwright (`agent-send.spec.ts`) — tippen → senden → Mock-Antwort
+      erscheint → User-Turn erscheint → Send-Button verlässt `data-running` (settelt).
+      Selbst gegen Preview gefahren, grün. (Der ECHTE Claude-Lauf bleibt real-runtime + 238.)
 
 ## Nicht in Scope (gegated — dieselbe Klasse wie der Rest von real-runtime)
 
