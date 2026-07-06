@@ -382,6 +382,14 @@ function treeOf(id: string): SessionTree {
 }
 
 let branchSeq = 0;
+let mockMsgSeq = 0;
+/**
+ * Live subscribers per session (P5 — browser dev chat). `subscribe` registers a
+ * listener here; `sendPrompt` appends a deterministic turn to {@link BLOCKS} and
+ * notifies them so the transcript re-fetches `getBlocks` and the run settles —
+ * turning the browser/dev chat from a dead no-op into a responsive mock.
+ */
+const liveListeners = new Map<string, Set<SessionListener>>();
 
 /**
  * Broker grant store (§3 return channel). `resolvePermission` records the human
@@ -504,6 +512,13 @@ export const mockAgentProvider: AgentProvider = {
   },
   subscribe: (id, listener: SessionListener): Unsubscribe => {
     let live = true;
+    // Register for live pushes (sendPrompt notifies these — P5).
+    let set = liveListeners.get(id);
+    if (!set) {
+      set = new Set();
+      liveListeners.set(id, set);
+    }
+    set.add(listener);
     // Replay the deterministic script on a microtask so subscribers can attach
     // before the first event; cancellable via the returned unsubscribe.
     void Promise.resolve().then(() => {
@@ -514,6 +529,7 @@ export const mockAgentProvider: AgentProvider = {
     });
     return () => {
       live = false;
+      set?.delete(listener);
     };
   },
   getBackend: () => Promise.resolve(BACKEND),
@@ -522,8 +538,31 @@ export const mockAgentProvider: AgentProvider = {
   getPlanUsage: () => Promise.resolve(PLAN_USAGE),
   getDetectedCli: () => Promise.resolve(DETECTED_CLI),
   getSystemContextSize: () => Promise.resolve(SYSTEM_CONTEXT),
-  // No live agent in the browser/mock — sendPrompt is a no-op (UI tests spy it).
-  sendPrompt: () => Promise.resolve(),
+  /**
+   * Browser/dev mock turn (P5). No real agent here, so we deterministically
+   * echo: append the user's message + a canned agent reply to the session's
+   * blocks, then notify live subscribers (the transcript re-fetches `getBlocks`)
+   * and signal `done` (the caller settles the run → no fake infinite spinner).
+   * The reply is explicitly labelled a mock so it is never mistaken for a real
+   * agent run — that runs on the native backend.
+   */
+  sendPrompt: (id, prompt) => {
+    const blocks = BLOCKS[id] ?? (BLOCKS[id] = []);
+    const userId = `mock-u${++mockMsgSeq}`;
+    const agentId = `mock-a${++mockMsgSeq}`;
+    blocks.push({ type: "message", block: { id: userId, role: "user", body: prompt } });
+    blocks.push({
+      type: "message",
+      block: {
+        id: agentId,
+        role: "agent",
+        body: `Mock reply — acknowledged: "${prompt.slice(0, 120)}". This is the browser dev mock; the real agent runs on the selected native backend.`,
+      },
+    });
+    const set = liveListeners.get(id);
+    if (set) for (const l of set) l({ type: "done" });
+    return Promise.resolve();
+  },
 };
 
 // Synchronous deterministic snapshots for render-only consumers (the async
