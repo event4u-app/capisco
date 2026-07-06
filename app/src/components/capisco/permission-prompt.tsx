@@ -5,6 +5,7 @@ import { KeyRound, Lock } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import type { GrantPreview } from "@/contracts";
 
 /**
  * Capisco PermissionPrompt — the capability-broker approval block. This is the
@@ -17,6 +18,12 @@ import { Button } from "@/components/ui/button";
  *    its value — secrets never enter the LLM context.
  *  - `prodNote` surfaces the read-only / per-command-only floor for production
  *    datasources; there is deliberately no "allow permanently" scope.
+ *  - `grantPreview` (scoped-grant / bulk-run, item 229) is ADDITIVE + opt-in:
+ *    when present (feature on) it renders a pattern-coverage preview + a single
+ *    "grant N writes under `<prefix>/`" affordance instead of N per-write prompts.
+ *    Absent (feature off) → the block is byte-identical to before, so goldens are
+ *    unchanged. The covered/out-of-scope split mirrors the broker's `scopeMatches`
+ *    rule, so it never over-promises what the grant will actually clear.
  */
 export interface PermissionPromptProps extends React.HTMLAttributes<HTMLDivElement> {
   command: string;
@@ -29,6 +36,17 @@ export interface PermissionPromptProps extends React.HTMLAttributes<HTMLDivEleme
   /** Localized read-only / per-command production note. */
   prodNote?: string;
   onGrant?: (scope: string) => void;
+  /**
+   * Scoped-grant bulk-run preview (item 229, feature-gated by the caller). When
+   * provided, a scoped affordance renders; when omitted, the prompt is unchanged.
+   */
+  grantPreview?: GrantPreview;
+  /** Localized heading for the scoped block, e.g. "Grant {n} writes under {prefix}". */
+  scopedLabel?: string;
+  /** Localized coverage line, e.g. "{covered} covered · {out} stay single-gated". */
+  scopedCoverageLabel?: string;
+  /** Fired when the human grants the scoped bulk write (pathPrefix + budget). */
+  onGrantScoped?: (pathPrefix: string, maxActions: number) => void;
 }
 
 export function PermissionPrompt({
@@ -39,6 +57,10 @@ export function PermissionPrompt({
   credentialNote,
   prodNote,
   onGrant,
+  grantPreview,
+  scopedLabel,
+  scopedCoverageLabel,
+  onGrantScoped,
   className,
   ...props
 }: PermissionPromptProps) {
@@ -77,6 +99,43 @@ export function PermissionPrompt({
       {prodNote && (
         <div className="text-micro text-muted-foreground" data-testid="permission-prod-note">
           {prodNote}
+        </div>
+      )}
+      {grantPreview && (
+        <div
+          data-testid="permission-scoped"
+          className="flex flex-col gap-1 rounded-sm border border-primary/30 bg-primary/5 p-1.5"
+        >
+          <div className="flex items-center gap-1 text-ui text-foreground">
+            <span
+              data-testid="permission-scoped-covered"
+              className="inline-flex items-center gap-1 text-primary"
+            >
+              ✓ {grantPreview.covered.length}
+            </span>
+            <span className="text-muted-foreground">
+              {scopedCoverageLabel ?? `covered under ${grantPreview.pathPrefix}`}
+            </span>
+            {grantPreview.outOfScope.length > 0 && (
+              <span
+                data-testid="permission-scoped-outofscope"
+                className="text-muted-foreground"
+              >
+                · ⚠ {grantPreview.outOfScope.length} stay single-gated
+              </span>
+            )}
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            data-testid="permission-scoped-grant"
+            className="w-fit"
+            disabled={grantPreview.covered.length === 0}
+            onClick={() => onGrantScoped?.(grantPreview.pathPrefix, grantPreview.maxActions)}
+          >
+            {scopedLabel ??
+              `Grant ${grantPreview.maxActions} writes under ${grantPreview.pathPrefix}`}
+          </Button>
         </div>
       )}
       <div className="flex gap-1.5">

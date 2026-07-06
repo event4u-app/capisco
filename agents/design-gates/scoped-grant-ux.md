@@ -468,10 +468,15 @@ der UI-Integration.
 Vorschau. Gebaut contract-mock-first: `PendingWriteIntent`/`GrantPreview`-Contract
 + reine `buildGrantPreview`/`suggestPathPrefix`/`isUnderPrefix` (boundary-anchored,
 NFC — spiegelt die Broker-`scopeMatches`-Regel, damit die Vorschau nie mehr
-verspricht als der Grant klärt) + deterministischer Mock + 9 Unit-Tests. **Offen:**
-Permission-Prompt-Visual (Scoped-Option + Preview-Render, Setting-Toggle, Golden-
-Regen) + der Agent-Write-Pfad, der `PendingWriteIntent`s real speist (Lookahead,
-gegated auf real-runtime) und `writeTextGrantWrite` nutzt.
+verspricht als der Grant klärt) + deterministischer Mock + 9 Unit-Tests. ✅ Permission-Prompt-Visual + Setting: `PermissionPrompt` um `grantPreview`/
+`onGrantScoped` erweitert (rendert die Coverage-Vorschau ✓covered · ⚠out-of-scope +
+einen „Grant N writes under <prefix>/"-Button — **additiv**, ohne Preview
+byte-identisch → Goldens unberührt, bestätigt); `scopedGrantsEnabled`-Setting
+(Default an, persistiert) + AgentSettings-Toggle (Permissions-Sektion, off →
+Once/Session/Deny); Story-Variante + 4 Komponenten-Tests. **Offen (die Aktivierung):**
+der Agent-Write-Pfad, der bei aktivem Setting reale `PendingWriteIntent`s speist
+(Agent-Lookahead — gegated auf real-runtime) und `writeTextGrantWrite` nutzt; erst
+dann ist die Vorschau in einem echten Prompt sichtbar (dann Golden-Update + 238-Abnahme).
 ✅ Schritt 5 (Revoke): `PolicyEngine.revokeTask` + `Broker.revokeTask` — droppt die
 scoped-Grants eines Tasks UND invalidiert offene `ExecutionGrant`s über einen
 `taskId→grantId`-Index (schließt das authorize→execute-Fenster, v1-H3-Race);

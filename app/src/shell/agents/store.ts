@@ -93,6 +93,10 @@ interface AgentsState {
    * gates the one-time "this is intentional, not broken/rude" hint. */
   terseEnabled: boolean;
   terseLevel: TerseLevel;
+  /** Scoped-grant / bulk-run preview (item 229). When on (default), a file-write
+   * permission prompt offers a task-bound "grant N writes under <prefix>/" scope
+   * with a pattern-coverage preview; when off, only Once/Session/Deny. PERSISTED. */
+  scopedGrantsEnabled: boolean;
   terseHintSeen: boolean;
 
   /**
@@ -177,6 +181,7 @@ interface AgentsState {
   setEffort: (effort: number) => void;
   setBudget: (budget: number) => void;
   setTerseEnabled: (on: boolean) => void;
+  setScopedGrantsEnabled: (on: boolean) => void;
   setTerseLevel: (level: TerseLevel) => void;
   markTerseHintSeen: () => void;
   setRoutingEnabled: (on: boolean) => void;
@@ -269,6 +274,7 @@ function createAgentsStore(opts: StoreOpts): UseBoundStore<StoreApi<AgentsState>
         effort: 3,
         budget: 200_000,
         terseEnabled: true,
+        scopedGrantsEnabled: true,
         terseLevel: "full",
         terseHintSeen: false,
         routingEnabled: false,
@@ -328,6 +334,7 @@ function createAgentsStore(opts: StoreOpts): UseBoundStore<StoreApi<AgentsState>
         setEffort: (effort) => set({ effort }),
         setBudget: (budget) => set({ budget }),
         setTerseEnabled: (terseEnabled) => set({ terseEnabled }),
+        setScopedGrantsEnabled: (scopedGrantsEnabled) => set({ scopedGrantsEnabled }),
         setTerseLevel: (terseLevel) => set({ terseLevel }),
         markTerseHintSeen: () => set({ terseHintSeen: true }),
         setRoutingEnabled: (routingEnabled) => set({ routingEnabled }),
@@ -477,6 +484,7 @@ function createAgentsStore(opts: StoreOpts): UseBoundStore<StoreApi<AgentsState>
         partialize: (s) => ({
           selectedBackendId: s.selectedBackendId,
           terseEnabled: s.terseEnabled,
+          scopedGrantsEnabled: s.scopedGrantsEnabled,
           terseLevel: s.terseLevel,
           terseHintSeen: s.terseHintSeen,
           routingEnabled: s.routingEnabled,
