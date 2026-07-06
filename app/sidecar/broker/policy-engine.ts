@@ -10,8 +10,9 @@
  *    `human` and an `agent` principal. Trust differs only for the
  *    untrusted-egress rule below.
  *  - **Untrusted egress can never auto-allow** (§3.3 lethal trifecta): a
- *    write/network/db-write/external-write capability marked `fromUntrusted` is
- *    forced to `ask` regardless of the allowlist — and crucially, a persisted
+ *    shell/file-write/network/db-write/external-write capability marked
+ *    `fromUntrusted` is forced to `ask` regardless of the allowlist (see
+ *    {@link EGRESS_KINDS}) — and crucially, a persisted
  *    `session`/`scoped` grant CANNOT pre-clear it either. Untrusted output is
  *    data, never instructions; the human must gate the egress every time.
  *  - **No forever-grant** (§3.2 / §4): `resolve` records only the
@@ -33,8 +34,20 @@ import type {
 } from "@/contracts";
 import type { GrantAxis, PermissionDecision, PermissionRequest } from "@/contracts";
 
-/** Capability kinds that perform egress / mutation — gated when untrusted. */
+/**
+ * Capability kinds that perform egress / mutation — gated when untrusted.
+ *
+ * `shell` is included: it is unconditionally egress-capable (a shell line can
+ * `curl`/`nc`/`git push`/`npx`, and even allowlisted read-only git commands have
+ * command-execution vectors — `git difftool`, `git log --ext-diff`, `--output=`,
+ * pager/alias config). Excluding it would let a `fromUntrusted` shell request
+ * skip the lethal-trifecta hard gate below and be auto-allowed by a benign
+ * allowlist rule (e.g. `git status* → allow`) — the exact laundering this gate
+ * exists to stop. Found by the scoped-grant-ux design-gate council review
+ * (see agents/design-gates/scoped-grant-ux.md § Council Pre-Review, HOLE-1).
+ */
 const EGRESS_KINDS: ReadonlySet<CapabilityKind> = new Set<CapabilityKind>([
+  "shell",
   "file-write",
   "network",
   "db-write",
@@ -105,10 +118,7 @@ export class GrantPolicyEngine implements PolicyEngine {
    * untrusted egress to target B: the human approved exactly one call, and the
    * grant is bound to its exact target so it can only ever clear that one.
    */
-  private consumableKey(
-    request: CapabilityRequest,
-    scope?: CapabilityScope,
-  ): string {
+  private consumableKey(request: CapabilityRequest, scope?: CapabilityScope): string {
     return `${this.#projectKey}:${request.kind}:${scope ?? ""}:${request.target}:${request.command ?? ""}`;
   }
 
@@ -162,7 +172,9 @@ export class GrantPolicyEngine implements PolicyEngine {
     return {
       outcome: "ask",
       request: buildRequest(request, scope),
-      reason: rule ? `allowlist: ${rule.kind} ${rule.pattern} (ask)` : "no matching grant — ask",
+      reason: rule
+        ? `allowlist: ${rule.kind} ${rule.pattern} (ask)`
+        : "no matching grant — ask",
     };
   }
 
@@ -173,7 +185,7 @@ export class GrantPolicyEngine implements PolicyEngine {
     scope?: CapabilityScope,
   ): GrantAxis {
     const axis: GrantAxis = decision.axis;
-    const boundScope = decision.axis === "scoped" ? decision.scope ?? scope : scope;
+    const boundScope = decision.axis === "scoped" ? (decision.scope ?? scope) : scope;
 
     // §3.3 lethal trifecta — untrusted egress is PER-CALL ONLY, never
     // persistable. When the resolved `ask` ORIGINATED from untrusted-derived

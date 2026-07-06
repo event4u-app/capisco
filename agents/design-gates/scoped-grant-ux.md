@@ -5,11 +5,15 @@ durch Matze (+ zweiten unabhängigen Council-Review) bestehen, BEVOR der Broker-
 Bau-Schritt (P1 Z. 226 „`scoped`-Grants im Policy-Engine umsetzen") beginnt. Es
 wird bei Bestehen zur Acceptance-as-Runbook der Adversarial-Testsuite (P1 Z. 232).*
 
-> **GATE-STATUS: ⏳ ENTWURF — wartet auf Design-Review durch Matze.** Autonom
-> gezeichneter Erstentwurf als Review-Input; **kein** `scoped`-Grant-Code, bis
-> Matze (+ Council) diesen Entwurf freigibt. Der Fallback bei „nicht sicher
-> umsetzbar" bleibt: manuelle Session-Grants pro Datei + Human-in-Loop (hässlich,
-> kein Blocker) — P2 bliebe dann blockiert.
+> **GATE-STATUS: ⛔ FAIL** (Council-Pre-Review 2026-07-06, 3 adversariale Linsen
+> gegen Entwurf + echten `policy-engine.ts`-Code — 2× FAIL, 1× CONDITIONAL). Das
+> Gate hat seinen Zweck erfüllt: die Runde fand mehrere strukturelle Bypässe, die
+> der Erstentwurf übersah — **darunter einen latenten Security-Bug im shipped
+> Code** (untrusted `shell` umging das Trifecta-Gate; in dieser Runde gefixt,
+> siehe § Council Pre-Review). **Kein `scoped`-Grant-Code, bis die in § Council
+> Pre-Review gelisteten Blocker im Design adressiert + von Matze reviewed sind.**
+> Fallback bei „nicht sicher umsetzbar": manuelle Session-Grants pro Datei +
+> Human-in-Loop (hässlich, kein Blocker) — P2 bliebe dann blockiert.
 
 ## 0. Warum dieses Gate (security-sensitive)
 
@@ -171,6 +175,89 @@ nicht durchrutscht — offene Frage Q3.
 - Manuelle Real-Abnahme (P1 Z. 238): ein echter Agent-Lauf mit ≥50 Schreib-
   zugriffen unter genau **einem** Prompt, sauberes Audit — **nach** Gate-Pass,
   auf Matzes Maschine.
+
+## Council Pre-Review (2026-07-06)
+
+Drei adversariale Reviewer, je eine Angriffs-Linse, gegen diesen Entwurf **und**
+den echten `policy-engine.ts`/`capability-broker.ts`-Code. Verdikte:
+
+| Linse | Verdict |
+|---|---|
+| Pfad / Symlink / TOCTOU | **FAIL** (7 Holes) |
+| Lethal-Trifecta / Untrusted-Egress-Laundering | **CONDITIONAL** (1 latenter Code-Bug + 3) |
+| Task-Lifecycle / Grant-Persistenz / Cross-Task-Leak | **FAIL** (Task-Bindung 100% aspirational) |
+
+### Sofort gefixt in dieser Runde (latenter Bug im shipped Code)
+
+- **HOLE-1 (Trifecta-Linse):** `shell` fehlte in `EGRESS_KINDS`
+  (`policy-engine.ts:37`) → eine `fromUntrusted`-`shell`-Anfrage übersprang das
+  Trifecta-Hard-Gate und wurde von einer harmlosen Allowlist-Regel
+  (`git status* → allow`, `default-grants.ts:26`) **auto-allowed**. Shell ist
+  uneingeschränkt egress-fähig (`git difftool`, `git log --ext-diff`/`--output=`,
+  Pager/Alias). **Gefixt:** `shell` zu `EGRESS_KINDS` hinzugefügt + 2 Regressions-
+  Tests (`broker.test.ts` MUST-NOT 4: untrusted shell → `ask`, keine Persistenz).
+  Unabhängig vom Scoped-Grant-Feature — reiner Bugfix des Gates.
+
+### Blocker fürs Gate (müssen ins Design + Code, bevor Bau)
+
+1. **Scope wird auf dem Write-Pfad nie an den Broker übergeben** (HOLE-7 Pfad-
+   Linse): `fs-write-broker.ts:83` ruft `authorize` **ohne** `scope`; `decide`
+   vergleicht `request.target` **nie** gegen einen `pathPrefix` — ein
+   persistierter `scoped`-Grant ist heute ein **Blanket-`kind:scope`-Allow**
+   (`policy-engine.ts:148`), nicht das im Entwurf beschriebene Pattern-Match. Die
+   zentrale Invariante („Ziel unter pathPrefix") ist unverdrahtet. → `decide`
+   muss den strukturierten Scope gegen `target`/`command` prüfen; `fs-write-broker`
+   muss den Scope durchreichen.
+2. **`safeResolve` kanonisiert nur die Root, `writeFileSync` folgt Symlinks**
+   (HOLE-1 Pfad-Linse): `fs-exec.ts:40` realpath't nur die Root, `fs-write-exec.ts:32`
+   schreibt durch jeden Symlink → der A2-Escape (Symlink `src/x → /etc/...`) ist
+   **heute shipbar**. → realpath des **Ziel-Präfixes** + `O_NOFOLLOW`/`openat` am
+   Leaf (schließt auch TOCTOU Q3/HOLE-2).
+3. **Task-Bindung ist 100% aspirational** (H1 Lifecycle): kein `taskId`/`revoke`/
+   `expire` irgendwo im Code; `#grants` wächst nur, stirbt erst mit dem Prozess.
+   „Task-Ende = Grant-Ende" und A4 sind unimplementiert. → `taskId` als
+   **strukturiertes Key-Feld** (NICHT in den Scope-String serialisiert — sonst
+   Kollision, H2), plus `revoke(taskId)`-Methode.
+4. **Revocation-Race über zwei Grant-Maps** (H3 Lifecycle): Widerruf entfernt nur
+   den Policy-Engine-Grant; ein bereits gemünzter `ExecutionGrant`
+   (`capability-broker.ts` eigene Map) feuert nach dem Widerruf noch. → Revoke
+   muss **beide** Maps per `taskId` sweepen; `execute` re-checkt Task-Liveness.
+5. **`maxActions` ist verpflichtend, nicht optional** (H4 Lifecycle + HOLE-3
+   Trifecta): kein Zähler-Storage heute (`#grants` ist `Map<string, GrantAxis>`);
+   und der Scoped-Grant verstärkt eine `fromUntrusted`-Fehlklassifikation von 1
+   auf N. → Zähler co-located mit dem Grant, Cap verpflichtend (Q2 = mandatory).
+6. **`shell` bleibt NICHT scoped-fähig** (HOLE-1 Trifecta, Q4 = nein): nur
+   `file-write` wird scoped; `shell`/`secret-read`/`external-write`/`network`/
+   `db-write` bleiben Einzel-Gate.
+7. **Strukturierte/escapte Grant-Keys** (HOLE-4 Trifecta): `grantKey`/`consumableKey`
+   bauen Keys per naivem `:`-Join ohne Escaping → `:`-haltige Targets (URLs
+   `https://h:443/x`, Windows-Pfade) kollidieren. → Tupel/JSON-Key statt String-Join.
+8. **Prefix-Boundary + macOS-Normalisierung** (HOLE-3/5 Pfad): `matches()` ist
+   nacktes `startsWith` (`/srcX` matcht `/src`); APFS ist case-insensitive +
+   NFC/NFD-normalisierend. → boundary-anchored Vergleich (`prefix + sep`) auf
+   NFC-normalisierten, case-gefalteten realpath'd Pfaden; besser Inode-Vergleich.
+9. **Hardlinks** (HOLE-6 Pfad, LOW-MED): realpath löst Hardlinks nicht auf; ein
+   Hardlink `src/h → /etc/hosts` überlebt jede Symlink-Prüfung. → write-to-temp +
+   `rename`, oder `nlink === 1`-Check.
+
+### Neue Abuse-Cases (in die §4-Tabelle + §9-Suite aufzunehmen)
+
+- **A8 — Mis-Classification-Amplification:** ein Provider setzt `fromUntrusted`
+  fälschlich nicht; ein Scoped-Grant macht aus 1 verpasstem Gate N Auto-Allows.
+  Mitigation: `maxActions` verpflichtend (Blocker 5) + Klassifikations-Contract
+  am Provider-Rand pinnen.
+- **A9 — Key-Collision:** `:`-haltiges Target kollidiert Grant-/Consumable-Keys
+  (Blocker 7).
+
+### Was der Entwurf richtig hatte (Council-Konsens)
+
+Die **Reihenfolge** in `decide` ist korrekt (Trifecta-Hard-Gate steht
+unbedingt vor jedem Grant-Allow); der `deny`-sticky + no-forever + fail-closed
+sind real und test-gepinnt; der Ausschluss der gefährlichsten Egress-Kinds und
+das Nicht-Antasten der §3.3-Regel sind die richtigen konservativen Schnitte;
+realpath-nach-Kanonisierung ist das konzeptionell richtige A1/A2-Mittel — es ist
+nur nicht gebaut. **Kein Cross-Project-Leak** gefunden (Caveat: `projectKey`
+default `"default"` darf nie für zwei echte Projekte gelten).
 
 ## 10. Referenzen
 

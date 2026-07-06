@@ -20,11 +20,7 @@ import {
   looksLikeSecretValue,
 } from "../broker/index.ts";
 import { makeWriteEscape } from "@/contracts";
-import type {
-  CapabilityRequest,
-  ExecutionContext,
-  Principal,
-} from "@/contracts";
+import type { CapabilityRequest, ExecutionContext, Principal } from "@/contracts";
 
 const human: Principal = { id: "u1", kind: "human", label: "You" };
 const agent: Principal = { id: "a1", kind: "agent", label: "Opus · sess-3" };
@@ -59,9 +55,7 @@ describe("Policy engine — (Principal × Capability × Scope) → decision", ()
   it("does NOT privilege the human — same gate for human and agent (§3.1)", () => {
     const engine = new GrantPolicyEngine(DEFAULT_GRANT_CONFIG);
     const req: CapabilityRequest = { kind: "shell", target: "git commit -m x" };
-    expect(engine.decide(human, req).outcome).toBe(
-      engine.decide(agent, req).outcome,
-    );
+    expect(engine.decide(human, req).outcome).toBe(engine.decide(agent, req).outcome);
     // And a denied command stays denied for the human too.
     const rm: CapabilityRequest = { kind: "shell", target: "rm x" };
     expect(engine.decide(human, rm).outcome).toBe("deny");
@@ -117,6 +111,34 @@ describe("MUST-NOT 4 — untrusted-derived egress is a hard human gate, never au
     expect(d.outcome).toBe("ask");
     expect(d.request?.fromUntrusted).toBe(true);
     expect(d.reason).toMatch(/lethal trifecta/i);
+  });
+
+  it("forces ask for untrusted SHELL even when the allowlist would allow it", () => {
+    // Regression for the council-review HOLE-1: `git status*` is an allowlist
+    // `allow`, but an untrusted-derived shell request must still hard-gate — a
+    // shell line is egress-capable (difftool/ext-diff/pager/alias). Before the
+    // fix, `shell` was outside EGRESS_KINDS and this auto-allowed.
+    const engine = new GrantPolicyEngine(DEFAULT_GRANT_CONFIG);
+    const trusted = engine.decide(agent, { kind: "shell", target: "git status --short" });
+    expect(trusted.outcome).toBe("allow"); // trusted path unchanged
+    const untrusted = engine.decide(agent, {
+      kind: "shell",
+      target: "git status --short",
+      fromUntrusted: true,
+    });
+    expect(untrusted.outcome).toBe("ask");
+    expect(untrusted.reason).toMatch(/lethal trifecta/i);
+  });
+
+  it("does NOT persist a session/scoped grant for an untrusted shell egress", () => {
+    const engine = new GrantPolicyEngine(DEFAULT_GRANT_CONFIG);
+    const untrusted: CapabilityRequest = {
+      kind: "shell",
+      target: "git log --oneline",
+      fromUntrusted: true,
+    };
+    expect(engine.resolve(agent, untrusted, { axis: "session" })).toBe("once");
+    expect(engine.decide(agent, untrusted).outcome).toBe("ask");
   });
 
   it("a session/scoped grant CANNOT pre-clear untrusted egress", () => {
@@ -266,8 +288,12 @@ describe("MUST-NOT 2 — secrets never leave as a value / env / CLI-arg", () => 
     };
     broker.resolve(human, req, { axis: "session" });
     const grant = broker.authorize(human, req).grant;
-    broker.execute(human, req, (ctx: ExecutionContext) =>
-      ctx.withSecret("staging-admin", (v) => v.length), { grant });
+    broker.execute(
+      human,
+      req,
+      (ctx: ExecutionContext) => ctx.withSecret("staging-admin", (v) => v.length),
+      { grant },
+    );
     const dump = JSON.stringify(broker.audit.list());
     expect(dump).toContain("staging-admin"); // the reference name is fine
     expect(dump).not.toContain("p@ssw0rd-LEAK"); // the value is NOT
@@ -281,15 +307,20 @@ describe("MUST-NOT 2 — secrets never leave as a value / env / CLI-arg", () => 
     broker.secrets.put("k", "v");
     const req: CapabilityRequest = { kind: "file-read", target: "x" };
     const grant = broker.authorize(human, req).grant;
-    broker.execute(human, req, (ctx) => {
-      const members = Object.keys(ctx);
-      expect(members).toEqual(["withSecret"]);
-      // No env, no argv, no spawn — the injector cannot place the value in a
-      // subprocess environment.
-      expect("env" in ctx).toBe(false);
-      expect("spawn" in ctx).toBe(false);
-      return null;
-    }, { grant });
+    broker.execute(
+      human,
+      req,
+      (ctx) => {
+        const members = Object.keys(ctx);
+        expect(members).toEqual(["withSecret"]);
+        // No env, no argv, no spawn — the injector cannot place the value in a
+        // subprocess environment.
+        expect("env" in ctx).toBe(false);
+        expect("spawn" in ctx).toBe(false);
+        return null;
+      },
+      { grant },
+    );
   });
 
   it("the audit store refuses a value-shaped credentialRef", () => {
@@ -359,7 +390,9 @@ describe("MUST-NOT 1 — the broker is the only path to execution (chokepoint)",
     const grant = broker.authorize(agent, req).grant;
     expect(broker.execute(agent, req, () => "ran", { grant })).toBe("ran");
     // The same handle cannot run a second time — it was consumed.
-    expect(() => broker.execute(agent, req, () => "again", { grant })).toThrow(/not authorized/);
+    expect(() => broker.execute(agent, req, () => "again", { grant })).toThrow(
+      /not authorized/,
+    );
   });
 });
 
@@ -387,9 +420,9 @@ describe("MUST-NOT 3 — prod read-only invariant; permanent prod-write unconstr
 
     // First write rides the escape (with its single-use execution grant).
     const grant1 = broker.authorize(agent, req).grant;
-    expect(broker.execute(agent, req, () => "wrote", { writeEscape: escape, grant: grant1 })).toBe(
-      "wrote",
-    );
+    expect(
+      broker.execute(agent, req, () => "wrote", { writeEscape: escape, grant: grant1 }),
+    ).toBe("wrote");
     // S3 — consumption is tracked by the broker registry (keyed on escape.id),
     // NOT by a mutable flag the supplier could reset. The frozen escape's
     // `consumed` mirror stays false; the broker still refuses a replay.
@@ -464,11 +497,16 @@ describe("MUST-NOT 5 — append-only audit, written BEFORE execution", () => {
     const req: CapabilityRequest = { kind: "shell", target: "git status" };
     let auditLenAtRun = -1;
     const grant = broker.authorize(agent, req).grant;
-    broker.execute(agent, req, () => {
-      // Inside the callback, the executed entry already exists.
-      auditLenAtRun = broker.audit.list().length;
-      return null;
-    }, { grant });
+    broker.execute(
+      agent,
+      req,
+      () => {
+        // Inside the callback, the executed entry already exists.
+        auditLenAtRun = broker.audit.list().length;
+        return null;
+      },
+      { grant },
+    );
     // authorize(allow audits) + executed entry.
     // The executed entry must be present when the callback fires.
     expect(auditLenAtRun).toBeGreaterThanOrEqual(1);
