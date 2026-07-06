@@ -79,23 +79,38 @@ describe("Composer → live agent run (bridge present)", () => {
   });
 });
 
-describe("Composer → mock path intact (no bridge)", () => {
-  it("Case B: with no bridge, sendPrompt never fires and the mock transcript still renders", async () => {
+describe("Composer → browser mock path responds + settles (no bridge)", () => {
+  it("Case B: with no bridge, the mock still dispatches sendPrompt and the run settles (no fake infinite spinner)", async () => {
     desktopState.value = false;
     const user = userEvent.setup();
     renderWorkspace();
 
     // The mock agents session (s1) renders a permission prompt block — proof the
-    // snapshot path is intact and untouched by the live wiring. (After a send the
-    // session flips to `loading` and shows the loading state by design, so the
-    // mock-block proof is read here, before the send.)
+    // snapshot path is intact (read before the send).
     expect(screen.getByTestId("permission-prompt")).toBeInTheDocument();
 
+    const id = useAgents.getState().activeId;
     const input = screen.getByTestId("composer-input");
     await user.type(input, "no bridge here");
     await user.click(screen.getByTestId("composer-send"));
 
-    // No bridge → the live agent run never fires; the mock path is untouched.
+    // Browser/dev: the mock turn IS dispatched (P5) — this is what makes the
+    // browser chat respond instead of no-op'ing.
+    expect(sendPrompt).toHaveBeenCalledWith(id, "no bridge here");
+    // And the run SETTLES back to ready (P2) — the stubbed sendPrompt resolves,
+    // `completeRun` fires, so the loading spinner does not hang forever.
+    await vi.waitFor(() => expect(useAgents.getState().runStates[id]).not.toBe("loading"));
+  });
+
+  it("an empty send does not start a hanging loading run", async () => {
+    desktopState.value = false;
+    const user = userEvent.setup();
+    renderWorkspace();
+    const id = useAgents.getState().activeId;
+    // Focus the composer and send with no text.
+    screen.getByTestId("composer-input").focus();
+    await user.click(screen.getByTestId("composer-send"));
     expect(sendPrompt).not.toHaveBeenCalled();
+    expect(useAgents.getState().runStates[id] ?? "ready").not.toBe("loading");
   });
 });

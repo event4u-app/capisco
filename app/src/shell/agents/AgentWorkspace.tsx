@@ -80,6 +80,7 @@ export function AgentWorkspace({ kind = "agents" }: { kind?: WorkspaceKind } = {
   // P5-A cockpit control-flow: per-session message queue + run-completion seam.
   const messageQueues = useStore((s) => s.messageQueues);
   const runCompletions = useStore((s) => s.runCompletions);
+  const completeRun = useStore((s) => s.completeRun);
   const enqueueMessage = useStore((s) => s.enqueueMessage);
   const dequeueMessage = useStore((s) => s.dequeueMessage);
   const removeQueued = useStore((s) => s.removeQueued);
@@ -236,30 +237,35 @@ export function AgentWorkspace({ kind = "agents" }: { kind?: WorkspaceKind } = {
   // `SessionTree.branch()` — pure tree bookkeeping, never overwrites, both paths.
   const runSend = (text: string, branchLabel?: string | null) => {
     if (!cur) return;
-    // Start the run (P3): the session goes `loading`, which drives the composer's
-    // Stop affordance. Preserved on an empty send (the pre-existing behaviour).
-    setRunState(cur.id, "loading");
+    // The one-time terse hint fires on any send attempt (incl. empty), preserved.
     if (terseEnabled && !terseHintSeen) {
       setTerseHintOpen(true);
       markTerseHintSeen();
     }
+    // Nothing to send → no run, no loading. (Setting `loading` on an empty send
+    // was the fake-infinite-spinner bug — nothing dispatched, nothing completed.)
     if (!text) return;
+    const sid = cur.id;
+    // Start the run: `loading` drives the composer's Stop affordance.
+    setRunState(sid, "loading");
     // P4: log the sent prompt + drop the now-obsolete draft.
-    appendPrompt(cur.id, text);
-    clearDraft(cur.id);
+    appendPrompt(sid, text);
+    clearDraft(sid);
     const agent = getProviders().agent;
     // P5-A: a recalled-then-edited prompt forks a retry sibling via the existing
     // `SessionTree.branch()` — pure tree bookkeeping, never overwrites, both paths.
     if (branchLabel && agent?.getTree && agent?.branch) {
-      const sid = cur.id;
       void agent.getTree(sid).then((tree) => agent.branch(sid, tree.activeLeaf, branchLabel));
     }
-    // Live agent run (road-to-agent-backend-enablement): only when a desktop
-    // bridge is present AND this is the agents kind. No bridge → mock path is
-    // untouched (the browser/visual harness never reaches this). Chat has no
-    // tools / live run, so it stays mock-only too.
     if (!isChat && isDesktop()) {
-      void agent.sendPrompt(cur.id, text);
+      // Real live agent run (desktop bridge + agents kind): completion arrives via
+      // the real stream (`done`) on the real-runtime track — leave `loading`.
+      void agent.sendPrompt(sid, text);
+    } else {
+      // Browser/dev mock (+ chat): dispatch the deterministic mock turn, then
+      // settle the run (clears the spinner + drains the P5-A queue). This is what
+      // makes the browser chat actually respond instead of spinning forever.
+      void Promise.resolve(agent.sendPrompt(sid, text)).finally(() => completeRun(sid));
     }
   };
   const send = () => {
