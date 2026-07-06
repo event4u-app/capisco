@@ -416,9 +416,35 @@ Boundary hält bestätigt** (Path-Linse verifizierte `realCanonical` inkl. des
 - Windows-Mixed-Separator — out-of-scope für die macOS/POSIX-Zielplattform, als
   Windows-Deferral notiert.
 
-**Nächster Schritt:** v2.1 ist damit Wiring-vollständig; eine dritte Runde könnte
-sie auf PASS heben, ODER Matze zeichnet v2.1 direkt final ab und der Bau startet
-gegen diese Spec + die enumerierte §9/A1–A9-Testsuite.
+### v2.2 — Final-Gate-Fixes (3. Runde 2026-07-06, im Bau angewandt)
+
+Die 3. Runde (safe-to-build-Mandat) ergab **CONDITIONAL** mit 3 Spec-Text-Fixes;
+der Reviewer zertifiziert „amend per these and this is buildable". Angewandt:
+
+- **F1 — `target` nicht überladen:** neues **`CapabilityRequest.canonicalTarget?`**
+  (absoluter realpath), von `fs-write-broker` befüllt (hat `root` in Scope);
+  `scopeMatches` vergleicht `canonicalTarget` gegen den absoluten `pathPrefix`.
+  `request.target` (Audit-Label + Allowlist-Input) **und** `safeResolve`-Return
+  bleiben unverändert (kein Audit-Drift, kein Bruch des geteilten Primitivs).
+- **F2 — taskId ans Fingerprint binden + Ownership klären:** `taskId` kommt in
+  `requestFingerprint` (bindet einen `ExecutionGrant` an den ausstellenden Task —
+  schließt den Cross-Task-Ride allein); Broker-`#grants`-Value → `{ fingerprint,
+  taskId }` + `taskId → Set<grantId>`-Index; **`#liveTasks` lebt auf dem Broker**
+  und wird als Parameter in `policy.decide` gereicht (die Engine greift nie in
+  Broker-State). Erster Build: **manuelles `revoke(taskId)` + Prozess-Tod**; die
+  vier Auto-Sweeps (fertig/idle/timeout/stopp) sind getrackter Follow-up (Headless
+  GAP-6), mit einem Test der einen stale Grant abweist.
+- **F3 — Value als discriminated union + Primitiv-Ort:** `#grants`-Value =
+  `{axis:"deny"} | {axis:"session"} | {axis:"scoped"; taskId; pathPrefix; remaining}`
+  (alle `set`/`get`-Sites aufgezählt). Das forked temp+rename-Grant-Write-Primitiv
+  lebt **in `fs-write-exec.ts`** (schon in der Chokepoint-`fs-write`-Allowlist —
+  die v2.1-Behauptung „muss hinzugefügt werden" war faktisch falsch).
+
+**Build-Reihenfolge (Reviewer-TDD, риск-first):** (1) taskId→Fingerprint +
+Cross-Task-Ride-Test; (2) canonical-Target-Seam; (3) `scopeMatches`
+(boundary+NFC); (4) union-`#grants` + `maxActions`; (5) `revoke`/`#liveTasks` +
+Revoke-Race-Test; (6) forked temp+rename. Vorab-Invariante gepinnt: untrusted
+file-write bleibt `ask` **auch bei aktivem passendem scoped-Grant** (HOLE-1-Lock).
 
 ## 10. Referenzen
 
