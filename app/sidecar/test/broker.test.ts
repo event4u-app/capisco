@@ -220,6 +220,27 @@ describe("MUST-NOT 4 — untrusted-derived egress is a hard human gate, never au
     expect(engine.decide(agent, trustedA).outcome).toBe("ask"); // consumed
   });
 
+  it("Fix 5 (HOLE-4) — a `:`-bearing target/command does NOT collide two grants' keys", () => {
+    // Under a naive `${kind}:${scope}:${target}:${command}` join, (target "x",
+    // command "y:z") and (target "x:y", command "z") produce the SAME key. The
+    // structured JSON key keeps them distinct, so approving one never clears the
+    // other. (council review, trifecta lens, HOLE-4)
+    const engine = new GrantPolicyEngine(DEFAULT_GRANT_CONFIG);
+    // Approve untrusted egress to A → single-use consumable bound to (x, "y:z").
+    engine.resolve(
+      agent,
+      { kind: "network", target: "x", command: "y:z", fromUntrusted: true },
+      { axis: "session" },
+    );
+    // The trusted request B (x:y, z) — which collides onto A's key under a naive
+    // `:`-join — must NOT be auto-allowed by A's consumable.
+    const trustedB: CapabilityRequest = { kind: "network", target: "x:y", command: "z" };
+    expect(engine.decide(agent, trustedB).outcome).toBe("ask");
+    // A's own one call is still cleared exactly once (the fix didn't break A).
+    const trustedA: CapabilityRequest = { kind: "network", target: "x", command: "y:z" };
+    expect(engine.decide(agent, trustedA).outcome).toBe("allow");
+  });
+
   it("a `deny` on an untrusted egress IS still sticky (sticky deny is safe)", () => {
     const engine = new GrantPolicyEngine(DEFAULT_GRANT_CONFIG);
     const untrusted: CapabilityRequest = {

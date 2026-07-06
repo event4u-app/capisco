@@ -88,7 +88,7 @@ function buildRequest(
 }
 
 export class GrantPolicyEngine implements PolicyEngine {
-  /** `${projectKey}:${kind}:${scope ?? ""}` → persisted grant axis. */
+  /** `JSON.stringify([projectKey, kind, scope])` → persisted grant axis. */
   readonly #grants = new Map<string, GrantAxis>();
   /**
    * Consumable, single-use allow keys (§3.3 lethal trifecta). A human who
@@ -107,8 +107,14 @@ export class GrantPolicyEngine implements PolicyEngine {
     this.#projectKey = projectKey;
   }
 
+  // Keys are built with `JSON.stringify` of a tuple (the same injective idiom as
+  // `requestFingerprint` in capability-broker.ts) — NOT a raw `:`-join. A naive
+  // `:`-join is ambiguous when a component itself contains `:` (a `network`
+  // target `https://h:443/x`, a Windows path `C:\…`), so two logically distinct
+  // requests could collide onto one key and cross-clear each other's grant.
+  // Found by the scoped-grant-ux design-gate council review (trifecta lens, HOLE-4).
   private grantKey(kind: CapabilityKind, scope?: CapabilityScope): string {
-    return `${this.#projectKey}:${kind}:${scope ?? ""}`;
+    return JSON.stringify([this.#projectKey, kind, scope ?? ""]);
   }
 
   /**
@@ -119,7 +125,13 @@ export class GrantPolicyEngine implements PolicyEngine {
    * grant is bound to its exact target so it can only ever clear that one.
    */
   private consumableKey(request: CapabilityRequest, scope?: CapabilityScope): string {
-    return `${this.#projectKey}:${request.kind}:${scope ?? ""}:${request.target}:${request.command ?? ""}`;
+    return JSON.stringify([
+      this.#projectKey,
+      request.kind,
+      scope ?? "",
+      request.target,
+      request.command ?? "",
+    ]);
   }
 
   decide(
