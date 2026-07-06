@@ -5,15 +5,15 @@ durch Matze (+ zweiten unabhängigen Council-Review) bestehen, BEVOR der Broker-
 Bau-Schritt (P1 Z. 226 „`scoped`-Grants im Policy-Engine umsetzen") beginnt. Es
 wird bei Bestehen zur Acceptance-as-Runbook der Adversarial-Testsuite (P1 Z. 232).*
 
-> **GATE-STATUS: ⛔ FAIL** (Council-Pre-Review 2026-07-06, 3 adversariale Linsen
-> gegen Entwurf + echten `policy-engine.ts`-Code — 2× FAIL, 1× CONDITIONAL). Das
-> Gate hat seinen Zweck erfüllt: die Runde fand mehrere strukturelle Bypässe, die
-> der Erstentwurf übersah — **darunter einen latenten Security-Bug im shipped
-> Code** (untrusted `shell` umging das Trifecta-Gate; in dieser Runde gefixt,
-> siehe § Council Pre-Review). **Kein `scoped`-Grant-Code, bis die in § Council
-> Pre-Review gelisteten Blocker im Design adressiert + von Matze reviewed sind.**
-> Fallback bei „nicht sicher umsetzbar": manuelle Session-Grants pro Datei +
-> Human-in-Loop (hässlich, kein Blocker) — P2 bliebe dann blockiert.
+> **GATE-STATUS: 🟡 v2.1 — CONDITIONAL, Wiring-vollständig; wartet auf Matze-Sign-off
+> (oder optionale 3. Runde).** Trajektorie: v1 ⛔ FAIL (3 Linsen) + 3 latente
+> Shipped-Code-Bugs (shell-Trifecta, Symlink-Escape, Key-Kollision — **alle gefixt**,
+> PRs #31–#33) → v2 🟡 CONDITIONAL (**A1/A2-Root-Boundary bestätigt geschlossen**,
+> kein Escape mehr; nur Wiring-Specs offen) → **§ v2.1** unten schreibt jede
+> Wiring-Spec fest (canonical-Target, Ordering, taskId-Durchreichung, Res-7-neu,
+> Case-Fold, Prefix-Kanonisierung). **Kein `scoped`-Grant-Code, bis Matze v2.1
+> final abzeichnet** (der Bau folgt dann Spec + der enumerierten A1–A9-Testsuite).
+> Fallback: manuelle Session-Grants + Human-in-Loop — P2 bliebe dann blockiert.
 
 ## 0. Warum dieses Gate (security-sensitive)
 
@@ -281,6 +281,170 @@ das Nicht-Antasten der §3.3-Regel sind die richtigen konservativen Schnitte;
 realpath-nach-Kanonisierung ist das konzeptionell richtige A1/A2-Mittel — es ist
 nur nicht gebaut. **Kein Cross-Project-Leak** gefunden (Caveat: `projectKey`
 default `"default"` darf nie für zwei echte Projekte gelten).
+
+## v2 — Blocker-Auflösung (2026-07-06, post-Council)
+
+Jeder der 9 v1-Blocker wird hier konkret + code-geerdet aufgelöst. Drei waren
+Shipped-Code-Bugs und sind bereits gefixt (PRs #31–#33); die übrigen sechs sind
+Design-Entscheidungen, die die **Bau**-Spezifikation festlegen.
+
+### Bereits gefixt (Shipped-Code, unabhängig vom Feature)
+- **B-shell / B2-keys / B-symlink:** `shell` in `EGRESS_KINDS` (#31);
+  `safeResolve` kanonisiert das Ziel (#32); Grant-Keys als `JSON.stringify`-Tupel
+  (#33). Die Basis-Ebene ist damit gehärtet, bevor das Feature darauf aufsetzt.
+
+### Design-Auflösungen (verbindliche Bau-Spezifikation)
+
+1. **Scope wird durchgereicht + in `decide` erzwungen** (v1-Blocker 1, HOLE-7).
+   `CapabilityScope` wird von einem opaken String zu einer strukturierten,
+   **typisierten** Form (serialisiert weiterhin injektiv via JSON, siehe #33):
+   `{ taskId, kind, pathPrefix, commandPattern?, maxActions }`. `fs-write-broker`
+   reicht den aktiven Scope an `authorize`/`decide`. Der persistierte-`scoped`-
+   Zweig in `decide` gibt **nicht** mehr blanket `allow`, sondern ruft
+   `scopeMatches(grant, request)`: `request.target` (realpath-kanonisiert, siehe
+   #32-Helper) muss **unter** `grant.pathPrefix` liegen (boundary-anchored,
+   `prefix + sep`), sonst `deny`. Kein Match → fällt auf `ask` (fail-closed).
+2. **Task-Bindung als typisiertes Feld + Live-Task-Registry** (v1-Blocker 3, H1/H2).
+   `taskId` ist ein **First-Class-Feld** des Grant-Records, **nicht** in einen
+   String serialisiert (verhindert die H2-Kollision). Neue Engine-Methode
+   `endTask(taskId)` löscht alle Grants dieses Tasks; der Broker hält ein
+   `#liveTasks: Set<taskId>`, und `decide` verweigert ein `scoped`-Match, dessen
+   `taskId` nicht in `#liveTasks` ist (deckt A4: neuer Task, gleicher Scope →
+   `ask`). Verdrahtet an alle vier Task-Ende-Bedingungen (fertig · Grant-Ablauf ·
+   manueller Stopp · Idle) — geteilt mit dem Headless-Lifecycle (dort GAP-6).
+3. **Revoke sweept beide Grant-Maps** (v1-Blocker 4, H3). `revoke(taskId)` +
+   `endTask(taskId)` entfernen den Policy-Engine-Grant **und** invalidieren alle
+   offenen `ExecutionGrant`s dieses Tasks in der Broker-Map; `execute` re-checkt
+   `#liveTasks`-Zugehörigkeit vor dem Lauf (schließt das authorize→execute-Fenster).
+4. **`maxActions` verpflichtend** (v1-Blocker 5, H4/A8). Jeder Scoped-Grant trägt
+   einen Pflicht-Zähler (co-located im Grant-Record, der Value-Typ der Map wird
+   `{ axis, taskId, pathPrefix, remaining }`), in `decide`/`execute` dekrementiert;
+   `remaining === 0` → nächste Aktion `ask`. Bounded eine `fromUntrusted`-
+   Fehlklassifikation (A8) von N auf den Cap. In-memory → Restart setzt nicht
+   heimlich zurück (der Grant ist weg, nicht der Zähler-verwaiste Grant).
+5. **`shell` bleibt NICHT scoped-fähig** (v1-Blocker 6, HOLE-1 Trifecta / Q4=nein).
+   Nur `file-write` ist scoped. `shell`/`secret-read`/`external-write`/`network`/
+   `db-write` bleiben Einzel-Gate. Ein Scoped-Grant für `shell` ist bei Ausstellung
+   ein Fehler.
+6. **Boundary-anchored + macOS-normalisierter Pfadvergleich** (v1-Blocker 8,
+   HOLE-3/5). `scopeMatches` vergleicht NFC-normalisierte, auf case-insensitiven
+   FS case-gefaltete realpath'd Pfade mit `target === prefix || target.startsWith(
+   prefix + sep)` — nie nacktes `startsWith`. (Der bestehende `matches()` für
+   Command-Allowlist bleibt unverändert; das ist ein separater Pfad.)
+7. **Hardlink-Behandlung** (v1-Blocker 9, HOLE-6, LOW). `file-write` schreibt
+   write-to-temp-in-dir + atomic `rename`; der Grant-Write prüft vorher
+   `lstat(target).nlink === 1` und verweigert einen Multi-Link-Ziel (ein Hardlink
+   auf `/etc/hosts` würde sonst in-place mutiert). Dokumentiert als LOW-Residual,
+   falls `nlink`-Prüfung als zu streng befunden wird.
+
+### Residual (bewusst offen, nicht Bau-blockierend)
+- **Leaf-TOCTOU (Q3):** ein nach `scopeMatches` getauschter Leaf-Symlink. `openat`/
+  `O_NOFOLLOW` zurückgestellt (bräche legitimes In-Projekt-Symlink-Editieren);
+  der #32-Realpath-Check schließt die nicht-racy Variante. Eigener späterer Slice.
+
+### Aktualisierte Abuse-Cases (v2)
+A1 traversal · A2 out-of-root-symlink (#32) · A3 restart-loss (in-memory) ·
+A4 cross-task (Live-Task-Registry) · A5 trifecta-untouched · A6 maxActions ·
+A7 no-wildcard · **A8 mis-classification → maxActions-bounded** · **A9 key-collision
+(#33)** — alle mit enumeriertem Test in der §9-Suite (Bau-Akzeptanz).
+
+## v2 Re-Review (2026-07-06)
+
+Zwei adversariale Linsen gegen die v2-Auflösung + echten Code. **Beide CONDITIONAL**
+(v1 war 2× FAIL) — **kein Escape-to-arbitrary-write mehr gefunden; die A1/A2-Root-
+Boundary hält bestätigt** (Path-Linse verifizierte `realCanonical` inkl. des
+„nicht-existentes Ziel mit symlinktem Parent"-Falls). Die verbleibenden Punkte sind
+**Wiring-Specs**, die v2.1 unten festschreibt, bevor gebaut wird.
+
+| Linse | Verdict | Kern |
+|---|---|---|
+| Enforcement / Lifecycle | CONDITIONAL | 2 FAIL-grade Wiring-Lücken (canonical-target, taskId-Durchreichung) |
+| Path-Containment | CONDITIONAL | Res 7 (Hardlink) inkohärent; Case-Fold aspirational |
+
+### v2.1 — verbindliche Wiring-Specs (schließen die CONDITIONAL-Punkte)
+
+1. **Canonical-Target-Verdrahtung (Enforcement FAIL-1).** Heute übergibt
+   `fs-write-broker.ts:83` `authorize` einen **relativen** `target` (`"src/foo.ts"`);
+   die Policy-Engine kennt die Repo-Root nicht → kann nicht gegen einen absoluten
+   `pathPrefix` vergleichen. **Fix:** `fs-write-broker` kanonisiert **vor**
+   `authorize` (`safeResolve` gibt künftig den `canonical` statt `abs` zurück, ODER
+   der Broker reicht `root` + kanonisiert) und übergibt den **absoluten,
+   realpath'd** Target an `decide`. `scopeMatches` vergleicht absolut gegen absolut.
+2. **Ordering-Invariante festgeschrieben (Enforcement FAIL-1).** `scopeMatches`
+   läuft **ausschließlich** im persistierten-`scoped`-Zweig von `decide`, **strikt
+   nach** dem untrusted-egress-Hard-Gate (`policy-engine.ts:146`). Nie als früher
+   Zweig, nie das untrusted-Gate umschließend. (Sonst HOLE-1-Laundering zurück.)
+3. **`taskId` durchreichen — Request + ExecutionGrant + Index (Enforcement FAIL-2).**
+   `CapabilityRequest` bekommt ein `taskId`-Feld; der `ExecutionGrant` (bzw. der
+   Broker-`#grants`-Value) trägt die ausstellende `taskId`; ein `taskId → Set<grantId>`
+   -Index ersetzt das reine `id → fingerprint`. `decide` matcht `grant.taskId ===
+   request.taskId` (NICHT nur `∈ #liveTasks` — sonst reitet ein zweiter lebender
+   Task den Grant des ersten). `execute` re-checkt `#liveTasks` **und** `endTask`
+   sweept den Broker-Map-Index per `taskId` (schließt das authorize→execute-Fenster).
+4. **`#grants`-Value-Typ + resolve-Seite + session-Diskriminator (Enforcement PASS-note).**
+   Value wird `{ axis, taskId, pathPrefix, remaining }`. `resolve` schreibt das
+   Objekt (nicht die nackte Achse); Sticky-`deny` wird `persisted?.axis === "deny"`;
+   `scopeMatches`/Dekrement laufen **nur** für `axis === "scoped"`, `session` bleibt
+   Blanket-Allow (kein `scopeMatches` auf einem `session`-Grant ohne `pathPrefix`).
+5. **`shell`-Reject bei Ausstellung + defensiver decide-Check (Enforcement PASS-note).**
+   Scope mit `kind !== "file-write"` wird bei der Grant-Erstellung abgelehnt;
+   `decide` refust defensiv zusätzlich einen scoped-Grant, dessen `kind` nicht zum
+   Request passt.
+6. **Res 7 (Hardlink) neu geschnitten (Path GAP-2/3/4).** Ersetzt das inkohärente
+   „`nlink===1` + temp+rename": der Grant-Write nutzt **write-to-temp-im-Zielordner
+   + atomic `rename`** — das **ersetzt** das Ziel-Inode (neutralisiert den Hardlink
+   by construction, statt es in-place zu mutieren; `nlink` ist das falsche Primitiv,
+   es ist `1` für `/etc/hosts`). Der **Rename-Zielordner wird unmittelbar vor dem
+   Rename neu `realCanonical`'d** (schließt Parent-Symlink-Swap). **Downstream:**
+   `renameSync` ist im `broker-chokepoint.test.ts:188`-Bann → `fs-write-exec.ts` muss
+   in die `fs-write`-Allowlist; UND dies ändert das **geteilte** Human-Save-Primitiv
+   (`writeTextWrite`, in-place) → entweder ein **separates** Grant-Write-Primitiv
+   forken (Human-Save bleibt in-place) oder den Inode-Churn für alle Saves bewusst
+   dokumentieren. v2.1 wählt: **forken** (kleinster Blast-Radius).
+7. **Case-Fold real machen + Prefix-Kanonisierung bei Ausstellung (Path GAP-1 + Minor).**
+   `scopeMatches` `.normalize("NFC")` + case-fold **beide** Operanden auf
+   case-insensitivem FS (`realCanonical` foldet NICHT selbst — der nicht-existente
+   Tail behält die Anfrage-Casing). `pathPrefix` wird **bei Grant-Ausstellung**
+   `realCanonical`'d + boundary-validiert (nicht nur der Target zur Check-Zeit) +
+   leerer/`*`-Prefix hart abgelehnt (belt-and-suspenders zu A7).
+
+### Residual (bewusst offen)
+- Leaf-TOCTOU (Q3) — neu bewertet gegen das temp+rename aus Spec 6: der Residual-
+  Text wird beim Bau gegen die finale Write-Strategie neu abgeleitet (temp+rename
+  verlängert das Fenster nicht, wenn der Zielordner unmittelbar vor Rename
+  re-kanonisiert wird — Spec 6). `O_NOFOLLOW` bleibt zurückgestellt.
+- Windows-Mixed-Separator — out-of-scope für die macOS/POSIX-Zielplattform, als
+  Windows-Deferral notiert.
+
+### v2.2 — Final-Gate-Fixes (3. Runde 2026-07-06, im Bau angewandt)
+
+Die 3. Runde (safe-to-build-Mandat) ergab **CONDITIONAL** mit 3 Spec-Text-Fixes;
+der Reviewer zertifiziert „amend per these and this is buildable". Angewandt:
+
+- **F1 — `target` nicht überladen:** neues **`CapabilityRequest.canonicalTarget?`**
+  (absoluter realpath), von `fs-write-broker` befüllt (hat `root` in Scope);
+  `scopeMatches` vergleicht `canonicalTarget` gegen den absoluten `pathPrefix`.
+  `request.target` (Audit-Label + Allowlist-Input) **und** `safeResolve`-Return
+  bleiben unverändert (kein Audit-Drift, kein Bruch des geteilten Primitivs).
+- **F2 — taskId ans Fingerprint binden + Ownership klären:** `taskId` kommt in
+  `requestFingerprint` (bindet einen `ExecutionGrant` an den ausstellenden Task —
+  schließt den Cross-Task-Ride allein); Broker-`#grants`-Value → `{ fingerprint,
+  taskId }` + `taskId → Set<grantId>`-Index; **`#liveTasks` lebt auf dem Broker**
+  und wird als Parameter in `policy.decide` gereicht (die Engine greift nie in
+  Broker-State). Erster Build: **manuelles `revoke(taskId)` + Prozess-Tod**; die
+  vier Auto-Sweeps (fertig/idle/timeout/stopp) sind getrackter Follow-up (Headless
+  GAP-6), mit einem Test der einen stale Grant abweist.
+- **F3 — Value als discriminated union + Primitiv-Ort:** `#grants`-Value =
+  `{axis:"deny"} | {axis:"session"} | {axis:"scoped"; taskId; pathPrefix; remaining}`
+  (alle `set`/`get`-Sites aufgezählt). Das forked temp+rename-Grant-Write-Primitiv
+  lebt **in `fs-write-exec.ts`** (schon in der Chokepoint-`fs-write`-Allowlist —
+  die v2.1-Behauptung „muss hinzugefügt werden" war faktisch falsch).
+
+**Build-Reihenfolge (Reviewer-TDD, риск-first):** (1) taskId→Fingerprint +
+Cross-Task-Ride-Test; (2) canonical-Target-Seam; (3) `scopeMatches`
+(boundary+NFC); (4) union-`#grants` + `maxActions`; (5) `revoke`/`#liveTasks` +
+Revoke-Race-Test; (6) forked temp+rename. Vorab-Invariante gepinnt: untrusted
+file-write bleibt `ask` **auch bei aktivem passendem scoped-Grant** (HOLE-1-Lock).
 
 ## 10. Referenzen
 

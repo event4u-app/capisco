@@ -75,6 +75,10 @@ function requestFingerprint(principal: Principal, request: CapabilityRequest): s
     request.command ?? "",
     request.credentialRef ?? "",
     Boolean(request.fromUntrusted),
+    // scoped-grant v2.2 F2 — bind the grant to its issuing task, so a grant
+    // minted under task A can never be executed by a request carrying task B.
+    // Absent taskId → "" (existing non-task calls fingerprint identically).
+    request.taskId ?? "",
   ]);
 }
 
@@ -103,7 +107,9 @@ export class Broker implements CapabilityBroker {
   readonly #usedEscapes = new Set<string>();
 
   constructor(opts: BrokerOptions = {}) {
-    this.#policy = opts.policy ?? new GrantPolicyEngine(opts.config ?? DEFAULT_GRANT_CONFIG, opts.projectKey);
+    this.#policy =
+      opts.policy ??
+      new GrantPolicyEngine(opts.config ?? DEFAULT_GRANT_CONFIG, opts.projectKey);
     this.secrets = opts.secrets ?? new InMemorySecretStore();
     this.audit = opts.audit ?? new InMemoryAuditStore();
     this.#prodDatasources = opts.productionDatasources ?? new Set();
@@ -165,7 +171,11 @@ export class Broker implements CapabilityBroker {
     principal: Principal,
     request: CapabilityRequest,
     run: (ctx: ExecutionContext) => T,
-    options: { scope?: CapabilityScope; writeEscape?: WriteEscape; grant?: ExecutionGrant } = {},
+    options: {
+      scope?: CapabilityScope;
+      writeEscape?: WriteEscape;
+      grant?: ExecutionGrant;
+    } = {},
   ): T {
     // 1. C3 — the chokepoint is now BOUND to a prior `authorize`. `execute` is
     //    NOT an independent re-decide: it requires the single-use execution

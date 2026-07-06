@@ -405,6 +405,25 @@ describe("MUST-NOT 1 — the broker is the only path to execution (chokepoint)",
     );
   });
 
+  it("F2 (scoped-grant) — an ExecutionGrant is bound to its issuing taskId (no cross-task ride)", () => {
+    // scoped-grant v2.2 F2 / v1 A4+H3: a grant minted under task-7 must never be
+    // executable by a request carrying a different taskId. The fingerprint now
+    // includes taskId, so this is enforced at the chokepoint even before the
+    // full scoped-grant lifecycle lands.
+    const broker = new Broker({ config: DEFAULT_GRANT_CONFIG });
+    const req7: CapabilityRequest = { kind: "shell", target: "git status", taskId: "task-7" };
+    const d = broker.authorize(agent, req7);
+    expect(d.outcome).toBe("allow");
+    expect(d.grant).toBeDefined();
+    // A different live task cannot ride task-7's grant.
+    const req8: CapabilityRequest = { kind: "shell", target: "git status", taskId: "task-8" };
+    expect(() => broker.execute(agent, req8, () => "ran", { grant: d.grant })).toThrow(
+      /not authorized/,
+    );
+    // The issuing task executes it exactly once.
+    expect(broker.execute(agent, req7, () => "ran", { grant: d.grant })).toBe("ran");
+  });
+
   it("an execution grant is single-use — a replay with the same grant is refused (C3)", () => {
     const broker = new Broker({ config: DEFAULT_GRANT_CONFIG });
     const req: CapabilityRequest = { kind: "file-read", target: "once.ts" };

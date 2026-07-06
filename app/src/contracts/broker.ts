@@ -88,6 +88,22 @@ export interface CapabilityRequest {
   credentialRef?: string;
   /** True when this capability is derived from untrusted agent/ticket/web output. */
   fromUntrusted?: boolean;
+  /**
+   * Issuing task id (scoped-grant v2.2 F2). Binds an {@link ExecutionGrant} to
+   * the task that authorised it — a grant minted under one task can never be
+   * executed by a request carrying a different `taskId` (the fingerprint
+   * includes it). Optional; absent on non-task-scoped calls (fingerprinted as
+   * `""`, so existing behaviour is unchanged).
+   */
+  taskId?: string;
+  /**
+   * Absolute, realpath-canonicalised target (scoped-grant v2.2 F1). Populated by
+   * the caller that knows the repo root (e.g. `fs-write-broker`) so a scoped
+   * grant's path check can compare against an absolute `pathPrefix`. `target`
+   * stays the relative audit-label / allowlist-match input; this field is
+   * additive and read only by the scoped-grant path.
+   */
+  canonicalTarget?: string;
 }
 
 /** A named scope a grant can be bound to (e.g. a dir tree, a datasource). */
