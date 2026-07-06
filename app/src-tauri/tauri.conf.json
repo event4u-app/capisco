@@ -12,6 +12,7 @@
   "app": {
     "windows": [
       {
+        "label": "main",
         "title": "Capisco",
         "width": 1440,
         "height": 880,
