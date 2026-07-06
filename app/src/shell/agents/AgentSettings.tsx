@@ -4,6 +4,7 @@ import { ChevronDown, CircleCheck, Download, ExternalLink, Lock, X } from "lucid
 
 import { agentSnapshot } from "@/mocks";
 import type { AgentBackend } from "@/contracts";
+import { getProviders } from "@/lib/desktop-shell";
 import { useAgents, type TerseLevel } from "./store";
 
 /**
@@ -45,7 +46,30 @@ export function AgentSettings({
   const [token, setToken] = React.useState("");
   const ref = React.useRef<HTMLDivElement>(null);
   const cli = agentSnapshot.detectedCli;
-  const backends = agentSnapshot.backends;
+  // Real backend catalog (P1) — seeded with the snapshot (first render + goldens
+  // unchanged) then replaced by the provider's `detect()` result. In the browser
+  // that is the deterministic mock backend; on desktop it is the real host scan.
+  // Fixes the "picker is cosmetic" bug (the catalog was a static mock, `detect()`
+  // was never called).
+  const [backends, setBackends] = React.useState<AgentBackend[]>(agentSnapshot.backends);
+  const redetect = React.useCallback(() => {
+    void getProviders()
+      .agentBackend.detect()
+      .then((list) => {
+        if (list.length) setBackends(list);
+      });
+  }, []);
+  React.useEffect(() => {
+    let alive = true;
+    void getProviders()
+      .agentBackend.detect()
+      .then((list) => {
+        if (alive && list.length) setBackends(list);
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
   const selectedBackendId = useAgents((s) => s.selectedBackendId);
   const setSelectedBackend = useAgents((s) => s.setSelectedBackend);
   const scopedGrantsEnabled = useAgents((s) => s.scopedGrantsEnabled);
@@ -177,7 +201,12 @@ export function AgentSettings({
           </div>
           <div className="as-path">{cli.detail}</div>
           <div className="as-note">{t("agents.settings.cliNote")}</div>
-          <button type="button" className="as-btn as-btn-default">
+          <button
+            type="button"
+            className="as-btn as-btn-default"
+            data-testid="agent-settings-redetect"
+            onClick={redetect}
+          >
             {t("agents.settings.redetect")}
           </button>
 
@@ -191,7 +220,13 @@ export function AgentSettings({
                 key={b.id}
                 backend={b}
                 selected={b.id === selectedBackendId}
-                onUse={() => setSelectedBackend(b.id)}
+                onUse={() => {
+                  // P1 — reflect locally AND drive the sidecar selection (the
+                  // load-bearing fix: `onUse` used to only set a local string,
+                  // so the run never used the picked backend).
+                  setSelectedBackend(b.id);
+                  void getProviders().agentBackend.select(b.id);
+                }}
                 onInstall={() => setInstallAttempt((b.installCommand ?? []).join(" "))}
               />
             ))}

@@ -43,19 +43,23 @@ Der Backend-Picker ist heute kosmetisch: er schreibt einen lokalen String, ruft
 `detect()` nie, zeigt einen statischen Mock-Katalog, und `onUse` erreicht den
 Sidecar `select()` nie → jeder Lauf läuft gegen „no backend".
 
-- [ ] **detect() beim Desktop-Boot** aufrufen + `current()` daraus ableiten (heute
-      nie gerufen → `current()` = „no backend"). <!-- backend-selection.ts:100; AgentWorkspace.tsx:199-220 (A3) -->
-- [ ] **Picker aus echtem detect()** speisen statt `agentSnapshot.backends` (statischer
-      Mock, disconnected von der Sidecar-Realität; Mock bleibt Browser-Fallback). <!-- AgentSettings.tsx:47 (A4) -->
-- [ ] **`onUse` → `agentBackend.select(id)`** (+ detect-if-needed) verdrahten; heute
-      reiner lokaler `set` (B3, die lasttragende „Wechsel tut nichts"-Ursache). <!-- store.ts:377; AgentSettings.tsx:194; einziger .select(-Caller ist main.ts:127 -->
-- [ ] **Redetect-Button** `onClick → detect()` (heute kein onClick) + **Save** persistiert
-      das API-Token statt es zu verwerfen. <!-- AgentSettings.tsx:180,168 (C5) -->
-- [ ] **AgentSettings nutzt den parametrisierten `useStore`** statt hart `useAgents`
-      (im Chat-Workspace schreibt das Backend-Segment sonst in den falschen Store). <!-- AgentSettings.tsx:49-50 (B4) -->
-- [ ] Tests: vitest mit Spy-Provider (onUse ruft select; Boot ruft detect; Redetect
-      ruft detect; Save persistiert) + Playwright (Picker füllt sich aus detect,
-      Auswahl spiegelt sich im Status). <!-- UI-Wire browser-testbar; echter Lauf native -->
+- [ ] **detect() beim Desktop-Boot** für das Composer-Label (`current()`) auf der
+      **Bridge** — das „no backend" im Composer betrifft den Dev-Bridge/echten
+      Sidecar-Pfad (`BackendSelection` nie detektiert). Der Picker detektet jetzt
+      (unten), aber der Composer-`current()`-Boot-Detect (A3/C4) bleibt offen. <!-- backend-selection.ts:100; AgentWorkspace.tsx:199-220 -->
+- [x] **Picker aus echtem detect()** speisen statt statischem `agentSnapshot.backends`:
+      AgentSettings holt den Katalog per `agentBackend.detect()` (on-mount + Redetect);
+      der Mock-`detect()` liefert jetzt den vollen deterministischen Katalog → der
+      Picker ist provider-getrieben (Browser wie Desktop). <!-- done: AgentSettings.tsx + mock-providers.ts -->
+- [x] **`onUse` → `agentBackend.select(id)`** verdrahtet (+ lokaler Set fürs UI) —
+      die lasttragende „Wechsel tut nichts"-Ursache B3 behoben. <!-- done -->
+- [x] **Redetect-Button** `onClick → detect()` (hatte keinen onClick). <!-- done. OFFEN: **Save** persistiert das API-Token noch nicht (braucht Secret-Store — native/real). -->
+- [ ] **AgentSettings parametrisierter `useStore`** statt hart `useAgents` (B4 —
+      im Chat-Workspace schreibt der Backend-Katalog sonst in den falschen Store). <!-- AgentSettings.tsx:49-50 offen -->
+- [x] Tests: vitest `AgentSettings.test.tsx` (Spy-Provider: detect on-mount, onUse→select,
+      Redetect→detect — grün); Browser-Katalog-Population deckt `agents.spec.ts:187`
+      (Playwright) ab. Der Klick-Select-Flow ist im Mock nicht browser-testbar (nur
+      `stub` ist `ready` + bereits selektiert) → per vitest bewiesen. <!-- done -->
 
 ## Phase 2 — Send-Loop-Ehrlichkeit (kein Fake-Endlos-Spinner)
 
