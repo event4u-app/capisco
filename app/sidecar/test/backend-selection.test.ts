@@ -4,25 +4,66 @@ import { BackendSelection, costUsd, type BackendDetector } from "../acp/backend-
 import type { AgentBackend } from "@/contracts";
 
 const CATALOG: AgentBackend[] = [
-  { id: "claude-native", label: "Claude Code (native)", driver: "native-stream-json", status: "ready", detail: "/opt/homebrew/bin/claude", version: "2.1.191" },
-  { id: "claude-code-acp", label: "Claude Code (via ACP)", driver: "acp-bridge", status: "installable", installCommand: ["npm", "i", "-g", "@zed-industries/claude-code-acp"] },
-  { id: "node", label: "Node.js", driver: "prerequisite", status: "ready", detail: "/usr/bin/node" },
+  {
+    id: "claude-native",
+    label: "Claude Code (native)",
+    driver: "native-stream-json",
+    status: "ready",
+    detail: "/opt/homebrew/bin/claude",
+    version: "2.1.191",
+  },
+  {
+    id: "claude-code-acp",
+    label: "Claude Code (via ACP)",
+    driver: "acp-bridge",
+    status: "installable",
+    installCommand: ["npm", "i", "-g", "@zed-industries/claude-code-acp"],
+  },
+  {
+    id: "node",
+    label: "Node.js",
+    driver: "prerequisite",
+    status: "ready",
+    detail: "/usr/bin/node",
+  },
 ];
 
 function detector(catalog = CATALOG): BackendDetector {
   return { detect: () => Promise.resolve(catalog) };
 }
 
+/** A detector that counts its scans — proves ensureDetected() scans at most once. */
+function countingDetector(catalog = CATALOG): BackendDetector & { calls: number } {
+  const d = {
+    calls: 0,
+    detect() {
+      d.calls += 1;
+      return Promise.resolve(catalog);
+    },
+  };
+  return d;
+}
+
 describe("costUsd", () => {
   it("computes USD from token telemetry by model", () => {
     // opus: 15/Mtok in, 75/Mtok out. 1M in + 1M out = 15 + 75 = $90.
-    expect(costUsd("claude-opus-4-8", { tokensIn: 1_000_000, tokensOut: 1_000_000, runtimeMs: 0 })).toBeCloseTo(90);
+    expect(
+      costUsd("claude-opus-4-8", { tokensIn: 1_000_000, tokensOut: 1_000_000, runtimeMs: 0 }),
+    ).toBeCloseTo(90);
   });
   it("falls back to family pricing for an unlisted point-release", () => {
-    expect(costUsd("claude-sonnet-4-7-20991231", { tokensIn: 1_000_000, tokensOut: 0, runtimeMs: 0 })).toBeCloseTo(3);
+    expect(
+      costUsd("claude-sonnet-4-7-20991231", {
+        tokensIn: 1_000_000,
+        tokensOut: 0,
+        runtimeMs: 0,
+      }),
+    ).toBeCloseTo(3);
   });
   it("returns 0 (honest) for an unknown model family", () => {
-    expect(costUsd("some-unknown-llm", { tokensIn: 1_000_000, tokensOut: 1_000_000, runtimeMs: 0 })).toBe(0);
+    expect(
+      costUsd("some-unknown-llm", { tokensIn: 1_000_000, tokensOut: 1_000_000, runtimeMs: 0 }),
+    ).toBe(0);
   });
 });
 
@@ -53,7 +94,11 @@ describe("BackendSelection", () => {
     sel.select("claude-code-acp");
     expect(sel.selectedId()).toBe("claude-code-acp");
     expect(sel.current().provider).toBe("Claude Code (via ACP)");
-    expect(sel.runConfig()).toEqual({ driver: "acp-bridge", command: "/usr/local/bin/claude-code-acp", args: [] });
+    expect(sel.runConfig()).toEqual({
+      driver: "acp-bridge",
+      command: "/usr/local/bin/claude-code-acp",
+      args: [],
+    });
   });
 
   it("select() refuses a non-ready (installable) backend", async () => {
@@ -77,6 +122,44 @@ describe("BackendSelection", () => {
   it("cost() computes from the active model + telemetry", async () => {
     const sel = new BackendSelection(detector());
     await sel.detect();
-    expect(sel.cost("claude-haiku-4-5", { tokensIn: 1_000_000, tokensOut: 0, runtimeMs: 0 })).toBeCloseTo(0.8);
+    expect(
+      sel.cost("claude-haiku-4-5", { tokensIn: 1_000_000, tokensOut: 0, runtimeMs: 0 }),
+    ).toBeCloseTo(0.8);
+  });
+
+  it("current() reads 'no backend' before any detect() — the boot bug (A3)", () => {
+    const sel = new BackendSelection(detector());
+    expect(sel.current().provider).toBe("no backend");
+  });
+
+  it("ensureDetected() scans the host once so the boot current() gets a real label (A3)", async () => {
+    const d = countingDetector();
+    const sel = new BackendSelection(d);
+    // The composer's boot current() path: self-heals from 'no backend' to real.
+    await sel.ensureDetected();
+    expect(d.calls).toBe(1);
+    expect(sel.current().provider).toBe("Claude Code (native) 2.1.191");
+    // A second read (label refresh, session switch) does NOT re-scan the host.
+    await sel.ensureDetected();
+    expect(d.calls).toBe(1);
+  });
+
+  it("ensureDetected() then select() works without an explicit detect() first (B3 on the bridge)", async () => {
+    const ready: AgentBackend[] = [
+      CATALOG[0],
+      { ...CATALOG[1], status: "ready", detail: "/usr/local/bin/claude-code-acp" },
+    ];
+    const sel = new BackendSelection(detector(ready));
+    await sel.ensureDetected();
+    sel.select("claude-code-acp"); // would throw "run detect() first" without the scan
+    expect(sel.selectedId()).toBe("claude-code-acp");
+  });
+
+  it("ensureDetected() does not re-scan when detect() already ran", async () => {
+    const d = countingDetector();
+    const sel = new BackendSelection(d);
+    await sel.detect();
+    await sel.ensureDetected();
+    expect(d.calls).toBe(1);
   });
 });

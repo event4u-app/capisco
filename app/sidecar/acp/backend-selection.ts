@@ -62,6 +62,7 @@ export interface BackendRunConfig {
 export class BackendSelection {
   readonly #detector: BackendDetector;
   #detected: AgentBackend[] = [];
+  #hasDetected = false;
   #selectedId: string | undefined;
 
   constructor(detector: BackendDetector, defaultId?: string) {
@@ -71,11 +72,24 @@ export class BackendSelection {
 
   async detect(): Promise<AgentBackend[]> {
     this.#detected = await this.#detector.detect();
+    this.#hasDetected = true;
     // If nothing is selected yet, default to the first READY backend.
     if (this.#selectedId === undefined) {
       this.#selectedId = this.#detected.find((b) => b.status === "ready")?.id;
     }
     return this.#detected;
+  }
+
+  /**
+   * Scan the host once if it never was. The composer asks `current()` at boot —
+   * before the settings gear (the only other `detect()` caller) is ever opened —
+   * so without this the bar reads "no backend" on the bridge even when a real
+   * backend is installed (A3). Both the `current()` and `select()` wire handlers
+   * gate on this so the first UI read self-heals. A genuine empty scan sets the
+   * flag too, so a host with no backend is not re-scanned on every label read.
+   */
+  async ensureDetected(): Promise<void> {
+    if (!this.#hasDetected) await this.detect();
   }
 
   /** Set the active backend. Throws on an unknown id or a non-ready backend. */
@@ -101,7 +115,11 @@ export class BackendSelection {
     const b = this.selectedBackend();
     if (!b) return { kind: "cli", provider: "no backend", detail: "run detect()" };
     const versioned = b.version ? `${b.label} ${b.version}` : b.label;
-    return { kind: b.driver === "prerequisite" ? "api" : "cli", provider: versioned, detail: b.detail };
+    return {
+      kind: b.driver === "prerequisite" ? "api" : "cli",
+      provider: versioned,
+      detail: b.detail,
+    };
   }
 
   /** How a chat run should spawn for the active backend. */

@@ -107,7 +107,8 @@ export function registerAllProviders(
   // `CAPISCO_AGENT_BACKEND=native` selects the ClaudeCodeProvider stream-json
   // adapter, which drives the user's existing `claude` login (no raw key). The
   // same `backend` is what Phase 2's interactive chat run reuses.
-  const backend = process.env.CAPISCO_AGENT_BACKEND === "native" ? ("native" as const) : undefined;
+  const backend =
+    process.env.CAPISCO_AGENT_BACKEND === "native" ? ("native" as const) : undefined;
   const { store } = registerSession(registry, broker, { pending, backend });
 
   // B8 — backend detection (moved up so the runtime selection can read it). The
@@ -124,10 +125,19 @@ export function registerAllProviders(
   registry.register("agent-backend", {
     detect: () => selection.detect(),
     select: async (id: string) => {
+      // The gear detects on mount, but the per-session re-select (frontend B3)
+      // can fire on a session switch before that — scan the host first so a
+      // valid id never trips the "run detect() first" guard on the bridge.
+      await selection.ensureDetected();
       selection.select(id);
       return selection.current();
     },
-    current: () => Promise.resolve(selection.current()),
+    // Boot path: the composer asks current() before the gear opens, so detect
+    // lazily here — otherwise the bar reads "no backend" on a real backend (A3).
+    current: async () => {
+      await selection.ensureDetected();
+      return selection.current();
+    },
     cost: (model: string, telemetry: import("@/contracts").Telemetry) =>
       Promise.resolve(selection.cost(model, telemetry)),
   } as never);
@@ -139,7 +149,13 @@ export function registerAllProviders(
     // asks park for the UI (`pending`).
     registry.replace(
       PROVIDER_IDS.agent,
-      createLiveAgentProvider({ store, pending, broker, acp: readRealAcpEnv(), selection }) as never,
+      createLiveAgentProvider({
+        store,
+        pending,
+        broker,
+        acp: readRealAcpEnv(),
+        selection,
+      }) as never,
     );
   }
   // B5 — the quality-tool runner (eslint/tsc/vitest) + deferred AI-review fake.
@@ -178,7 +194,10 @@ export function registerAllProviders(
 /**
  * Construct a sidecar with all providers registered (not yet listening).
  */
-export function createSidecar(socketPath: string, opts: RegisterAllProvidersOptions = {}): Sidecar {
+export function createSidecar(
+  socketPath: string,
+  opts: RegisterAllProvidersOptions = {},
+): Sidecar {
   const sidecar = new Sidecar({ socketPath });
   registerAllProviders(sidecar.registry, opts);
   return sidecar;
