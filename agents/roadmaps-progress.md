@@ -2,14 +2,14 @@
 
 > Auto-generated — do not edit. Regenerate with `task roadmap-progress` or by running the `update_roadmap_progress` script for your install; rewritten on every roadmap create / execute / completion change (timestamp lives in git history).
 >
-> 7 open roadmaps · [roadmaps/](roadmaps/) · [archive/](roadmaps/archive/) · [skipped/](roadmaps/skipped/) · [later/](roadmaps/later/)
+> 8 open roadmaps · [roadmaps/](roadmaps/) · [archive/](roadmaps/archive/) · [skipped/](roadmaps/skipped/) · [later/](roadmaps/later/)
 
 ## Overall
 
-**109 / 229 steps done · 48%**
+**113 / 251 steps done · 45%**
 
 ```text
-███████████████████░░░░░░░░░░░░░░░░░░░░░   48%
+██████████████████░░░░░░░░░░░░░░░░░░░░░░   45%
 ```
 
 ## Open roadmaps
@@ -23,6 +23,7 @@
 | 5 | [road-to-real-breadth.md](roadmaps/road-to-real-breadth.md) | 5 | 30 | 22 | 8 | 0 | 0 | ███░░░░░░░ 27% |
 | 6 | [road-to-real-runtime.md](roadmaps/road-to-real-runtime.md) | 5 | 29 | 4 | 25 | 0 | 0 | █████████░ 86% |
 | 7 | [road-to-sentry-observability.md](roadmaps/road-to-sentry-observability.md) | 5 | 29 | 21 | 8 | 0 | 0 | ███░░░░░░░ 28% |
+| 8 | [road-to-shell-and-chat-really-work.md](roadmaps/road-to-shell-and-chat-really-work.md) | 6 | 22 | 18 | 4 | 0 | 0 | ██░░░░░░░░ 18% |
 
 ---
 
@@ -120,3 +121,16 @@
 | 2 | Broker-gegatete Writes (anti-injection) | ⬜ not started | 6 | 0 | 0 | 0 | 0% |
 | 3 | Cron Monitors + Performance + Alerts + IDE-Notification | ⬜ not started | 5 | 0 | 0 | 0 | 0% |
 | 4 | Realtime (Webhooks) — optional, deferred | ⬜ not started | 3 | 0 | 0 | 0 | 0% |
+
+### [road-to-shell-and-chat-really-work.md](roadmaps/road-to-shell-and-chat-really-work.md)
+
+**Road to: Shell & Chat really work** — 4 / 22 done (18%)
+
+| # | Phase | State | Open | Done | Deferred | Cancelled | % |
+|---|---|---|---:|---:|---:|---:|---:|
+| 0 | Native-Fenster-Shell (Tauri-ACL)  [nativ-verifiziert] | 🟡 in progress | 1 | 4 | 0 | 0 | 80% |
+| 1 | Echte Backend-Auswahl (detect → Katalog → select → Redetect/Save) | ⬜ not started | 6 | 0 | 0 | 0 | 0% |
+| 2 | Send-Loop-Ehrlichkeit (kein Fake-Endlos-Spinner) | ⬜ not started | 4 | 0 | 0 | 0 | 0% |
+| 3 | Per-Session-Backend + Mid-Chat-Agent/CLI-Wechsel | ⬜ not started | 4 | 0 | 0 | 0 | 0% |
+| 4 | Chat-Kind-Ehrlichkeit | ⬜ not started | 1 | 0 | 0 | 0 | 0% |
+| 5 | Browser-Mock streamt eine echte Antwort (Dev/Demo-Erlebnis) | ⬜ not started | 2 | 0 | 0 | 0 | 0% |
