@@ -43,10 +43,13 @@ Der Backend-Picker ist heute kosmetisch: er schreibt einen lokalen String, ruft
 `detect()` nie, zeigt einen statischen Mock-Katalog, und `onUse` erreicht den
 Sidecar `select()` nie → jeder Lauf läuft gegen „no backend".
 
-- [ ] **detect() beim Desktop-Boot** für das Composer-Label (`current()`) auf der
-      **Bridge** — das „no backend" im Composer betrifft den Dev-Bridge/echten
-      Sidecar-Pfad (`BackendSelection` nie detektiert). Der Picker detektet jetzt
-      (unten), aber der Composer-`current()`-Boot-Detect (A3/C4) bleibt offen. <!-- backend-selection.ts:100; AgentWorkspace.tsx:199-220 -->
+- [x] **detect() beim Desktop-Boot** für das Composer-Label (`current()`) auf der
+      **Bridge** (A3): Der Composer fragt `current()` vor dem Öffnen des Gears →
+      `BackendSelection` war nie detektiert → „no backend" trotz echtem Backend.
+      Fix: die Wire-Handler `current`/`select` rufen `ensureDetected()` (scannt den
+      Host genau einmal, `#hasDetected`). Erste UI-Lesung self-healt zum echten
+      Label; der per-Session-Re-Select (B3) trippt nicht mehr „run detect() first".
+      Sidecar-Tests: 14 grün. <!-- done: backend-selection.ts ensureDetected + main.ts wire (A3). C4 (Frontend-Label-Deps) bleibt P2. -->
 - [x] **Picker aus echtem detect()** speisen statt statischem `agentSnapshot.backends`:
       AgentSettings holt den Katalog per `agentBackend.detect()` (on-mount + Redetect);
       der Mock-`detect()` liefert jetzt den vollen deterministischen Katalog → der
