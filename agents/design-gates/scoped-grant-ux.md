@@ -454,7 +454,15 @@ boundary-anchored + NFC/case-fold, **strikt nach** dem untrusted-Gate),
 leerer-relativer Prefix / non-positive Budget) + Adversarial-Suite A1/A2/A4/A5/A6/A7
 (inkl. Ordering-Pin). Engine bleibt I/O-frei (Kanonisierung caller-seitig). **Offen:**
 Schritt 2 (fs-write-broker füllt `canonicalTarget` real — heute inert, da keine UI
-scoped-Grants erzeugt), Schritt 6 (forked temp+rename), UI (Grant in Matrix + Widerruf, 229 Bulk-Run).
+scoped-Grants erzeugt), UI (Grant in Matrix + Widerruf, 229 Bulk-Run).
+✅ Schritt 2 (`canonicalizeTarget` in fs-exec — absoluter realpath'd Target für
+den scopeMatches-Vergleich) + ✅ Schritt 6 (`writeTextGrantWrite` in fs-write-exec
+— forked temp+rename-Primitiv: neutralisiert Hardlinks by-inode-replace + schließt
+Parent-Symlink-Swap via dest-dir-Re-Kanonisierung; Human-Save-`writeTextWrite`
+bleibt in-place). Beide getestet (Hardlink-Neutralisierung, Symlink-Escape-Reject,
+canonicalizeTarget-absolut/escape). Exported Bausteine — der **Agent-Write-Pfad**
+konsumiert sie (füllt `taskId`+`canonicalTarget`, nutzt `writeTextGrantWrite`) bei
+der UI-Integration.
 ✅ Schritt 5 (Revoke): `PolicyEngine.revokeTask` + `Broker.revokeTask` — droppt die
 scoped-Grants eines Tasks UND invalidiert offene `ExecutionGrant`s über einen
 `taskId→grantId`-Index (schließt das authorize→execute-Fenster, v1-H3-Race);

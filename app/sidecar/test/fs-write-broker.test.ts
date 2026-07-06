@@ -17,12 +17,21 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { readFileSync, writeFileSync, symlinkSync, mkdtempSync, rmSync } from "node:fs";
+import {
+  readFileSync,
+  writeFileSync,
+  symlinkSync,
+  linkSync,
+  mkdtempSync,
+  rmSync,
+} from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import type { AuditEntry } from "@/contracts";
 import { Broker } from "../broker/capability-broker.ts";
 import { BrokerFsWriter } from "../fs/fs-write-broker.ts";
+import { writeTextGrantWrite } from "../fs/fs-write-exec.ts";
+import { canonicalizeTarget } from "../fs/fs-exec.ts";
 import { RealGitProvider } from "../git/real-git-provider.ts";
 import { RealFsProvider } from "../fs/real-fs-provider.ts";
 import { makeTempRepo, type TempRepo } from "./git-temp-repo.ts";
@@ -171,5 +180,47 @@ describe("broker-gated file write — the real perform adapter", () => {
     const noWriter = await noWriterFs.writeFile(repo.dir, "src/app.ts", "ALSO-NOPE\n");
     expect(noWriter.written).toBe(false);
     expect(read("src/app.ts")).toBe(before);
+  });
+});
+
+describe("writeTextGrantWrite — hardlink-safe grant write (scoped-grant step 6)", () => {
+  it("writes a new file with the given content", () => {
+    writeTextGrantWrite(repo.dir, "src/new.ts", "export const x = 1;\n");
+    expect(read("src/new.ts")).toBe("export const x = 1;\n");
+  });
+
+  it("REPLACES the target inode — a hardlink's other name is left untouched", () => {
+    // A hardlink `src/h.txt` → `victim.txt` (same fs so linkSync works). An
+    // in-place write would mutate the shared inode (hitting the victim); the
+    // temp+rename REPLACES the name, so the victim keeps the original bytes.
+    writeFileSync(join(repo.dir, "victim.txt"), "ORIGINAL\n", "utf8");
+    linkSync(join(repo.dir, "victim.txt"), join(repo.dir, "src", "h.txt"));
+    writeTextGrantWrite(repo.dir, "src/h.txt", "REPLACED\n");
+    expect(read("src/h.txt")).toBe("REPLACED\n");
+    expect(read("victim.txt")).toBe("ORIGINAL\n"); // inode not mutated in place
+  });
+
+  it("rejects an out-of-root symlink target (reuses the #32 boundary guard)", () => {
+    const outsideDir = mkdtempSync(join(tmpdir(), "capisco-grant-escape-"));
+    const outsideFile = join(outsideDir, "v.txt");
+    writeFileSync(outsideFile, "ORIG\n", "utf8");
+    symlinkSync(outsideFile, join(repo.dir, "src", "link.txt"));
+    expect(() => writeTextGrantWrite(repo.dir, "src/link.txt", "X\n")).toThrow(
+      /escapes project root/,
+    );
+    expect(readFileSync(outsideFile, "utf8")).toBe("ORIG\n");
+    rmSync(outsideDir, { recursive: true, force: true });
+  });
+
+  it("canonicalizeTarget returns an absolute realpath under the root", () => {
+    const c = canonicalizeTarget(repo.dir, "src/app.ts");
+    expect(c.startsWith("/")).toBe(true);
+    expect(c.endsWith(`${"/src/app.ts"}`)).toBe(true);
+  });
+
+  it("canonicalizeTarget rejects an escape (throws before any use)", () => {
+    expect(() => canonicalizeTarget(repo.dir, "../../etc/passwd")).toThrow(
+      /escapes project root/,
+    );
   });
 });
