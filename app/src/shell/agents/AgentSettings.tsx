@@ -20,6 +20,8 @@ import { useAgents, type TerseLevel } from "./store";
 export function AgentSettings({
   backendKind,
   setBackendKind,
+  selectedBackendId,
+  setSelectedBackend,
   onClose,
   routingEnabled,
   setRoutingEnabled,
@@ -30,6 +32,11 @@ export function AgentSettings({
 }: {
   backendKind: "api" | "cli";
   setBackendKind: (k: "api" | "cli") => void;
+  /** The active session's selected backend (P3 — per-session, passed from the
+   * active workspace store, so the Chat + Agents pickers stay independent — B4). */
+  selectedBackendId: string;
+  /** Bind the pick to the active session + drive the sidecar selection. */
+  setSelectedBackend: (id: string) => void;
   onClose: () => void;
   /** Token-economy: auto model routing (default off). Just a toggle — the
    * prototype has no model dropdown here; the effective model is the session
@@ -70,8 +77,6 @@ export function AgentSettings({
       alive = false;
     };
   }, []);
-  const selectedBackendId = useAgents((s) => s.selectedBackendId);
-  const setSelectedBackend = useAgents((s) => s.setSelectedBackend);
   const scopedGrantsEnabled = useAgents((s) => s.scopedGrantsEnabled);
   const setScopedGrantsEnabled = useAgents((s) => s.setScopedGrantsEnabled);
   // Records the last install attempt's audited target (broker-gated, never
@@ -220,13 +225,10 @@ export function AgentSettings({
                 key={b.id}
                 backend={b}
                 selected={b.id === selectedBackendId}
-                onUse={() => {
-                  // P1 — reflect locally AND drive the sidecar selection (the
-                  // load-bearing fix: `onUse` used to only set a local string,
-                  // so the run never used the picked backend).
-                  setSelectedBackend(b.id);
-                  void getProviders().agentBackend.select(b.id);
-                }}
+                // P1/P3 — the passed setter binds the pick to the active session
+                // AND drives the sidecar selection (see AgentWorkspace). No longer
+                // a dead local set.
+                onUse={() => setSelectedBackend(b.id)}
                 onInstall={() => setInstallAttempt((b.installCommand ?? []).join(" "))}
               />
             ))}

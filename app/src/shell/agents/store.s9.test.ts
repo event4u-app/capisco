@@ -55,3 +55,21 @@ describe("deleteSavedPrompt", () => {
     expect(useAgents.getState().savedPrompts.map((p) => p.body)).toEqual(["beta"]);
   });
 });
+
+describe("per-session backend (P3 — switch agent/CLI within a chat)", () => {
+  beforeEach(() =>
+    useAgents.setState({ selectedBackendId: "stub", selectedBackendIdBySession: {} }),
+  );
+
+  it("setSessionBackend binds a backend to ONE session, independent of others", () => {
+    const s = useAgents.getState();
+    s.setSessionBackend("chat-A", "claude-native");
+    s.setSessionBackend("chat-B", "codex");
+    const map = useAgents.getState().selectedBackendIdBySession;
+    expect(map["chat-A"]).toBe("claude-native");
+    expect(map["chat-B"]).toBe("codex");
+    // The workspace default is untouched — a session with no binding falls back to it.
+    expect(useAgents.getState().selectedBackendId).toBe("stub");
+    expect(map["chat-C"]).toBeUndefined();
+  });
+});

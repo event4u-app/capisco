@@ -54,8 +54,9 @@ Sidecar `select()` nie → jeder Lauf läuft gegen „no backend".
 - [x] **`onUse` → `agentBackend.select(id)`** verdrahtet (+ lokaler Set fürs UI) —
       die lasttragende „Wechsel tut nichts"-Ursache B3 behoben. <!-- done -->
 - [x] **Redetect-Button** `onClick → detect()` (hatte keinen onClick). <!-- done. OFFEN: **Save** persistiert das API-Token noch nicht (braucht Secret-Store — native/real). -->
-- [ ] **AgentSettings parametrisierter `useStore`** statt hart `useAgents` (B4 —
-      im Chat-Workspace schreibt der Backend-Katalog sonst in den falschen Store). <!-- AgentSettings.tsx:49-50 offen -->
+- [x] **AgentSettings liest `selectedBackendId`/`setSelectedBackend` aus Props**
+      statt hart `useAgents` (B4 — schrieb im Chat-Workspace sonst in den falschen
+      Store; jetzt fädelt AgentWorkspace den per-Session-Wert durch). <!-- AgentSettings.tsx Props (B4) -->
 - [x] Tests: vitest `AgentSettings.test.tsx` (Spy-Provider: detect on-mount, onUse→select,
       Redetect→detect — grün); Browser-Katalog-Population deckt `agents.spec.ts:187`
       (Playwright) ab. Der Klick-Select-Flow ist im Mock nicht browser-testbar (nur
@@ -82,12 +83,23 @@ Backend-State ist heute global (`backendKind`/`selectedBackendId` als Top-Level-
 Store-Felder), nicht per Session; es gibt kein Inline-Switch-UI (nur das Gear-Popover).
 „Im Chat wechseln" hat weder Speicherort noch Oberfläche.
 
-- [ ] Per-Session-Backend-Binding: `backendBySession: Record<string,string>` (oder
-      `backendId` auf `Session`/`StoredSession`), durch `sendPrompt` gefädelt. <!-- store.ts:164,167 (B1) -->
+- [x] Per-Session-Backend-Binding: `selectedBackendIdBySession: Record<string,string>`
+      im Store + `setSessionBackend`, durch AgentWorkspace→AgentSettings gefädelt
+      (das Gear-Popover ist jetzt der per-Session-Umschalter). `sendPrompt` hat kein
+      Backend-Arg → die Bindung wirkt über den Re-Select-Effect (B3), nicht über ein
+      Prompt-Feld. <!-- store.ts:170,385; AgentWorkspace.tsx:481 (B1) -->
 - [ ] Inline-Switch-UI: ein Backend-Chip/Dropdown auf der Composer-Bar oder im
-      SessionTabbar, an den per-Session-Setter verdrahtet. <!-- Composer.tsx:926; AgentSettings.tsx:131 (B2) -->
-- [ ] Bei Session-Wechsel den Sidecar-Backend re-selektieren (per-Session → select()).
-- [ ] Tests: vitest (per-Session-State) + Playwright (Chip wechselt Backend, Status folgt).
+      SessionTabbar (UX-Kür — der per-Session-Wechsel funktioniert bereits übers
+      Gear; Playwright-Chip-Test zieht mit diesem Item). <!-- Composer.tsx:926; AgentSettings.tsx:131 (B2) -->
+- [x] Bei Session-Wechsel den Sidecar-Backend re-selektieren (per-Session → select()):
+      Effect keyed auf den aufgelösten `sessionBackendId`, feuert bei Switch + In-Place-
+      Rebind. Ohne das wäre die per-Session-Wahl kosmetisch. <!-- AgentWorkspace.tsx:226 (B3) -->
+- [x] Tests: vitest per-Session-State (`store.s9.test.ts` — Sessions unabhängig) +
+      AgentSettings-Pick→Setter (`AgentSettings.test.tsx`). Playwright-Chip zieht mit B2. <!-- done -->
+- [x] Verifikation: `tsc -b --noEmit` clean, targeted + full vitest grün (1157),
+      eslint 0 errors (1 pre-existing Warning), Visual 96 + Golden byte-identisch. <!-- done -->
+- [ ] Native-Check (Matze): im Desktop-Build zwei Chats mit verschiedenen Backends
+      belegen, wechseln, senden → jeder Chat läuft gegen sein Backend.
 
 ## Phase 4 — Chat-Kind-Ehrlichkeit
 
