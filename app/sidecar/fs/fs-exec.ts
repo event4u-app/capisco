@@ -15,7 +15,7 @@
  */
 
 import { readFileSync, readdirSync, statSync, realpathSync, existsSync } from "node:fs";
-import { resolve, relative, sep } from "node:path";
+import { resolve, relative, sep, dirname, basename } from "node:path";
 
 export class FsError extends Error {
   constructor(message: string) {
@@ -34,8 +34,47 @@ export function canonicalRoot(root: string): string {
 }
 
 /**
+ * Canonicalise `abs` by `realpath`-ing its deepest EXISTING ancestor and
+ * re-appending the not-yet-created tail. A fresh write's target file does not
+ * exist yet, so we cannot `realpath` it directly — but any symlink in its
+ * existing prefix (a symlinked parent, or the leaf itself when it already
+ * exists) IS resolved to its real on-disk location. On macOS this also folds
+ * case + Unicode normalisation into the comparison.
+ */
+function realCanonical(abs: string): string {
+  let existing = abs;
+  const tail: string[] = [];
+  while (!existsSync(existing)) {
+    const parent = dirname(existing);
+    if (parent === existing) return abs; // reached the fs root; nothing to resolve
+    tail.unshift(basename(existing));
+    existing = parent;
+  }
+  try {
+    const real = realpathSync(existing);
+    return tail.length ? resolve(real, ...tail) : real;
+  } catch {
+    return abs;
+  }
+}
+
+/**
  * Resolve `relPath` against `root`, rejecting any path that escapes the root
- * (`..` traversal, absolute paths pointing elsewhere). Returns the absolute path.
+ * (`..` traversal, absolute paths pointing elsewhere, OR a symlink that points
+ * outside the root). Returns the absolute path.
+ *
+ * Two-stage guard:
+ *  1. String check — the resolved absolute path is lexically inside `base`.
+ *  2. Symlink check — the CANONICAL path (realpath of the existing prefix, see
+ *     {@link realCanonical}) is still inside `base`. This closes the escape where
+ *     a symlink INSIDE the root points OUTSIDE it (e.g. `src/link → /etc`): the
+ *     string check passes but the canonical path is outside, so it is rejected —
+ *     while an IN-project symlinked sub-tree still canonicalises inside and is
+ *     allowed (so `listDir`'s intentional symlink expansion keeps working).
+ *     Residual: a symlink swapped in AFTER this check but BEFORE the write
+ *     (TOCTOU) is not covered here — that needs an `openat`/`O_NOFOLLOW` write,
+ *     which is deferred because it would also block legitimate edits of an
+ *     in-project symlinked file.
  */
 export function safeResolve(root: string, relPath: string): string {
   const base = canonicalRoot(root);
@@ -43,6 +82,11 @@ export function safeResolve(root: string, relPath: string): string {
   const rel = relative(base, abs);
   if (rel === "" || rel.startsWith("..") || rel.startsWith(`..${sep}`)) {
     throw new FsError(`path escapes project root: ${relPath}`);
+  }
+  const canonical = realCanonical(abs);
+  const canonicalRel = relative(base, canonical);
+  if (canonicalRel === ".." || canonicalRel.startsWith(`..${sep}`)) {
+    throw new FsError(`path escapes project root via symlink: ${relPath}`);
   }
   return abs;
 }
