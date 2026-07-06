@@ -329,4 +329,17 @@ export class GrantPolicyEngine implements PolicyEngine {
     // `once` falls through — never persisted.
     return axis;
   }
+
+  /**
+   * Revoke every `scoped` grant issued under `taskId` (scoped-grant v2.2 step 5).
+   * `session`/`deny` records are not task-bound and are left intact. Idempotent —
+   * a task with no scoped grants is a no-op.
+   */
+  revokeTask(taskId: string): void {
+    for (const [key, grant] of this.#grants) {
+      if (grant.axis === "scoped" && grant.taskId === taskId) {
+        this.#grants.delete(key);
+      }
+    }
+  }
 }

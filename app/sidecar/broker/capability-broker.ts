@@ -96,6 +96,12 @@ export class Broker implements CapabilityBroker {
    * is no way to add an entry except through `authorize`.
    */
   readonly #grants = new Map<string, string>();
+  /**
+   * scoped-grant v2.2 step 5 — `taskId → set of outstanding grant ids`. Lets
+   * {@link revokeTask} invalidate every unexecuted {@link ExecutionGrant} minted
+   * under a task, closing the authorize→execute window (revoke between the two).
+   */
+  readonly #grantsByTask = new Map<string, Set<string>>();
   #grantSeq = 0;
   /**
    * S3 — used production-write escapes, by their opaque `id`. The first
@@ -153,6 +159,16 @@ export class Broker implements CapabilityBroker {
     if (decision.outcome === "allow") {
       const grant: ExecutionGrant = Object.freeze({ id: `grant-${++this.#grantSeq}` });
       this.#grants.set(grant.id, requestFingerprint(principal, request));
+      // step 5 — index the grant by its issuing task so `revokeTask` can
+      // invalidate it if the task is revoked before `execute` consumes it.
+      if (request.taskId) {
+        let ids = this.#grantsByTask.get(request.taskId);
+        if (!ids) {
+          ids = new Set();
+          this.#grantsByTask.set(request.taskId, ids);
+        }
+        ids.add(grant.id);
+      }
       return { ...decision, grant };
     }
     return decision;
@@ -192,6 +208,8 @@ export class Broker implements CapabilityBroker {
     }
     // Consume the grant — single-use. A replay with the same handle now fails.
     this.#grants.delete(grant.id);
+    // Keep the per-task index tidy (step 5) — drop the now-consumed grant id.
+    if (request.taskId) this.#grantsByTask.get(request.taskId)?.delete(grant.id);
 
     // 2. Production datasource write invariant (§3.3 / S3). A write against a
     //    production datasource requires a command-matched single-shot escape —
@@ -265,5 +283,18 @@ export class Broker implements CapabilityBroker {
     }
     // The value goes straight into the vault, never the chat / log.
     this.secrets.put(proposal.ref, value);
+  }
+
+  revokeTask(taskId: string): void {
+    // Drop the task's scoped grants in the policy engine…
+    this.#policy.revokeTask(taskId);
+    // …AND invalidate any outstanding (unexecuted) ExecutionGrants minted under
+    // it, so a grant issued before the revoke can no longer execute (closes the
+    // authorize→execute window — the v1 H3 revocation race).
+    const ids = this.#grantsByTask.get(taskId);
+    if (ids) {
+      for (const id of ids) this.#grants.delete(id);
+      this.#grantsByTask.delete(taskId);
+    }
   }
 }

@@ -454,8 +454,13 @@ boundary-anchored + NFC/case-fold, **strikt nach** dem untrusted-Gate),
 leerer-relativer Prefix / non-positive Budget) + Adversarial-Suite A1/A2/A4/A5/A6/A7
 (inkl. Ordering-Pin). Engine bleibt I/O-frei (Kanonisierung caller-seitig). **Offen:**
 Schritt 2 (fs-write-broker füllt `canonicalTarget` real — heute inert, da keine UI
-scoped-Grants erzeugt), Schritt 5 (`revoke`/`#liveTasks`-Sweep + Multi-Task-Index),
-Schritt 6 (forked temp+rename), UI (Grant in Matrix + Widerruf, 229 Bulk-Run).
+scoped-Grants erzeugt), Schritt 6 (forked temp+rename), UI (Grant in Matrix + Widerruf, 229 Bulk-Run).
+✅ Schritt 5 (Revoke): `PolicyEngine.revokeTask` + `Broker.revokeTask` — droppt die
+scoped-Grants eines Tasks UND invalidiert offene `ExecutionGrant`s über einen
+`taskId→grantId`-Index (schließt das authorize→execute-Fenster, v1-H3-Race);
+Tests: Revoke-droppt-Grant, session-unberührt, idempotent, Broker-Revoke-Race,
+Fremdtask-unberührt. **Offen** (Headless-Follow-up): `#liveTasks`-Liveness in
+`decide` + Auto-Sweep an Task-Ende + Multi-Task-Concurrent-Index.
 
 ## 10. Referenzen
 

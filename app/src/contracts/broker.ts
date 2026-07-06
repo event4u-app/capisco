@@ -209,6 +209,12 @@ export interface PolicyEngine {
     decision: PermissionDecision,
     scope?: CapabilityScope,
   ): GrantAxis;
+  /**
+   * Revoke every `scoped` grant issued under `taskId` (scoped-grant v2.2 step 5).
+   * `session`/`deny` grants are not task-bound and are untouched. Used for a
+   * manual revoke and, later, the task-end sweep. Idempotent.
+   */
+  revokeTask(taskId: string): void;
 }
 
 /**
@@ -341,6 +347,13 @@ export interface CapabilityBroker {
   proposeVaultWrite(ref: string, reason: string): VaultWriteProposal;
   /** Approve a proposal and commit the value to the vault (never via chat). */
   commitVaultWrite(proposal: VaultWriteProposal, value: string): void;
+  /**
+   * Revoke a task (scoped-grant v2.2 step 5): drop its scoped grants in the
+   * policy engine AND invalidate any outstanding {@link ExecutionGrant} minted
+   * under it — closing the authorize→execute window (a grant minted before the
+   * revoke can no longer execute). Idempotent.
+   */
+  revokeTask(taskId: string): void;
   readonly audit: AuditStore;
   readonly secrets: SecretStore;
 }
