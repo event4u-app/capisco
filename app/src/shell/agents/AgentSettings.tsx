@@ -48,6 +48,8 @@ export function AgentSettings({
   const backends = agentSnapshot.backends;
   const selectedBackendId = useAgents((s) => s.selectedBackendId);
   const setSelectedBackend = useAgents((s) => s.setSelectedBackend);
+  const scopedGrantsEnabled = useAgents((s) => s.scopedGrantsEnabled);
+  const setScopedGrantsEnabled = useAgents((s) => s.setScopedGrantsEnabled);
   // Records the last install attempt's audited target (broker-gated, never
   // silent). The real install runs through `provision.install` on the sidecar;
   // here it surfaces the exact command the broker would authorize.
@@ -264,6 +266,24 @@ export function AgentSettings({
               ))}
             </div>
           )}
+        </div>
+      </div>
+
+      <div className="as-sec" data-testid="agent-settings-permissions">
+        <span className="caps">{t("agents.settings.permissions")}</span>
+        <div className="as-toggle">
+          <div className="as-toggle-main">
+            <Switch
+              checked={scopedGrantsEnabled}
+              onChange={() => setScopedGrantsEnabled(!scopedGrantsEnabled)}
+              label={t("agents.settings.scopedGrantsTitle")}
+              testId="agent-settings-scoped-grants-toggle"
+            />
+            <div className="as-toggle-text">
+              <div className="as-toggle-title">{t("agents.settings.scopedGrantsTitle")}</div>
+              <div className="as-toggle-sub">{t("agents.settings.scopedGrantsSub")}</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

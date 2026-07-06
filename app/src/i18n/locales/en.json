@@ -442,7 +442,10 @@
       "routingOverride": "This session",
       "routingAuto": "Auto (routed)",
       "terseTitle": "Terse mode",
-      "terseSub": "Shorter replies, fewer output tokens. Never touches facts, diffs, or broker prompts. On by default."
+      "terseSub": "Shorter replies, fewer output tokens. Never touches facts, diffs, or broker prompts. On by default.",
+      "permissions": "Permissions",
+      "scopedGrantsTitle": "Scoped bulk-run grants",
+      "scopedGrantsSub": "A file-write approval can grant N writes under one directory for the task, with a coverage preview, instead of prompting per write. Off falls back to Once / This session / Deny. On by default."
     },
     "command": {
       "newSession": "New agent session",

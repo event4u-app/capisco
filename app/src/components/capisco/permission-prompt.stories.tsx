@@ -1,4 +1,6 @@
 import { PermissionPrompt } from "./permission-prompt";
+import { buildGrantPreview } from "@/lib/grant-preview";
+import { mockPendingWrites } from "@/mocks/scoped-grant";
 
 export const Default = () => (
   <div className="max-w-sm">
@@ -23,6 +25,16 @@ export const WithCredentialReference = () => (
       credentialRef="staging-admin"
       credentialNote="Secret shown as a reference, never its value."
       prodNote="Production datasources are read-only — per-command approval only, no “allow permanently”."
+    />
+  </div>
+);
+
+export const ScopedBulkRun = () => (
+  <div className="max-w-sm">
+    <PermissionPrompt
+      command="Write(src/ui/panel.tsx)"
+      grantPreview={buildGrantPreview(mockPendingWrites, "/repo/src/")}
+      onGrantScoped={() => {}}
     />
   </div>
 );
