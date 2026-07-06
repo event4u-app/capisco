@@ -119,9 +119,15 @@ Regeln:
 
 **Kanonische Härtung:** A1/A2 sind der Kern — die einzige sichere Pfad-Prüfung
 ist Vergleich **nach** `fs.realpath` (bzw. `realpathSync`), nie String-Präfix auf
-dem rohen `target`. TOCTOU-Hinweis: Kanonisierung + Schreiben müssen am
-Execution-Layer atomar genug sein, dass ein zwischenzeitlich getauschter Symlink
-nicht durchrutscht — offene Frage Q3.
+dem rohen `target`. **Basis-Ebene gelandet** (2026-07-06): `safeResolve`
+(`fs-exec.ts`) kanonisiert jetzt das **Ziel** (realpath des existierenden
+Präfixes) und weist einen Symlink ab, der aus der Root herauszeigt — der A2-Escape
+ist damit im shipped fs-write-Pfad geschlossen (Tests: fs-write-broker.test.ts),
+während eine In-Projekt-Symlink-Expansion erhalten bleibt. Der Scoped-Grant baut
+darauf den `pathPrefix`-Vergleich (feiner als die Root-Boundary) auf. **Residual
+Q3 (TOCTOU):** ein NACH der Prüfung getauschter Leaf-Symlink ist noch offen —
+`openat`/`O_NOFOLLOW` wurde bewusst zurückgestellt, weil es auch legitimes
+Editieren einer In-Projekt-symlinkten Datei blockieren würde; eigener Slice.
 
 ## 5. Gate-pro-Aktion-Matrix
 
@@ -197,6 +203,13 @@ den echten `policy-engine.ts`/`capability-broker.ts`-Code. Verdikte:
   Pager/Alias). **Gefixt:** `shell` zu `EGRESS_KINDS` hinzugefügt + 2 Regressions-
   Tests (`broker.test.ts` MUST-NOT 4: untrusted shell → `ask`, keine Persistenz).
   Unabhängig vom Scoped-Grant-Feature — reiner Bugfix des Gates.
+- **HOLE-1 (Pfad-Linse) — fs-write Symlink-Escape:** `safeResolve` kanonisierte
+  nur die Root, `writeFileSync` folgte Symlinks → ein Symlink IN der Root, der
+  nach außen zeigt (`src/link → /etc/...`), verließ die Workspace-Sandbox — heute
+  shipbar. **Gefixt:** `safeResolve` (`fs-exec.ts`) kanonisiert jetzt das Ziel
+  (realpath des existierenden Präfixes) + Boundary-Re-Check; nach-außen-Symlink →
+  `deny`, In-Projekt-Symlink weiterhin erlaubt. 2 Tests (fs-write-broker.test.ts).
+  Reiner Containment-Bugfix. **Residual:** Leaf-TOCTOU (Blocker 2).
 
 ### Blocker fürs Gate (müssen ins Design + Code, bevor Bau)
 
@@ -208,11 +221,12 @@ den echten `policy-engine.ts`/`capability-broker.ts`-Code. Verdikte:
    zentrale Invariante („Ziel unter pathPrefix") ist unverdrahtet. → `decide`
    muss den strukturierten Scope gegen `target`/`command` prüfen; `fs-write-broker`
    muss den Scope durchreichen.
-2. **`safeResolve` kanonisiert nur die Root, `writeFileSync` folgt Symlinks**
-   (HOLE-1 Pfad-Linse): `fs-exec.ts:40` realpath't nur die Root, `fs-write-exec.ts:32`
-   schreibt durch jeden Symlink → der A2-Escape (Symlink `src/x → /etc/...`) ist
-   **heute shipbar**. → realpath des **Ziel-Präfixes** + `O_NOFOLLOW`/`openat` am
-   Leaf (schließt auch TOCTOU Q3/HOLE-2).
+2. **~~`safeResolve` folgt Symlinks~~ (Basis GEFIXT 2026-07-06; TOCTOU-Residual
+   offen):** die nicht-racy Variante ist geschlossen — `safeResolve` kanonisiert
+   jetzt das Ziel (siehe § Council Pre-Review „Sofort gefixt"). **Offen:** ein
+   NACH der Prüfung getauschter Leaf-Symlink (TOCTOU Q3/HOLE-2) → braucht
+   `openat`/`O_NOFOLLOW` am Leaf, das aber legitimes Editieren einer In-Projekt-
+   symlinkten Datei blockiert — eigener Slice, bewusst zurückgestellt.
 3. **Task-Bindung ist 100% aspirational** (H1 Lifecycle): kein `taskId`/`revoke`/
    `expire` irgendwo im Code; `#grants` wächst nur, stirbt erst mit dem Prozess.
    „Task-Ende = Grant-Ende" und A4 sind unimplementiert. → `taskId` als
