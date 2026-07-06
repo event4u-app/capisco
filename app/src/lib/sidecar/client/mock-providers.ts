@@ -8,6 +8,7 @@
  */
 
 import {
+  agentSnapshot,
   mockAgentProvider,
   mockEditorProvider,
   mockGitProvider,
@@ -50,17 +51,10 @@ const mockLsp: LspProvider = {
  * detect/select/current/cost live in the sidecar (BackendSelection).
  */
 const mockAgentBackend: AgentBackendProvider = {
-  detect: () =>
-    Promise.resolve([
-      {
-        id: "claude-native",
-        label: "Claude Code (native)",
-        driver: "native-stream-json",
-        status: "ready",
-        detail: "/usr/local/bin/claude",
-        version: "1.4.2",
-      },
-    ]),
+  // The full deterministic catalog (same list the picker read statically before
+  // P1) — now delivered THROUGH `detect()`, so the picker is provider-driven in
+  // the browser exactly as it is on desktop. The real host scan replaces this.
+  detect: () => Promise.resolve(agentSnapshot.backends),
   select: () => mockAgentProvider.getBackend(),
   current: () => mockAgentProvider.getBackend(),
   cost: () => Promise.resolve(0.04),
