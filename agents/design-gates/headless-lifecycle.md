@@ -6,16 +6,13 @@ Schritt (P2 Z. 256 „Headless-Session-Semantik bauen") beginnt. Council-Korrekt
 eingearbeitet: Headless-Sessions sind ein NEUER Lifecycle — Design-Schritt vor
 Bau, nicht „Semantik nebenbei".*
 
-> **GATE-STATUS: ⛔ FAIL** (Council-Pre-Review 2026-07-06, Vollständigkeits-Linse
-> gegen Entwurf + echten Code). Der Entwurf ist eine ehrliche Karte, behauptet
-> aber Komposition + Sicherheits-Garantien, die der Code nicht trägt: von 6
-> Terminierungs-Kriterien hat nur **eines** (Idle-Timeout) erzwingenden Code, und
-> die zentrale „pausiert-nie-eskaliert"-Invariante ist vom realen `ask`-Gate
-> **widerlegt** (es **auto-denyt** nach 5 min). **Kein Headless-Code, bis die in
-> § Council Pre-Review gelisteten Blocker adressiert + von Matze reviewed sind.**
-> Blockiert zusätzlich auf P1 (Scoped-Grant, `scoped-grant-ux.md`). Rollback bei
-> „terminieren nicht zuverlässig" → Scheduler archivieren, manuelle Lang-Läufe
-> behalten.
+> **GATE-STATUS: 🟡 v2.1 — CONDITIONAL; wartet auf Matze-Sign-off + P1-Landung.**
+> Trajektorie: v1 ⛔ FAIL (GAP-1/2/5 gate-blockierend) → v2 🟡 CONDITIONAL → **§ v2.1
+> Re-Review** unten schärft jeden Punkt (GAP-5 Digest ohne Freiform-`target`, GAP-1
+> Pause-statt-Hang + Resume, Terminal-State, Epoch-Storage, GAP-8-Headline).
+> **Kein Headless-Code, bis Matze v2.1 abzeichnet UND P1 (Scoped-Grant) gelandet
+> ist.** Rollback bei „terminieren nicht zuverlässig" → Scheduler archivieren,
+> manuelle Lang-Läufe behalten.
 
 ## 0. Was eine Headless-Session ist (und was nicht)
 
@@ -198,6 +195,126 @@ Auto-Resume); der **Idle-Timeout** ist real verdrahtet (`live-agent-provider.ts:
 das **Grant-Modell launert keine Untrusted-Egress-Freigaben** (starke Basis);
 der **Audit-Stream trägt nie Secret-Werte** — der Gap ist nur, dass der Entwurf
 diese Garantie auf den (ungebauten) Digest über-dehnt.
+
+## v2 — Blocker-Auflösung (2026-07-06, post-Council)
+
+Jeder GAP wird konkret + code-geerdet aufgelöst. GAP-1/2/5 waren gate-blockierend.
+
+1. **GAP-1 — echtes Pause-Primitiv statt Auto-Deny.** Neuer, dritter Resolver-
+   Ausgang `pause` (heute nur `allow`/`deny`): eine Headless-Session ohne
+   anwesenden Menschen, die ein `ask` trifft, geht in State `paused` (GAP-8),
+   **ohne** einen `deny` an den Broker zu emittieren und **ohne** den Run-Loop
+   voranzutreiben. Konkret: die `PendingPermissionRegistry` bekommt einen
+   **Headless-Modus** — statt des 5-min-fail-closed-`deny`-Timers
+   (`pending-permission-registry.ts:67,127`) parkt sie den Request **unbegrenzt**
+   und markiert die Session `paused`; Auflösung erst durch Mensch (morgens) oder
+   ein Terminierungs-Kriterium. Interaktive Sessions behalten den `deny`-Timer.
+   Der Grant wird **nie** gemerkt (kein Auto-Approve über Nacht).
+2. **GAP-2 — Wall-Clock-Cap-Watchdog.** Ein zweiter Watchdog neben dem
+   StallWatchdog, **einmal bei Run-Start armiert** und **nicht** von Events
+   gekickt (`stall-watchdog.ts:kick` gilt nur für Idle). Überschreitung → sauberes
+   Ende + Digest-Notiz „durch Zeit-Limit beendet". Deterministisch mit Fake-Timern
+   testbar (60s-Kicks terminieren trotzdem am Cap).
+3. **GAP-3 — Token-Budget aus dem Gate DESCOPED (explizit).** Es gibt heute kein
+   Sidecar-seitiges Token-Accounting (das Meter ist eine Frontend-Mock-Facade,
+   `store.ts:153`). Der Wall-Clock-Cap (GAP-2) deckt den Runaway-Fall. Der harte
+   Token-Cap wird **nachgezogen, sobald ein echter Sidecar-Zähler existiert** —
+   bis dahin ausdrücklich **kein** Gate-Akzeptanzkriterium (statt einer Mock-
+   Garantie, die nichts erzwingt).
+4. **GAP-4 — ein Terminierungs-Arbiter.** Genau eine Stelle entscheidet „je
+   zuerst": beim ersten feuernden Kriterium cancelt sie StallWatchdog +
+   Wall-Clock-Cap + eine geparkte Permission (GAP-1) und setzt genau **einen**
+   Terminal-State. Kein Double-Settle, keine stale Timer auf toter Session
+   (Test: zwei Kriterien im selben Tick → ein Terminal-State).
+5. **GAP-5 — Digest ist reine Referenz-Projektion.** Der Morning-Digest wird
+   **ausschließlich** aus strukturierten Referenzen gebaut: Audit-Einträge (die
+   per Konstruktion nie Secret-Werte tragen, `audit-store.ts:83`), Diff-Links,
+   Gate-Stop-Records. **Nie** rohe Transkript-Bodies. Damit ist „nie Secret-Werte"
+   eine strukturelle Eigenschaft, kein Scrubber, der versagen kann (dasselbe
+   PII-exclusion-by-construction-Prinzip wie beim Audit-Log). Test: Token-förmiger
+   String im Transkript → im Digest absent.
+6. **GAP-6 — Grant-Expiry via Scoped-Grant-v2.** „Grant abgelaufen" ist jetzt
+   konkret: task-completion-bound über `endTask(taskId)` aus scoped-grant-ux.md
+   v2 (Auflösung 2) — dasselbe Live-Task-Registry-Primitiv. Kein separates
+   Expiry-Modell nötig.
+7. **GAP-7 — Restart-Erkennung via Boot-Epoch.** Der Sidecar bekommt eine
+   Boot-Epoch/Nonce; der Reconnect-Handshake (`reconnecting-client.ts:108`)
+   vergleicht sie. Epoch-Wechsel = echter Prozess-Restart (in-memory Store weg) →
+   der laufende Headless-Run wird terminal `interrupted` markiert (GAP-8) statt
+   still einen leeren Tree neu zu lesen. Ein reiner Transport-Blip (gleiche Epoch)
+   reconnektet nahtlos wie bisher.
+8. **GAP-8 — `RunState` um `paused` + `interrupted` erweitert.** Heute
+   `"ready"|"loading"|"error"` (`store.ts:9`). Beide neuen States rendern distinkt
+   in der P0-Matrix (paused = „wartet auf Dich", nicht error-rot; interrupted =
+   „Neustart hat den Lauf beendet"). Das ist reine Frontend/Store-Arbeit und der
+   **erste autonom baubare Headless-Slice** — er kann VOR dem gegateten Pause-
+   Primitiv landen (Groundwork), sofern das als eigener Schritt gewünscht ist.
+
+### Residual / Reihenfolge
+- **P1 zuerst:** GAP-6 hängt an scoped-grant-ux v2 (endTask). Der Headless-Bau
+  startet nach P1-Landung + Matze-Sign-off.
+- **GAP-8 (RunState)** ist der einzige v2-Teil, der schon jetzt ohne P1/Gate
+  baubar wäre (reine Typ-/UI-Erweiterung) — bewusst NICHT spekulativ gebaut, bis
+  Matze ihn als eigenen Slice freigibt (er wäre sonst UI für ein gegatetes Feature).
+
+## v2 Re-Review (2026-07-06)
+
+Vollständigkeits-Linse gegen die v2-Auflösung + echten Code. **CONDITIONAL**
+(v1 war FAIL). GAP-1/2/4/6 sind wie entworfen schließbar; drei Punkte brauchen
+v2.1-Schärfung, einer (GAP-5) war derselbe Über-Claim-Typ wie v1.
+
+### v2.1 — verbindliche Schärfungen
+
+1. **GAP-5 neu geschnitten (war leaning-FAIL).** Der „strukturell, kein Scrubber"-
+   Claim ist **falsch**: `looksLikeSecretValue` (`audit-store.ts:83`) schützt nur
+   das `credentialRef`-**Namensfeld**, NICHT `AuditEntry.target` — und `target` ist
+   der agent-gelieferte Freiform-Wert (`acp-session.ts:350`, z. B. eine `Bash`-
+   Kommandozeile `curl -H "Authorization: Bearer sk-…"`). Ein Digest aus Audit-
+   Einträgen erbt dieses Freiform-Feld. **Fix:** der Digest projiziert eine
+   **bounded** Teilmenge — `{ capability-kind, credentialRef-Name, outcome, seq,
+   diff-link-id }` — und **schließt `target` explizit aus** (oder redigiert `target`
+   mit `looksLikeSecretValue`-Klasse, dann aber den „kein Scrubber"-Claim streichen).
+   Der v2-Test muss den Secret-über-`target`-Pfad prüfen (nicht nur Transkript-Body).
+2. **GAP-1 Pause vs. Hang + Resume + Watchdog-Kollision.** Das „park unbegrenzt"
+   ist heute ein **Hang** (der Resolver wird in einem JSON-RPC-Handler awaited,
+   `acp-session.ts:383` — ein nie-auflösendes Promise = hängender Agent-Request).
+   v2.1 muss festschreiben: (a) der Idle-StallWatchdog wird **explizit supprimiert**,
+   solange `paused` (sonst kollabiert Pause zu `error`); (b) das **Resume-Protokoll**
+   (Sidecar noch up → `resolvePermission` settlet den geparkten Request; Sidecar
+   neugestartet → `paused` wird `interrupted`, nicht resumebar); (c) `#park`'s
+   supersede-`deny` (`pending-permission-registry.ts:110`) darf einen headless-
+   `paused`-Eintrag **nicht** treffen (sonst kehrt der Auto-Deny von GAP-1 zurück).
+3. **GAP-2/4 Terminal-State + Arbiter-Deny.** Wenn der Wall-Clock-Cap auf einen
+   `paused`-Run trifft: Terminal-State ist **`interrupted`** (nicht `ready` — ein
+   an einem Gate gestrandeter, dann guillotinierter Run ist nicht „sauber fertig").
+   Und: der Arbiter, der die geparkte Permission cancelt, **emittiert dabei einen
+   `deny`** an den Broker-Seam (`registry.ts:#clear` nimmt eine `PermissionDecision`)
+   — die GAP-1-Formulierung „emittiert nie deny" gilt nur, **bis** ein
+   Terminierungs-Kriterium feuert; dann muss es. Festschreiben.
+4. **GAP-3 Kosten-Residual benannt.** Der Wall-Clock-Cap bound Wall-Clock, **nicht
+   Spend** — ein Tight-Loop kann im Fenster viel Token/Kosten verbrennen. v2.1 nennt
+   das Residual explizit in §5 + Akzeptanz („zeit-, nicht kostengebunden; Worst-Case
+   = Modellrate × Cap"), statt es als voll gedeckt darzustellen.
+5. **GAP-7 Epoch-Storage + Consumer-Landing.** Die Boot-Epoch muss **in-memory bei
+   Boot** gemünzt werden (ändert sich bei echtem Restart) und im `initialize`/
+   `session/new`-Handshake zurückgegeben — **nie auf Platte persistiert** (sonst
+   sieht ein Restart wie ein Blip aus). UND: es gibt heute **keinen `onReconnect`-
+   Consumer** in `app/src` (`reconnecting-client.ts:105` — Callback ohne Abonnent);
+   v2.1 nennt die Landing-Site, wo der Epoch-Vergleich + `interrupted`-Übergang
+   verdrahtet wird, sonst hat GAP-7 keinen Ort.
+6. **GAP-8 Headline korrigiert.** Der v2-Text widersprach sich (baubar-jetzt vs.
+   nicht-spekulativ). Korrekt: das Union-Mitglied `paused`/`interrupted` +
+   Fallback-Render darf jetzt landen; die **distinkte** „wartet-auf-Dich"-Darstellung
+   wird **mit dem Pause-Produzenten** gegatet (State ohne Produzent = tote/irreführende
+   UI). Kein „unabhängig wertvolles Groundwork".
+
+### Was v2 richtig hatte
+GAP-4 (Arbiter, erstes-Kriterium-gewinnt) + GAP-2 (zweiter, nicht-gekickter
+Watchdog) sind sauber + deterministisch testbar; GAP-6 bindet Grant-Expiry
+ehrlich an das P1-`endTask`-Primitiv (gute Dependency-Hygiene); die
+Persistenz-Ehrlichkeit (§4) übersteht die Re-Review; kein Gate-Loosening für
+Headless. **Nächster Schritt:** v2.1 ist Wiring-vollständig; Matze zeichnet ab
+(oder optionale 3. Runde), Bau folgt **nach** P1-Landung.
 
 ## 9. Referenzen
 
