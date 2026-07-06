@@ -91,6 +91,17 @@ export function safeResolve(root: string, relPath: string): string {
   return abs;
 }
 
+/**
+ * The absolute, realpath-canonicalised form of `relPath` under `root` — the
+ * input a scoped grant's `pathPrefix` check compares against (scoped-grant v2.2
+ * F1). It boundary-guards via {@link safeResolve} first (an escape throws), then
+ * canonicalises so the value compared against the (also canonical) prefix is
+ * symlink-resolved. The policy engine stays I/O-free by consuming THIS string.
+ */
+export function canonicalizeTarget(root: string, relPath: string): string {
+  return realCanonical(safeResolve(root, relPath));
+}
+
 export interface DirEntry {
   name: string;
   isDir: boolean;
