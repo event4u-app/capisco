@@ -463,6 +463,15 @@ bleibt in-place). Beide getestet (Hardlink-Neutralisierung, Symlink-Escape-Rejec
 canonicalizeTarget-absolut/escape). Exported Bausteine — der **Agent-Write-Pfad**
 konsumiert sie (füllt `taskId`+`canonicalTarget`, nutzt `writeTextGrantWrite`) bei
 der UI-Integration.
+✅ Bulk-Run-UX-Kern (Item 229): **UX-Entscheidung getroffen** (Matze) — toggleable
+**Muster-Abdeckungs-Vorschau**, Default an; off → Once/Session/Deny, an → volle
+Vorschau. Gebaut contract-mock-first: `PendingWriteIntent`/`GrantPreview`-Contract
++ reine `buildGrantPreview`/`suggestPathPrefix`/`isUnderPrefix` (boundary-anchored,
+NFC — spiegelt die Broker-`scopeMatches`-Regel, damit die Vorschau nie mehr
+verspricht als der Grant klärt) + deterministischer Mock + 9 Unit-Tests. **Offen:**
+Permission-Prompt-Visual (Scoped-Option + Preview-Render, Setting-Toggle, Golden-
+Regen) + der Agent-Write-Pfad, der `PendingWriteIntent`s real speist (Lookahead,
+gegated auf real-runtime) und `writeTextGrantWrite` nutzt.
 ✅ Schritt 5 (Revoke): `PolicyEngine.revokeTask` + `Broker.revokeTask` — droppt die
 scoped-Grants eines Tasks UND invalidiert offene `ExecutionGrant`s über einen
 `taskId→grantId`-Index (schließt das authorize→execute-Fenster, v1-H3-Race);
