@@ -733,3 +733,64 @@ describe("scoped-grant enforcement (P1 — pathPrefix + taskId + maxActions)", (
     ).toBe("ask");
   });
 });
+
+describe("scoped-grant revoke (P1 step 5 — manual revoke + authorize→execute race)", () => {
+  const PFX = "/repo/src/";
+  function scopedEngine(taskId: string): GrantPolicyEngine {
+    const engine = new GrantPolicyEngine(DEFAULT_GRANT_CONFIG);
+    engine.resolve(
+      agent,
+      { kind: "file-write", target: "src/s.ts", taskId },
+      { axis: "scoped", scopedGrant: { pathPrefix: PFX, maxActions: 5 } },
+    );
+    return engine;
+  }
+  const w = (taskId: string): CapabilityRequest => ({
+    kind: "file-write",
+    target: "src/a.ts",
+    canonicalTarget: "/repo/src/a.ts",
+    taskId,
+  });
+
+  it("revokeTask drops a task's scoped grant — subsequent writes re-ask", () => {
+    const engine = scopedEngine("t1");
+    expect(engine.decide(agent, w("t1")).outcome).toBe("allow");
+    engine.revokeTask("t1");
+    expect(engine.decide(agent, w("t1")).outcome).toBe("ask");
+  });
+
+  it("revokeTask leaves a session grant untouched (only scoped is task-bound)", () => {
+    const engine = new GrantPolicyEngine(DEFAULT_GRANT_CONFIG);
+    const req: CapabilityRequest = { kind: "file-write", target: "src/x.ts" };
+    engine.resolve(agent, req, { axis: "session" });
+    engine.revokeTask("t1");
+    expect(engine.decide(agent, req).outcome).toBe("allow"); // session grant survives
+  });
+
+  it("revokeTask is a no-op for an unknown task (idempotent)", () => {
+    const engine = scopedEngine("t1");
+    engine.revokeTask("nope");
+    expect(engine.decide(agent, w("t1")).outcome).toBe("allow"); // t1's grant intact
+  });
+
+  it("broker.revokeTask invalidates an OUTSTANDING ExecutionGrant (authorize→execute race closed)", () => {
+    const broker = new Broker();
+    // git status is allowlist-allow → authorize mints a grant, indexed by task t1.
+    const req: CapabilityRequest = { kind: "shell", target: "git status", taskId: "t1" };
+    const d = broker.authorize(agent, req);
+    expect(d.grant).toBeDefined();
+    // Revoke the task BEFORE execute — the outstanding grant is invalidated.
+    broker.revokeTask("t1");
+    expect(() => broker.execute(agent, req, () => "ran", { grant: d.grant })).toThrow(
+      /not authorized/,
+    );
+  });
+
+  it("broker.revokeTask does not invalidate a DIFFERENT task's grant", () => {
+    const broker = new Broker();
+    const req7: CapabilityRequest = { kind: "shell", target: "git status", taskId: "t7" };
+    const d = broker.authorize(agent, req7);
+    broker.revokeTask("t8"); // a different task
+    expect(broker.execute(agent, req7, () => "ran", { grant: d.grant })).toBe("ran");
+  });
+});
