@@ -601,3 +601,135 @@ describe("Bidirectional vault write-back (§3.2) — human-gated, never via chat
     expect(broker.secrets.list()).toContain("test-user-1");
   });
 });
+
+describe("scoped-grant enforcement (P1 — pathPrefix + taskId + maxActions)", () => {
+  const PFX = "/repo/src/";
+  // Issue a scoped file-write grant for task t under PFX with an action budget.
+  function grant(engine: GrantPolicyEngine, taskId = "t1", maxActions = 5): void {
+    engine.resolve(
+      agent,
+      { kind: "file-write", target: "src/seed.ts", taskId },
+      { axis: "scoped", scopedGrant: { pathPrefix: PFX, maxActions } },
+    );
+  }
+  const write = (
+    target: string,
+    canonicalTarget: string,
+    taskId = "t1",
+  ): CapabilityRequest => ({
+    kind: "file-write",
+    target,
+    canonicalTarget,
+    taskId,
+  });
+
+  it("A1/A2 — clears a write whose canonical target is under the pathPrefix", () => {
+    const engine = new GrantPolicyEngine(DEFAULT_GRANT_CONFIG);
+    grant(engine);
+    expect(engine.decide(agent, write("src/a.ts", "/repo/src/a.ts")).outcome).toBe("allow");
+    expect(engine.decide(agent, write("src/deep/b.ts", "/repo/src/deep/b.ts")).outcome).toBe(
+      "allow",
+    );
+  });
+
+  it("A1 — denies (falls through to ask) a target OUTSIDE the pathPrefix", () => {
+    const engine = new GrantPolicyEngine(DEFAULT_GRANT_CONFIG);
+    grant(engine);
+    // Escape outside the prefix → the scoped grant does NOT match → file-write
+    // default (`ask`) applies. It never blanket-clears.
+    expect(engine.decide(agent, write("../etc/x", "/repo/etc/passwd")).outcome).toBe("ask");
+  });
+
+  it("A1 — boundary-anchored: a sibling prefix (/srcX) does NOT match /src/", () => {
+    const engine = new GrantPolicyEngine(DEFAULT_GRANT_CONFIG);
+    grant(engine);
+    expect(engine.decide(agent, write("srcX/a.ts", "/repo/srcX/a.ts")).outcome).toBe("ask");
+  });
+
+  it("A4 — task-bound: a DIFFERENT taskId does not ride the grant", () => {
+    const engine = new GrantPolicyEngine(DEFAULT_GRANT_CONFIG);
+    grant(engine, "t1");
+    // Same in-prefix target, but task t2 → no match → ask.
+    expect(engine.decide(agent, write("src/a.ts", "/repo/src/a.ts", "t2")).outcome).toBe("ask");
+    // The issuing task t1 still clears.
+    expect(engine.decide(agent, write("src/a.ts", "/repo/src/a.ts", "t1")).outcome).toBe(
+      "allow",
+    );
+  });
+
+  it("A5 (ORDERING PIN) — an untrusted file-write still HARD-GATES even with an active scoped grant", () => {
+    const engine = new GrantPolicyEngine(DEFAULT_GRANT_CONFIG);
+    grant(engine, "t1", 5);
+    const untrusted: CapabilityRequest = {
+      ...write("src/a.ts", "/repo/src/a.ts"),
+      fromUntrusted: true,
+    };
+    const d = engine.decide(agent, untrusted);
+    expect(d.outcome).toBe("ask");
+    expect(d.reason).toMatch(/lethal trifecta/i);
+    // Budget was NOT consumed by the hard-gated untrusted request.
+    expect(engine.decide(agent, write("src/a.ts", "/repo/src/a.ts")).reason).toMatch(/4 left/);
+  });
+
+  it("A6 — maxActions budget: clears exactly N writes, then re-asks", () => {
+    const engine = new GrantPolicyEngine(DEFAULT_GRANT_CONFIG);
+    grant(engine, "t1", 2);
+    expect(engine.decide(agent, write("src/a.ts", "/repo/src/a.ts")).outcome).toBe("allow");
+    expect(engine.decide(agent, write("src/b.ts", "/repo/src/b.ts")).outcome).toBe("allow");
+    // Budget exhausted → next write asks.
+    expect(engine.decide(agent, write("src/c.ts", "/repo/src/c.ts")).outcome).toBe("ask");
+  });
+
+  it("needs a canonicalTarget — a scoped request without one does not match", () => {
+    const engine = new GrantPolicyEngine(DEFAULT_GRANT_CONFIG);
+    grant(engine);
+    expect(
+      engine.decide(agent, { kind: "file-write", target: "src/a.ts", taskId: "t1" }).outcome,
+    ).toBe("ask");
+  });
+
+  it("A7 — rejects at issuance: non-file-write kind, missing taskId, empty/relative prefix, non-positive budget", () => {
+    const engine = new GrantPolicyEngine(DEFAULT_GRANT_CONFIG);
+    // shell is not scoped-able
+    expect(() =>
+      engine.resolve(
+        agent,
+        { kind: "shell", target: "git status", taskId: "t1" },
+        { axis: "scoped", scopedGrant: { pathPrefix: PFX, maxActions: 1 } },
+      ),
+    ).toThrow(/only available for file-write/);
+    // missing taskId
+    expect(() =>
+      engine.resolve(
+        agent,
+        { kind: "file-write", target: "src/a.ts" },
+        { axis: "scoped", scopedGrant: { pathPrefix: PFX, maxActions: 1 } },
+      ),
+    ).toThrow(/issuing taskId/);
+    // empty / relative prefix (wildcard default forbidden)
+    expect(() =>
+      engine.resolve(
+        agent,
+        { kind: "file-write", target: "src/a.ts", taskId: "t1" },
+        { axis: "scoped", scopedGrant: { pathPrefix: "src/", maxActions: 1 } },
+      ),
+    ).toThrow(/absolute pathPrefix/);
+    // non-positive budget
+    expect(() =>
+      engine.resolve(
+        agent,
+        { kind: "file-write", target: "src/a.ts", taskId: "t1" },
+        { axis: "scoped", scopedGrant: { pathPrefix: PFX, maxActions: 0 } },
+      ),
+    ).toThrow(/maxActions/);
+  });
+
+  it("a scoped grant does NOT blanket-clear a different capability kind", () => {
+    const engine = new GrantPolicyEngine(DEFAULT_GRANT_CONFIG);
+    grant(engine);
+    // A network request (different kind) is unaffected by a file-write scoped grant.
+    expect(
+      engine.decide(agent, { kind: "network", target: "https://x/y", taskId: "t1" }).outcome,
+    ).toBe("ask");
+  });
+});
