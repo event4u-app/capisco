@@ -15,6 +15,7 @@ const desktopState = { value: false };
 
 vi.mock("@/lib/desktop-shell", () => ({
   isDesktop: () => desktopState.value,
+  subscribeBridge: () => () => {},
   getProviders: () => ({
     agent: {
       sendPrompt,

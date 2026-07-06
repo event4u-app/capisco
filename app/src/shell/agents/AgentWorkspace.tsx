@@ -8,6 +8,7 @@ import { agentSnapshot, chatSnapshot, mockWorktrees } from "@/mocks";
 import { useOpenProject } from "@/shell/open-project-store";
 import { useWorktrees } from "@/shell/worktree-store";
 import { getProviders, isDesktop } from "@/lib/desktop-shell";
+import { useBridgeReady } from "@/lib/use-bridge";
 import type { MentionFieldElement } from "./MentionAutocomplete";
 import { useLayout } from "@/shell/store";
 import { usePalette } from "@/shell/command-registry";
@@ -200,8 +201,12 @@ export function AgentWorkspace({ kind = "agents" }: { kind?: WorkspaceKind } = {
   // shows the actual backend (no longer "API") and real cost from telemetry.
   const [liveBackendLabel, setLiveBackendLabel] = React.useState<string | null>(null);
   const [liveCostUsd, setLiveCostUsd] = React.useState<number | null>(null);
+  // Reactive so a bridge that installs after boot re-runs this effect (C4) — the
+  // dev bridge wires in asynchronously, and without a re-run the bar keeps the
+  // browser/mock label forever.
+  const bridgeReady = useBridgeReady();
   React.useEffect(() => {
-    if (!isDesktop() || !cur) return;
+    if (!bridgeReady || !cur) return;
     const p = getProviders();
     if (!p.agentBackend) return; // partial bundle (some tests) — keep mock labels
     let cancelled = false;
@@ -221,7 +226,7 @@ export function AgentWorkspace({ kind = "agents" }: { kind?: WorkspaceKind } = {
     return () => {
       cancelled = true;
     };
-  }, [cur?.id, cur?.model, cur?.telemetry]);
+  }, [bridgeReady, cur?.id, cur?.model, cur?.telemetry]);
 
   // P3 — the backend that THIS session runs against: its own binding, else the
   // workspace default. `agent.sendPrompt` has no backend arg (it runs against the
@@ -234,11 +239,11 @@ export function AgentWorkspace({ kind = "agents" }: { kind?: WorkspaceKind } = {
     ? (selectedBackendIdBySession[cur.id] ?? selectedBackendId)
     : selectedBackendId;
   React.useEffect(() => {
-    if (!isDesktop()) return;
+    if (!bridgeReady) return;
     const p = getProviders();
     if (!p.agentBackend) return;
     void p.agentBackend.select(sessionBackendId).catch(() => {});
-  }, [sessionBackendId]);
+  }, [sessionBackendId, bridgeReady]);
 
   const openFile = React.useCallback(() => {
     // Tool actions deep-link into the diff view (R1) — the shell remembers the

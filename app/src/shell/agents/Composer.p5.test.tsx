@@ -21,6 +21,7 @@ const sendPrompt = vi.fn().mockResolvedValue(undefined);
 
 vi.mock("@/lib/desktop-shell", () => ({
   isDesktop: () => false,
+  subscribeBridge: () => () => {},
   getProviders: () => ({
     agent: {
       sendPrompt,

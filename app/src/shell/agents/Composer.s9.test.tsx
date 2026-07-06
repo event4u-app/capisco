@@ -14,6 +14,7 @@ import { useAgents } from "./store";
 
 vi.mock("@/lib/desktop-shell", () => ({
   isDesktop: () => false,
+  subscribeBridge: () => () => {},
   getProviders: () => ({
     agent: {
       sendPrompt: () => Promise.resolve(),
