@@ -17,8 +17,9 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync, symlinkSync, mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
+import { tmpdir } from "node:os";
 import type { AuditEntry } from "@/contracts";
 import { Broker } from "../broker/capability-broker.ts";
 import { BrokerFsWriter } from "../fs/fs-write-broker.ts";
@@ -46,7 +47,10 @@ describe("broker-gated file write — the real perform adapter", () => {
   it("writes to disk for real when the broker clears the save", async () => {
     const broker = new Broker();
     // A human Save resolver clears the `ask` gate (trusted human intent).
-    const writer = new BrokerFsWriter({ broker, resolvePermission: () => ({ axis: "session" }) });
+    const writer = new BrokerFsWriter({
+      broker,
+      resolvePermission: () => ({ axis: "session" }),
+    });
 
     await writer.write(repo.dir, "src/app.ts", "export const answer = 99;\n");
 
@@ -80,15 +84,57 @@ describe("broker-gated file write — the real perform adapter", () => {
 
   it("rejects a path-traversal escape from the repo root (no disk change)", async () => {
     const broker = new Broker();
-    const writer = new BrokerFsWriter({ broker, resolvePermission: () => ({ axis: "session" }) });
-    await expect(
-      writer.write(repo.dir, "../../etc/capisco-pwned", "x\n"),
-    ).rejects.toThrow(/escapes project root/);
+    const writer = new BrokerFsWriter({
+      broker,
+      resolvePermission: () => ({ axis: "session" }),
+    });
+    await expect(writer.write(repo.dir, "../../etc/capisco-pwned", "x\n")).rejects.toThrow(
+      /escapes project root/,
+    );
+  });
+
+  it("rejects a SYMLINK inside the repo that points OUTSIDE it (no escape write)", async () => {
+    // council HOLE-1: the string path `src/link.txt` is lexically inside the
+    // repo, but the symlink resolves outside it. Following it would write
+    // outside the workspace sandbox — must be rejected, target untouched.
+    const outsideDir = mkdtempSync(join(tmpdir(), "capisco-escape-"));
+    const outsideFile = join(outsideDir, "victim.txt");
+    writeFileSync(outsideFile, "ORIGINAL\n", "utf8");
+    symlinkSync(outsideFile, join(repo.dir, "src", "link.txt"));
+
+    const broker = new Broker();
+    const writer = new BrokerFsWriter({
+      broker,
+      resolvePermission: () => ({ axis: "session" }),
+    });
+    await expect(writer.write(repo.dir, "src/link.txt", "PWNED\n")).rejects.toThrow(
+      /escapes project root via symlink/,
+    );
+
+    // The out-of-tree file is byte-identical — the symlink was never followed.
+    expect(readFileSync(outsideFile, "utf8")).toBe("ORIGINAL\n");
+    rmSync(outsideDir, { recursive: true, force: true });
+  });
+
+  it("allows a write through an IN-project symlink (intentional sub-tree symlinks keep working)", async () => {
+    // A symlink whose target is inside the repo canonicalises inside the root,
+    // so the guard permits it (the fix rejects only OUT-of-root symlinks).
+    symlinkSync(join(repo.dir, "src", "app.ts"), join(repo.dir, "src", "alias.ts"));
+    const broker = new Broker();
+    const writer = new BrokerFsWriter({
+      broker,
+      resolvePermission: () => ({ axis: "session" }),
+    });
+    await writer.write(repo.dir, "src/alias.ts", "export const viaAlias = true;\n");
+    expect(read("src/app.ts")).toBe("export const viaAlias = true;\n");
   });
 
   it("creates a new file in a not-yet-existing sub-tree when cleared", async () => {
     const broker = new Broker();
-    const writer = new BrokerFsWriter({ broker, resolvePermission: () => ({ axis: "session" }) });
+    const writer = new BrokerFsWriter({
+      broker,
+      resolvePermission: () => ({ axis: "session" }),
+    });
     await writer.write(repo.dir, "src/nested/new.ts", "export const fresh = true;\n");
     expect(read("src/nested/new.ts")).toBe("export const fresh = true;\n");
   });
