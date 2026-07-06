@@ -13,7 +13,6 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import "@/i18n";
 import { ThemeProvider } from "@/lib/theme";
-import { useAgents } from "./store";
 
 const detect = vi.fn(() =>
   Promise.resolve([
@@ -38,12 +37,16 @@ vi.mock("@/lib/desktop-shell", () => ({
 
 import { AgentSettings } from "./AgentSettings";
 
+const setSelectedBackend = vi.fn();
+
 function renderSettings() {
   render(
     <ThemeProvider>
       <AgentSettings
         backendKind="cli"
         setBackendKind={() => {}}
+        selectedBackendId="stub"
+        setSelectedBackend={setSelectedBackend}
         onClose={() => {}}
         routingEnabled={false}
         setRoutingEnabled={() => {}}
@@ -59,25 +62,23 @@ function renderSettings() {
 beforeEach(() => {
   detect.mockClear();
   select.mockClear();
-  useAgents.setState({ selectedBackendId: "stub" });
+  setSelectedBackend.mockClear();
 });
 afterEach(() => vi.clearAllMocks());
 
-describe("AgentSettings — real backend detect/select (P1)", () => {
+describe("AgentSettings — real backend detect/select (P1) + per-session pick (P3)", () => {
   it("calls detect() on mount and renders the detected backend (not the static mock)", async () => {
     renderSettings();
     await waitFor(() => expect(detect).toHaveBeenCalled());
     expect(await screen.findByTestId("agent-backend-claude-native")).toBeInTheDocument();
   });
 
-  it("picking a backend drives agentBackend.select(id) (was a dead local set)", async () => {
+  it("picking a backend calls the passed setter (which binds the session + selects)", async () => {
     const user = userEvent.setup();
     renderSettings();
     const useBtn = await screen.findByTestId("agent-backend-claude-native-use");
     await user.click(useBtn);
-    expect(select).toHaveBeenCalledWith("claude-native");
-    // …and reflects locally.
-    expect(useAgents.getState().selectedBackendId).toBe("claude-native");
+    expect(setSelectedBackend).toHaveBeenCalledWith("claude-native");
   });
 
   it("Redetect re-runs detect()", async () => {

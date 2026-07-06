@@ -75,6 +75,9 @@ export function AgentWorkspace({ kind = "agents" }: { kind?: WorkspaceKind } = {
   const closeSession = useStore((s) => s.closeSession);
   const setEffort = useStore((s) => s.setEffort);
   const setBackendKind = useStore((s) => s.setBackendKind);
+  const selectedBackendId = useStore((s) => s.selectedBackendId);
+  const selectedBackendIdBySession = useStore((s) => s.selectedBackendIdBySession);
+  const setSessionBackend = useStore((s) => s.setSessionBackend);
   const setRunState = useStore((s) => s.setRunState);
   const cancelRun = useStore((s) => s.cancelRun);
   // P5-A cockpit control-flow: per-session message queue + run-completion seam.
@@ -219,6 +222,23 @@ export function AgentWorkspace({ kind = "agents" }: { kind?: WorkspaceKind } = {
       cancelled = true;
     };
   }, [cur?.id, cur?.model, cur?.telemetry]);
+
+  // P3 — the backend that THIS session runs against: its own binding, else the
+  // workspace default. `agent.sendPrompt` has no backend arg (it runs against the
+  // sidecar's currently-selected backend), so on every session switch we must
+  // re-select it to match — otherwise the per-session choice is cosmetic and a
+  // send lands on whichever backend was picked last, globally. Desktop-only; the
+  // browser mock ignores selection. Keyed on the resolved id (a string) so it
+  // fires on switch AND on an in-place rebind, without an object dep.
+  const sessionBackendId = cur
+    ? (selectedBackendIdBySession[cur.id] ?? selectedBackendId)
+    : selectedBackendId;
+  React.useEffect(() => {
+    if (!isDesktop()) return;
+    const p = getProviders();
+    if (!p.agentBackend) return;
+    void p.agentBackend.select(sessionBackendId).catch(() => {});
+  }, [sessionBackendId]);
 
   const openFile = React.useCallback(() => {
     // Tool actions deep-link into the diff view (R1) — the shell remembers the
@@ -474,6 +494,13 @@ export function AgentWorkspace({ kind = "agents" }: { kind?: WorkspaceKind } = {
         <AgentSettings
           backendKind={backendKind}
           setBackendKind={setBackendKind}
+          selectedBackendId={sessionBackendId}
+          setSelectedBackend={(id) => {
+            // P3 — the pick is bound to THIS session (a chat keeps its own
+            // backend). Also drives the sidecar selection for the run.
+            if (cur) setSessionBackend(cur.id, id);
+            void getProviders().agentBackend.select(id);
+          }}
           onClose={() => setSettingsOpen(false)}
           routingEnabled={routingEnabled}
           setRoutingEnabled={setRoutingEnabled}

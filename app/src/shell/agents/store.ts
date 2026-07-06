@@ -163,8 +163,11 @@ interface AgentsState {
   // Backend settings popover.
   backendKind: "api" | "cli";
   settingsOpen: boolean;
-  /** Selected agent backend id (B8 P3) — persisted; default the deterministic stub. */
+  /** Selected agent backend id (B8 P3) — the WORKSPACE default; persisted. */
   selectedBackendId: string;
+  /** Per-session selected backend (P3 — switch agent/CLI within a chat). A chat
+   * remembers its own backend; falls back to {@link selectedBackendId}. Persisted. */
+  selectedBackendIdBySession: Record<string, string>;
 
   setActive: (id: string) => void;
   createSession: (model: string) => void;
@@ -203,6 +206,8 @@ interface AgentsState {
 
   setBackendKind: (kind: "api" | "cli") => void;
   setSelectedBackend: (id: string) => void;
+  /** Set the backend for ONE session (P3 — per-chat agent/CLI switch). */
+  setSessionBackend: (sessionId: string, id: string) => void;
   setRunState: (id: string, run: RunState) => void;
   /** Cancel a session's run (P3 / B3): set it ready, never mutate the parent,
    * never auto-resume. Does NOT drain the message queue (a Stop is not a
@@ -282,6 +287,7 @@ function createAgentsStore(opts: StoreOpts): UseBoundStore<StoreApi<AgentsState>
         backendKind: "api",
         settingsOpen: false,
         selectedBackendId: agentSnapshot.defaultBackendId,
+        selectedBackendIdBySession: {},
 
         setActive: (activeId) => set({ activeId }),
 
@@ -375,6 +381,10 @@ function createAgentsStore(opts: StoreOpts): UseBoundStore<StoreApi<AgentsState>
 
         setBackendKind: (backendKind) => set({ backendKind }),
         setSelectedBackend: (selectedBackendId) => set({ selectedBackendId }),
+        setSessionBackend: (sessionId, id) =>
+          set((s) => ({
+            selectedBackendIdBySession: { ...s.selectedBackendIdBySession, [sessionId]: id },
+          })),
         setRunState: (id, run) => set((s) => ({ runStates: { ...s.runStates, [id]: run } })),
         // Cancel THIS session's run (composer-context-runtime P3, B3): set it
         // back to ready and touch NOTHING else — the parent session (a fork's
@@ -483,6 +493,7 @@ function createAgentsStore(opts: StoreOpts): UseBoundStore<StoreApi<AgentsState>
         // the affected screens are regenerated alongside this phase).
         partialize: (s) => ({
           selectedBackendId: s.selectedBackendId,
+          selectedBackendIdBySession: s.selectedBackendIdBySession,
           terseEnabled: s.terseEnabled,
           scopedGrantsEnabled: s.scopedGrantsEnabled,
           terseLevel: s.terseLevel,
