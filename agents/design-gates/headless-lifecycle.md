@@ -6,12 +6,16 @@ Schritt (P2 Z. 256 „Headless-Session-Semantik bauen") beginnt. Council-Korrekt
 eingearbeitet: Headless-Sessions sind ein NEUER Lifecycle — Design-Schritt vor
 Bau, nicht „Semantik nebenbei".*
 
-> **GATE-STATUS: ⏳ ENTWURF — wartet auf Design-Review durch Matze.** Autonom
-> gezeichneter Erstentwurf als Review-Input. **Blockiert zusätzlich auf P1**
-> (Scoped-Grant): ein Nachtlauf ohne Scoped-Grant bleibt am ersten Gate stehen —
-> siehe `scoped-grant-ux.md`. Kein Headless-Code, bis P1 gelandet UND dieser
-> Entwurf freigegeben ist. Rollback bei „terminieren nicht zuverlässig" →
-> Scheduler archivieren, manuelle Lang-Läufe behalten.
+> **GATE-STATUS: ⛔ FAIL** (Council-Pre-Review 2026-07-06, Vollständigkeits-Linse
+> gegen Entwurf + echten Code). Der Entwurf ist eine ehrliche Karte, behauptet
+> aber Komposition + Sicherheits-Garantien, die der Code nicht trägt: von 6
+> Terminierungs-Kriterien hat nur **eines** (Idle-Timeout) erzwingenden Code, und
+> die zentrale „pausiert-nie-eskaliert"-Invariante ist vom realen `ask`-Gate
+> **widerlegt** (es **auto-denyt** nach 5 min). **Kein Headless-Code, bis die in
+> § Council Pre-Review gelisteten Blocker adressiert + von Matze reviewed sind.**
+> Blockiert zusätzlich auf P1 (Scoped-Grant, `scoped-grant-ux.md`). Rollback bei
+> „terminieren nicht zuverlässig" → Scheduler archivieren, manuelle Lang-Läufe
+> behalten.
 
 ## 0. Was eine Headless-Session ist (und was nicht)
 
@@ -131,6 +135,69 @@ wiederherstellt. Eine echte Persistenz-Schicht ist ein **späteres** Primitiv
 - Manuelle Real-Abnahme (P2 Z. 279): ein echter Nachtlauf über eine kleine
   Roadmap-Phase, morgens Digest mit Diff-Links + Gate-Stopps — **nach** Gate-Pass
   + P1, auf Matzes Maschine.
+
+## Council Pre-Review (2026-07-06)
+
+Vollständigkeits-Linse (Terminierung / Eskalation / Secret-Leak) gegen Entwurf +
+echten Code. **Verdict: FAIL** — GAP-1, GAP-2, GAP-5 sind einzeln gate-blockierend.
+
+### Gate-blockierende Gaps
+
+1. **GAP-1 (CRITICAL) — „pausiert-nie-eskaliert" ist aspirational; das reale
+   Primitiv AUTO-DENYT.** Das einzige, was ein `ask` auf einer Live-Session klärt,
+   ist die `PendingPermissionRegistry` — Default ist ein fail-closed Timer, der
+   nach 5 min `deny` settlet (`pending-permission-registry.ts:67,127`). Ein
+   Nachtlauf ohne Mensch → park → 5 min → **auto-deny** → der Agent läuft auf
+   einer verweigerten Capability weiter (Retry/schlechterer Pfad/falsches „user
+   declined"). `deny` ≠ `pause`. Es gibt **kein** Pause-Primitiv. → dritter
+   Resolver-Ausgang `pause` (suspendiert den Lauf, `paused`-State, überlebt bis
+   Mensch oder Terminierungs-Kriterium). Test: Headless + Timeout → `paused`,
+   **kein** `deny` an den Broker, Run-Loop steht.
+2. **GAP-2 (CRITICAL) — Max-Laufzeit hat KEINEN erzwingenden Code** („run
+   forever"): ein aktiver-aber-nicht-konvergierender Lauf kickt den StallWatchdog
+   endlos (`stall-watchdog.ts:28`); kein Wall-Clock-Cap existiert (grep
+   `maxRuntime|wallClock` = 0 Treffer). → zweiter Watchdog, **nicht** von Events
+   gekickt, einmal bei Run-Start armiert. Fake-Timer-Test: 60s-Kicks terminieren
+   trotzdem am Cap.
+3. **GAP-5 (HIGH) — Digest-Secret-Leak-Garantie hat kein Redaktions-Mechanismus.**
+   §6 behauptet „nie Secret-Werte" als garantiert; es gibt **kein** Digest-Modul
+   und keinen Scrubber. `looksLikeSecretValue` (`audit-store.ts:83`) prüft nur das
+   `credentialRef`-Feld des Audit-Logs, nicht Transkript-Bodies. → Digest als
+   Projektion NUR über strukturierte Referenzen (Audit-Einträge + Diff-Links +
+   Gate-Stop-Records), nie rohe Transkript-Zeilen; Test: Token-förmiger String im
+   Transkript → im Digest **absent**.
+
+### Weitere Gaps (fix vor Bau)
+
+- **GAP-3 (HIGH) — Token-Budget unerzwingbar:** das Budget-Meter ist eine
+  Frontend-Mock-Facade (`store.ts:153`, `budget: 200_000` reine UI-Projektion);
+  kein Token-Accounting im Run-Loop. → entweder aus dem Gate descopen (explizit)
+  oder echten Sidecar-Zähler bauen.
+- **GAP-4 (MED) — kein Terminierungs-Arbiter:** zwei gleichzeitig feuernde
+  Kriterien → Double-Settle / stale Timer auf toter Session. → ein Arbiter, der
+  beim ersten Kriterium StallWatchdog + (künftigen) Runtime-Cap + geparkte
+  Permission cancelt.
+- **GAP-6 (MED) — „Grant abgelaufen" hat kein Expiry-Modell:** referenziert das
+  P1-Konzept, das noch keinen Expiry trägt (Grants persistieren bis Prozess-Tod).
+  → in P1 konkret spezifizieren; bis dahin diese Zeile als blocked markieren.
+- **GAP-7 (MED) — Restart ≠ Blip nicht unterscheidbar:** `ReconnectingSidecarClient`
+  behandelt jeden Close gleich (`reconnecting-client.ts:108`); ein echter
+  Sidecar-Restart (in-memory Store weg) liest still einen leeren Tree neu statt
+  „interrupted" zu melden. → Boot-Epoch/Nonce im Reconnect-Handshake; bei Wechsel
+  laufenden Headless-Run terminal `interrupted`.
+- **GAP-8 (MED) — `RunState` hat kein `paused`/`interrupted`:** `RunState =
+  "ready"|"loading"|"error"` (`store.ts:9`) kann die sicheren Ausgänge nicht
+  darstellen; ein pausierter Lauf kollabiert zu `loading` (wirkt normal) oder
+  `error` (wirkt kaputt). → `RunState` um `paused`+`interrupted` erweitern, in der
+  Matrix distinkt rendern.
+
+### Was der Entwurf richtig hatte (Council-Konsens)
+
+Die **Persistenz-Ehrlichkeit (§4)** ist code-akkurat und stark (kein fragiles
+Auto-Resume); der **Idle-Timeout** ist real verdrahtet (`live-agent-provider.ts:177`);
+das **Grant-Modell launert keine Untrusted-Egress-Freigaben** (starke Basis);
+der **Audit-Stream trägt nie Secret-Werte** — der Gap ist nur, dass der Entwurf
+diese Garantie auf den (ungebauten) Digest über-dehnt.
 
 ## 9. Referenzen
 
