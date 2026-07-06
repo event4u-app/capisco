@@ -210,6 +210,13 @@ den echten `policy-engine.ts`/`capability-broker.ts`-Code. Verdikte:
   (realpath des existierenden Präfixes) + Boundary-Re-Check; nach-außen-Symlink →
   `deny`, In-Projekt-Symlink weiterhin erlaubt. 2 Tests (fs-write-broker.test.ts).
   Reiner Containment-Bugfix. **Residual:** Leaf-TOCTOU (Blocker 2).
+- **HOLE-4 (Trifecta-Linse) — Key-Kollision:** `grantKey`/`consumableKey`
+  (`policy-engine.ts`) bauten Keys per naivem `:`-Join → ein `:`-haltiges Target
+  (`network` `https://h:443/x`, Windows-Pfad) konnte zwei logisch verschiedene
+  Requests auf denselben Key kollidieren und deren Grants cross-clearen. **Gefixt:**
+  beide Keys nutzen jetzt `JSON.stringify([...])` (derselbe injektive Idiom wie
+  `requestFingerprint`) + Regressions-Test (broker.test.ts: `(x, "y:z")` vs
+  `("x:y", z)` clearen sich nicht mehr). Reiner Isolations-Bugfix; schließt A9.
 
 ### Blocker fürs Gate (müssen ins Design + Code, bevor Bau)
 
@@ -243,9 +250,11 @@ den echten `policy-engine.ts`/`capability-broker.ts`-Code. Verdikte:
 6. **`shell` bleibt NICHT scoped-fähig** (HOLE-1 Trifecta, Q4 = nein): nur
    `file-write` wird scoped; `shell`/`secret-read`/`external-write`/`network`/
    `db-write` bleiben Einzel-Gate.
-7. **Strukturierte/escapte Grant-Keys** (HOLE-4 Trifecta): `grantKey`/`consumableKey`
-   bauen Keys per naivem `:`-Join ohne Escaping → `:`-haltige Targets (URLs
-   `https://h:443/x`, Windows-Pfade) kollidieren. → Tupel/JSON-Key statt String-Join.
+7. **~~Strukturierte/escapte Grant-Keys~~ (GEFIXT 2026-07-06):** `grantKey`/
+   `consumableKey` nutzen jetzt `JSON.stringify([...])` statt `:`-Join — keine
+   Kollision mehr durch `:`-haltige Targets. Siehe § Council Pre-Review „Sofort
+   gefixt". (Bleibt relevant fürs Scoped-Grant-Design nur, falls neue Key-
+   Komponenten dazukommen — dann denselben Idiom nutzen.)
 8. **Prefix-Boundary + macOS-Normalisierung** (HOLE-3/5 Pfad): `matches()` ist
    nacktes `startsWith` (`/srcX` matcht `/src`); APFS ist case-insensitive +
    NFC/NFD-normalisierend. → boundary-anchored Vergleich (`prefix + sep`) auf
