@@ -446,6 +446,17 @@ Cross-Task-Ride-Test; (2) canonical-Target-Seam; (3) `scopeMatches`
 Revoke-Race-Test; (6) forked temp+rename. Vorab-Invariante gepinnt: untrusted
 file-write bleibt `ask` **auch bei aktivem passendem scoped-Grant** (HOLE-1-Lock).
 
+**Bau-Fortschritt:** ✅ Schritt 1 (taskId→Fingerprint, PR #34). ✅ Enforcement-Kern
+(Schritte 3+4): `PersistedGrant`-discriminated-union in `policy-engine.ts`,
+`scopeMatches` (task-gebunden + canonicalTarget unter `pathPrefix`,
+boundary-anchored + NFC/case-fold, **strikt nach** dem untrusted-Gate),
+`maxActions`-Dekrement, Issuance-Rejects (non-file-write / fehlende taskId /
+leerer-relativer Prefix / non-positive Budget) + Adversarial-Suite A1/A2/A4/A5/A6/A7
+(inkl. Ordering-Pin). Engine bleibt I/O-frei (Kanonisierung caller-seitig). **Offen:**
+Schritt 2 (fs-write-broker füllt `canonicalTarget` real — heute inert, da keine UI
+scoped-Grants erzeugt), Schritt 5 (`revoke`/`#liveTasks`-Sweep + Multi-Task-Index),
+Schritt 6 (forked temp+rename), UI (Grant in Matrix + Widerruf, 229 Bulk-Run).
+
 ## 10. Referenzen
 
 - `app/sidecar/broker/policy-engine.ts` — `GrantPolicyEngine` (Ist-Stand).

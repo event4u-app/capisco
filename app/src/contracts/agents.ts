@@ -45,6 +45,14 @@ export interface PermissionDecision {
   axis: GrantAxis;
   /** Required when `axis === "scoped"` — the named scope the grant is bound to. */
   scope?: PermissionScope;
+  /**
+   * Bounds of a `scoped` grant (scoped-grant v2.2). Present only when
+   * `axis === "scoped"`. `pathPrefix` MUST be an absolute, realpath-canonicalised
+   * directory — the CALLER canonicalises it (the policy engine stays pure / I/O-free
+   * and only string-compares). `maxActions` is the mandatory action budget: the
+   * grant clears at most this many `file-write`s under the prefix, then re-asks.
+   */
+  scopedGrant?: { pathPrefix: string; maxActions: number };
 }
 
 export interface PermissionRequest {
