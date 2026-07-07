@@ -212,9 +212,17 @@ org. **Der Kill-Switch landet zuerst.**
       `SentryIssue`-Shape; Default-Query `is:unresolved`, Default-Env `production`.
       <!-- done: sentryIssues() baut genau diese Query; live gegen die echte Org geprüft
       (is:unresolved&statsPeriod=24h → GALAWORK-GPS-5V u.a., korrekt gemappt). -->
-- [ ] **Polling-first** alle 30–60 s mit ETag/`statsPeriod`, 429-Backoff; letzte
+- [~] **Polling-first** alle 30–60 s mit ETag/`statsPeriod`, 429-Backoff; letzte
       erfolgreiche Sync-Zeit als **„Updated Xs ago" + manueller Refresh** (Kontext,
       keine Entschuldigung — Council).
+      <!-- Sidecar-Kern DONE: SentryPoller (ETag-Cache → If-None-Match/304, 429-Retry-
+      After-Backoff-Fenster, lastSyncMs, keep-last-rows-on-error) + sentryIssuesConditional
+      + parseRetryAfterMs; 11 Tests (Mock-fetch). EHRLICHER BEFUND: Sentry's org-issues-
+      Endpoint sendet KEINEN ETag → der 304-Pfad feuert live nicht, degradiert sauber
+      auf 200 (per curl gegen die echte Org geprüft). Realer Wert live = 429-Backoff +
+      lastSync + keep-last-rows; die ETag-Maschinerie greift korrekt, falls je ein
+      Endpoint/Instanz einen ETag liefert. DEFERRED (owner-gated): das 30–60s-Intervall
+      + „Updated Xs ago"-Anzeige + manueller Refresh sind UI/Wire (Design + Timing). -->
 - [ ] **Single-org / single-project, manuelle Config** (zwei Textfelder: Org-Slug,
       Project-Slug), Validierung gegen `GET /projects/{org}/{project}/`. Multi-org +
       Slug-Auto-Matching **deferred** (Council: Config-UX-Falle, P2+).
