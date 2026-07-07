@@ -24,6 +24,7 @@
 import type {
   AgentBackendProvider,
   AgentProvider,
+  CredentialsProvider,
   EditorProvider,
   GitProvider,
   LspProvider,
@@ -52,6 +53,9 @@ export interface ProviderBundle {
   agent: AgentProvider;
   /** Runtime agent-backend selection (P2): real detect/select/current/cost. */
   agentBackend: AgentBackendProvider;
+  /** Write-only credential vault surface: the settings gear stores the API token
+   * (persisted in the sidecar keychain/0600 file); no read path by design. */
+  credentials: CredentialsProvider;
   /** Real language intelligence (P5): completion/hover, per root × language. */
   lsp: LspProvider;
   /** Real shell PTY per tab (P6): open/write/resize/close/list + per-id stream. */
@@ -113,6 +117,7 @@ export function createIpcProviders(client: SidecarClient): ProviderBundle {
   return {
     agent: createAgentProxy(client),
     agentBackend: rpcProxy<AgentBackendProvider>(client, "agent-backend"),
+    credentials: rpcProxy<CredentialsProvider>(client, "credentials"),
     lsp: rpcProxy<LspProvider>(client, "lsp"),
     terminal: createTerminalProxy(client),
     // toSignals is a pure fold (no run) — served locally, never round-tripped.

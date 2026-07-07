@@ -422,6 +422,8 @@
       "provider": "Provider",
       "apiToken": "API token",
       "keychainNote": "Stored in your OS keychain.",
+      "tokenStored": "saved",
+      "tokenStoredNote": "A token is stored in your OS keychain. Enter a new one to replace it.",
       "save": "Save",
       "detected": "{{name}} detected",
       "cliNote": "Capisco shells out to your installed CLI. No token stored.",

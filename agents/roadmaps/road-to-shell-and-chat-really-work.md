@@ -56,7 +56,14 @@ Sidecar `select()` nie → jeder Lauf läuft gegen „no backend".
       Picker ist provider-getrieben (Browser wie Desktop). <!-- done: AgentSettings.tsx + mock-providers.ts -->
 - [x] **`onUse` → `agentBackend.select(id)`** verdrahtet (+ lokaler Set fürs UI) —
       die lasttragende „Wechsel tut nichts"-Ursache B3 behoben. <!-- done -->
-- [x] **Redetect-Button** `onClick → detect()` (hatte keinen onClick). <!-- done. OFFEN: **Save** persistiert das API-Token noch nicht (braucht Secret-Store — native/real). -->
+- [x] **Redetect-Button** `onClick → detect()` (hatte keinen onClick). <!-- done -->
+- [x] **Save persistiert das API-Token** (braucht Secret-Store): neuer write-only
+      `credentials`-Provider (`put`/`has`, **kein** Read-Pfad — spiegelt die
+      SecretStore-Invariante), verdrahtet über `broker.secrets` (Keychain/0600-File).
+      AgentSettings-Save `put`et den Token + zeigt „stored"; Mount-`has()` markiert
+      einen vorhandenen Token maskiert. Tests: Sidecar-Factory gegen echten
+      InMemorySecretStore (put→inject, kein Getter, Replace) + AgentSettings
+      Save→put/leerer-Save/Mount-has. <!-- done: credentials-provider.ts + main.ts wire + providers/mock + AgentSettings -->
 - [x] **AgentSettings liest `selectedBackendId`/`setSelectedBackend` aus Props**
       statt hart `useAgents` (B4 — schrieb im Chat-Workspace sonst in den falschen
       Store; jetzt fädelt AgentWorkspace den per-Session-Wert durch). <!-- AgentSettings.tsx Props (B4) -->

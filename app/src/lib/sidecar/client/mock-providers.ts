@@ -27,7 +27,7 @@ import {
   mockWorkspaceProvider,
   mockWorktreeProvider,
 } from "@/mocks";
-import type { AgentBackendProvider, LspProvider } from "@/contracts";
+import type { AgentBackendProvider, CredentialsProvider, LspProvider } from "@/contracts";
 import type { ProviderBundle } from "./providers.ts";
 
 /** Browser-mode LSP mock — no language server in the browser; empty + deterministic. */
@@ -60,10 +60,26 @@ const mockAgentBackend: AgentBackendProvider = {
   cost: () => Promise.resolve(0.04),
 };
 
+/**
+ * Browser-mode credential mock: write-only, in-memory, ephemeral. Mirrors the
+ * sidecar's no-readback invariant — `put` records only presence, there is no
+ * getter. Dev/demo has no real vault; the real keychain/file store lives in the
+ * sidecar. Refs stored this session let the gear show its "stored" affordance.
+ */
+const mockCredentialRefs = new Set<string>();
+const mockCredentials: CredentialsProvider = {
+  put: (ref: string) => {
+    mockCredentialRefs.add(ref);
+    return Promise.resolve();
+  },
+  has: (ref: string) => Promise.resolve(mockCredentialRefs.has(ref)),
+};
+
 export function createMockProviders(): ProviderBundle {
   return {
     agent: mockAgentProvider,
     agentBackend: mockAgentBackend,
+    credentials: mockCredentials,
     lsp: mockLsp,
     terminal: mockTerminalProvider,
     quality: mockQualityProvider,
