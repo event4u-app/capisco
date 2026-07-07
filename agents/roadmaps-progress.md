@@ -6,10 +6,10 @@
 
 ## Overall
 
-**130 / 254 steps done · 51%**
+**131 / 254 steps done · 52%**
 
 ```text
-████████████████████░░░░░░░░░░░░░░░░░░░░   51%
+█████████████████████░░░░░░░░░░░░░░░░░░░   52%
 ```
 
 ## Open roadmaps
@@ -22,7 +22,7 @@
 | 4 | [road-to-desktop-release.md](roadmaps/road-to-desktop-release.md) | 6 | 14 | 14 | 0 | 0 | 0 | ░░░░░░░░░░ 0% |
 | 5 | [road-to-real-breadth.md](roadmaps/road-to-real-breadth.md) | 5 | 30 | 22 | 8 | 0 | 0 | ███░░░░░░░ 27% |
 | 6 | [road-to-real-runtime.md](roadmaps/road-to-real-runtime.md) | 5 | 29 | 4 | 25 | 0 | 0 | █████████░ 86% |
-| 7 | [road-to-sentry-observability.md](roadmaps/road-to-sentry-observability.md) | 5 | 29 | 21 | 8 | 0 | 0 | ███░░░░░░░ 28% |
+| 7 | [road-to-sentry-observability.md](roadmaps/road-to-sentry-observability.md) | 5 | 29 | 20 | 9 | 0 | 0 | ███░░░░░░░ 31% |
 | 8 | [road-to-shell-and-chat-really-work.md](roadmaps/road-to-shell-and-chat-really-work.md) | 6 | 25 | 4 | 21 | 0 | 0 | ████████░░ 84% |
 
 ---
@@ -112,12 +112,12 @@
 
 ### [road-to-sentry-observability.md](roadmaps/road-to-sentry-observability.md)
 
-**Road to Sentry Observability — die Sentry-Ansicht (4 Tabs, 1:1 ans Design)** — 8 / 29 done (28%)
+**Road to Sentry Observability — die Sentry-Ansicht (4 Tabs, 1:1 ans Design)** — 9 / 29 done (31%)
 
 | # | Phase | State | Open | Done | Deferred | Cancelled | % |
 |---|---|---|---:|---:|---:|---:|---:|
 | 0 | Contract + Fixture + Design 1:1 portiert (autonom-grün) | ✅ done | 0 | 8 | 0 | 0 | 100% |
-| 1 | ProviderAuth + Real-Read (Token-first) + Kill-Switch | ⬜ not started | 7 | 0 | 0 | 0 | 0% |
+| 1 | ProviderAuth + Real-Read (Token-first) + Kill-Switch | 🟡 in progress | 6 | 1 | 0 | 0 | 14% |
 | 2 | Broker-gegatete Writes (anti-injection) | ⬜ not started | 6 | 0 | 0 | 0 | 0% |
 | 3 | Cron Monitors + Performance + Alerts + IDE-Notification | ⬜ not started | 5 | 0 | 0 | 0 | 0% |
 | 4 | Realtime (Webhooks) — optional, deferred | ⬜ not started | 3 | 0 | 0 | 0 | 0% |

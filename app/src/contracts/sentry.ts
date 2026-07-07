@@ -94,3 +94,16 @@ export interface SentryReadProvider extends SentryProvider {
   getStats(): Promise<SentryStats>;
   listAlertRules(): Promise<SentryAlertRule[]>;
 }
+
+/**
+ * Runtime kill-switch surface (road-to-sentry-observability P1). Lets the whole
+ * Sentry integration be switched off/on without a restart. When off, the read
+ * provider returns empty results and makes no upstream call. `forced` reflects a
+ * manifest/env force-disable that overrides the runtime toggle.
+ */
+export interface SentryControlProvider {
+  isEnabled(): Promise<boolean>;
+  setEnabled(on: boolean): Promise<void>;
+  /** Whether a force-disable override (manifest/env) is in effect. */
+  isForced(): Promise<boolean>;
+}

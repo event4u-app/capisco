@@ -33,6 +33,7 @@ import type {
   RecentProjectsProvider,
   RevertProvider,
   SentryReadProvider,
+  SentryControlProvider,
   SessionStore,
   ShadowStore,
   QualityProvider,
@@ -86,6 +87,9 @@ export interface ProviderBundle {
   /** Sentry observability (road-to-sentry-observability P0) — issues / crons /
    * stats / alert rules; fixture-backed read provider, real adapter deferred. */
   sentry: SentryReadProvider;
+  /** Sentry runtime kill-switch (P1) — disable/enable the integration without a
+   * restart; a manifest/env force-disable overrides the toggle. */
+  sentryControl: SentryControlProvider;
 }
 
 /**
@@ -145,5 +149,6 @@ export function createIpcProviders(client: SidecarClient): ProviderBundle {
     ingest: rpcProxy<IngestProvider>(client, "ingest"),
     revert: rpcProxy<RevertProvider>(client, "revert"),
     sentry: rpcProxy<SentryReadProvider>(client, "sentry"),
+    sentryControl: rpcProxy<SentryControlProvider>(client, "sentry-control"),
   };
 }
