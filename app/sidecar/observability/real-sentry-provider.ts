@@ -10,7 +10,11 @@
 
 import type { SecretStore, SignalItem, SignalSeverity } from "@/contracts";
 import type { SentryIssue, SentryLevel, SentryProvider, SentryStatus } from "@/contracts";
-import { bearerTokenAuth, type ProviderAuth } from "../auth/provider-auth.ts";
+import {
+  bearerTokenAuth,
+  resolveProviderAuth,
+  type ProviderAuth,
+} from "../auth/provider-auth.ts";
 import { sentryIssues } from "./sentry-http.ts";
 import { sanitizeIssueTitle, sanitizeTag } from "@/lib/sentry-sanitize.ts";
 
@@ -36,15 +40,16 @@ function status(v: unknown): SentryStatus {
 }
 function trend24h(stats: unknown): number[] {
   const buckets = (stats as { "24h"?: [number, number][] } | undefined)?.["24h"];
-  return Array.isArray(buckets) ? buckets.map((b) => (Array.isArray(b) ? Number(b[1]) || 0 : 0)) : [];
+  return Array.isArray(buckets)
+    ? buckets.map((b) => (Array.isArray(b) ? Number(b[1]) || 0 : 0))
+    : [];
 }
 
 /** Pure: a Sentry API issue row → the spec's SentryIssue. */
 export function toIssue(row: Record<string, unknown>, nowMs: number = Date.now()): SentryIssue {
   const project = (row.project as { slug?: string } | undefined)?.slug ?? "";
   const assignedTo = row.assignedTo as { name?: string } | string | null | undefined;
-  const assignee =
-    typeof assignedTo === "string" ? assignedTo : (assignedTo?.name ?? null);
+  const assignee = typeof assignedTo === "string" ? assignedTo : (assignedTo?.name ?? null);
   return {
     id: `${(row.shortId as string) ?? (row.id as string) ?? "?"}`,
     level: level(row.level),
@@ -113,9 +118,21 @@ export function createRealSentryProvider(opts: {
   baseUrl?: string;
   tokenRef?: string;
 }): RealSentryProvider {
-  return new RealSentryProvider({
-    org: opts.org,
-    auth: bearerTokenAuth(opts.secrets, opts.tokenRef ?? "sentry-token"),
-    baseUrl: opts.baseUrl,
-  });
+  const tokenRef = opts.tokenRef ?? "sentry-token";
+  // Route through the best-available resolver so OAuth / MCP slot in later WITHOUT
+  // touching this factory (Provider-Auth directive). Only token mode is built
+  // today — available when the keychain holds the token; oauth/mcp are simply
+  // absent from the candidate list until they exist. `build` runs only for the
+  // winner, so probing never reads a secret it will not use.
+  const auth = resolveProviderAuth([
+    {
+      mode: "token",
+      available: opts.secrets.has(tokenRef),
+      build: () => bearerTokenAuth(opts.secrets, tokenRef),
+    },
+  ]);
+  if (!auth) {
+    throw new Error(`sentry: no auth available (no "${tokenRef}" in the keychain)`);
+  }
+  return new RealSentryProvider({ org: opts.org, auth, baseUrl: opts.baseUrl });
 }

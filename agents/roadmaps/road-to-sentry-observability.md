@@ -191,9 +191,13 @@ org. **Der Kill-Switch landet zuerst.**
       besten; `build` läuft NUR fürs Gewinner-Candidate (kein unnötiger Keychain-Read);
       undefined → „not configured", nie geraten. Tests: 7 (Präferenz, token-fallback,
       cli-last-resort, none→undefined, build-only-winner, order, secret-by-reference). -->
-- [ ] **RealProvider auf den Resolver umstellen** (heute fester `bearerTokenAuth`):
-      Kandidaten-Liste (token verfügbar wenn Keychain-Ref gesetzt; oauth/mcp sobald
-      gebaut) statt fixem Modus. <!-- Folge-Slice; RealSentryProvider existiert + nutzt token direkt -->
+- [x] **RealProvider auf den Resolver umstellen** (war fester `bearerTokenAuth`):
+      `createRealSentryProvider` baut jetzt eine Kandidaten-Liste und ruft
+      `resolveProviderAuth` — token verfügbar wenn der Keychain-Ref gesetzt ist
+      (oauth/mcp sind schlicht noch nicht in der Liste, bis sie gebaut sind). `build`
+      läuft nur fürs Gewinner-Candidate; kein Token → wirft „no auth available"
+      (dev-bridge-catch behält die Fixture). Token-Verhalten identisch zum Live-Pfad
+      aus #50. Tests: token→Provider, kein-Token→wirft. <!-- done -->
 - [x] **RealProvider read-only** (`real-sentry-provider.ts`, dünner Swap hinter dem
       gleichen Contract): Sentry Web API (`/api/0/`, self-hosted Base-URL
       konfigurierbar). **Token-Modus zuerst** — Org-Token aus der **OS-Keychain**
