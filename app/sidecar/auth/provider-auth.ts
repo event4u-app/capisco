@@ -38,7 +38,11 @@ function base64(s: string): string {
 }
 
 /** API-token Basic auth (e.g. Jira Cloud `email:token`), value from the keychain. */
-export function basicTokenAuth(secrets: SecretStore, tokenRef: string, user: string): ProviderAuth {
+export function basicTokenAuth(
+  secrets: SecretStore,
+  tokenRef: string,
+  user: string,
+): ProviderAuth {
   return {
     mode: "token",
     withAuthHeader: (use) =>
@@ -65,4 +69,42 @@ export function rawTokenAuth(secrets: SecretStore, tokenRef: string): ProviderAu
 /** CLI / MCP transports authenticate themselves — no header at the HTTP layer. */
 export function selfAuth(mode: "cli" | "mcp"): ProviderAuth {
   return { mode, withAuthHeader: (use) => use(undefined) };
+}
+
+/**
+ * Best-available preference for a provider that offers more than one mode
+ * (real-breadth directive 2026-06-26): the richest, auth-delegated integration
+ * wins, the local-tool session is the last resort.
+ *
+ *   MCP (server holds auth) → Web-OAuth (refreshable) → API-token (keychain) → CLI.
+ */
+export const AUTH_PREFERENCE: readonly AuthMode[] = ["mcp", "oauth", "token", "cli"];
+
+/**
+ * One candidate mode a provider could authenticate with. `available` is the
+ * runtime probe (MCP server connected? token in the keychain? CLI logged in?);
+ * `build` is called ONLY for the winning candidate, so probing never constructs
+ * an auth it will not use (no needless keychain read).
+ */
+export interface AuthCandidate {
+  mode: AuthMode;
+  available: boolean;
+  build: () => ProviderAuth;
+}
+
+/**
+ * Pick the best available auth per {@link AUTH_PREFERENCE}. Provider code declares
+ * which modes it *could* use and whether each is available right now; the resolver
+ * returns the highest-preference available one — so OAuth / MCP slot in later
+ * without touching the provider. `undefined` when nothing is available (the
+ * provider then surfaces "not configured", never guesses).
+ */
+export function resolveProviderAuth(
+  candidates: readonly AuthCandidate[],
+): ProviderAuth | undefined {
+  for (const mode of AUTH_PREFERENCE) {
+    const winner = candidates.find((c) => c.mode === mode && c.available);
+    if (winner) return winner.build();
+  }
+  return undefined;
 }
