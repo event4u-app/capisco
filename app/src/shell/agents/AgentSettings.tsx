@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { ChevronDown, CircleCheck, Download, ExternalLink, Lock, X } from "lucide-react";
 
 import { agentSnapshot } from "@/mocks";
-import type { AgentBackend } from "@/contracts";
+import { AGENT_API_TOKEN_REF, type AgentBackend } from "@/contracts";
 import { getProviders } from "@/lib/desktop-shell";
 import { useAgents, type TerseLevel } from "./store";
 
@@ -51,6 +51,42 @@ export function AgentSettings({
 }) {
   const { t } = useTranslation();
   const [token, setToken] = React.useState("");
+  // Whether a token is already persisted (presence only — the value is never
+  // readable back). Drives the "stored" affordance + the masked placeholder so
+  // the user sees Save actually persisted, without the secret ever leaving the vault.
+  const [tokenStored, setTokenStored] = React.useState(false);
+  const [saving, setSaving] = React.useState(false);
+  React.useEffect(() => {
+    let alive = true;
+    void getProviders()
+      .credentials?.has(AGENT_API_TOKEN_REF)
+      .then((has) => {
+        if (alive) setTokenStored(has);
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, []);
+  // Persist the entered token to the sidecar vault (keychain / 0600 file), then
+  // close. Empty field → nothing to store (Save just closes). The plaintext value
+  // never round-trips back: we only flip the local "stored" flag on success.
+  const saveApiToken = React.useCallback(() => {
+    const value = token.trim();
+    if (!value) {
+      onClose();
+      return;
+    }
+    setSaving(true);
+    void getProviders()
+      .credentials.put(AGENT_API_TOKEN_REF, value)
+      .then(() => {
+        setTokenStored(true);
+        setToken("");
+        onClose();
+      })
+      .catch(() => setSaving(false));
+  }, [token, onClose]);
   const ref = React.useRef<HTMLDivElement>(null);
   const cli = agentSnapshot.detectedCli;
   // Real backend catalog (P1) — seeded with the snapshot (first render + goldens
@@ -186,15 +222,25 @@ export function AgentSettings({
             id="agent-api-token"
             type="password"
             className="as-input"
-            placeholder="sk-ant-…"
+            placeholder={
+              tokenStored ? "••••••••••••  ·  " + t("agents.settings.tokenStored") : "sk-ant-…"
+            }
             value={token}
             onChange={(e) => setToken(e.target.value)}
           />
           <div className="as-note">
             <Lock size={11} color="var(--ds-text-tertiary)" strokeWidth={1.6} />
-            {t("agents.settings.keychainNote")}
+            {tokenStored
+              ? t("agents.settings.tokenStoredNote")
+              : t("agents.settings.keychainNote")}
           </div>
-          <button type="button" className="as-btn as-btn-primary" onClick={onClose}>
+          <button
+            type="button"
+            className="as-btn as-btn-primary"
+            data-testid="agent-settings-save-token"
+            disabled={saving}
+            onClick={saveApiToken}
+          >
             {t("agents.settings.save")}
           </button>
         </div>

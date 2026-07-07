@@ -115,3 +115,20 @@ export interface AgentBackendProvider {
   /** USD cost from cumulative token telemetry for a model. */
   cost(model: string, telemetry: import("./agents").Telemetry): Promise<number>;
 }
+
+/** Vault reference for the Anthropic API token entered in the settings gear. */
+export const AGENT_API_TOKEN_REF = "agent-api-token:anthropic";
+
+/**
+ * Write-only credential surface for the settings gear (road-to-shell-and-chat P1
+ * — "Save persists the API token"). Deliberately has NO read path: it mirrors
+ * the broker {@link SecretStore} invariant — a stored token is used only via the
+ * broker's execution-layer injection, never handed back as a value. The UI can
+ * store one and check presence (to show "stored" + a masked field), nothing more.
+ */
+export interface CredentialsProvider {
+  /** Store/replace a secret under a reference name. Never readable back. */
+  put(ref: string, value: string): Promise<void>;
+  /** Whether a secret exists for the ref. Presence only — never the value. */
+  has(ref: string): Promise<boolean>;
+}

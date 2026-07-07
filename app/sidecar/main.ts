@@ -28,6 +28,7 @@ import { registerTaskForge } from "./register-task-forge.ts";
 import { registerSentry } from "./register-sentry.ts";
 import { registerProvision } from "./register-provision.ts";
 import { BackendSelection } from "./acp/backend-selection.ts";
+import { createCredentialsProvider } from "./acp/credentials-provider.ts";
 import { registerLsp } from "./register-lsp.ts";
 import { registerTerminal } from "./register-terminal.ts";
 import { createSecretStore } from "./broker/create-secret-store.ts";
@@ -141,6 +142,13 @@ export function registerAllProviders(
     cost: (model: string, telemetry: import("@/contracts").Telemetry) =>
       Promise.resolve(selection.cost(model, telemetry)),
   } as never);
+
+  // Write-only credential surface for the settings gear (P1 — "Save persists the
+  // API token"). Delegates to the broker's persistent SecretStore (keychain on
+  // macOS, else 0600 file). NO read path is exposed: the value is used only via
+  // the broker's execution-layer injection, never returned — the "Save the token
+  // once, use it forever, never read it back" invariant the vault is built on.
+  registry.register("credentials", createCredentialsProvider(broker.secrets) as never);
 
   if (opts.liveAgent) {
     // P2 — the interactive chat run. The broker is the side-effect chokepoint;

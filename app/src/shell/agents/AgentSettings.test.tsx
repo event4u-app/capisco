@@ -27,27 +27,31 @@ const detect = vi.fn(() =>
   ]),
 );
 const select = vi.fn(() => Promise.resolve({ kind: "cli" as const, provider: "Claude Code" }));
+const putToken = vi.fn(() => Promise.resolve());
+const hasToken = vi.fn(() => Promise.resolve(false));
 
 vi.mock("@/lib/desktop-shell", () => ({
   isDesktop: () => false,
   getProviders: () => ({
     agentBackend: { detect, select, current: detect, cost: () => Promise.resolve(0) },
+    credentials: { put: putToken, has: hasToken },
   }),
 }));
 
 import { AgentSettings } from "./AgentSettings";
+import { AGENT_API_TOKEN_REF } from "@/contracts";
 
 const setSelectedBackend = vi.fn();
 
-function renderSettings() {
+function renderSettings(overrides: { backendKind?: "api" | "cli"; onClose?: () => void } = {}) {
   render(
     <ThemeProvider>
       <AgentSettings
-        backendKind="cli"
+        backendKind={overrides.backendKind ?? "cli"}
         setBackendKind={() => {}}
         selectedBackendId="stub"
         setSelectedBackend={setSelectedBackend}
-        onClose={() => {}}
+        onClose={overrides.onClose ?? (() => {})}
         routingEnabled={false}
         setRoutingEnabled={() => {}}
         terseEnabled={false}
@@ -63,6 +67,8 @@ beforeEach(() => {
   detect.mockClear();
   select.mockClear();
   setSelectedBackend.mockClear();
+  putToken.mockClear();
+  hasToken.mockClear();
 });
 afterEach(() => vi.clearAllMocks());
 
@@ -87,5 +93,33 @@ describe("AgentSettings — real backend detect/select (P1) + per-session pick (
     await waitFor(() => expect(detect).toHaveBeenCalledTimes(1));
     await user.click(screen.getByTestId("agent-settings-redetect"));
     await waitFor(() => expect(detect).toHaveBeenCalledTimes(2));
+  });
+});
+
+describe("AgentSettings — API token persistence (P1 Save)", () => {
+  it("Save persists the entered token to the credential vault, then closes", async () => {
+    const user = userEvent.setup();
+    const onClose = vi.fn();
+    renderSettings({ backendKind: "api", onClose });
+    await user.type(screen.getByLabelText(/API token/i), "sk-ant-secret-123");
+    await user.click(screen.getByTestId("agent-settings-save-token"));
+    await waitFor(() =>
+      expect(putToken).toHaveBeenCalledWith(AGENT_API_TOKEN_REF, "sk-ant-secret-123"),
+    );
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+  });
+
+  it("Save with an empty field stores nothing but still closes", async () => {
+    const user = userEvent.setup();
+    const onClose = vi.fn();
+    renderSettings({ backendKind: "api", onClose });
+    await user.click(screen.getByTestId("agent-settings-save-token"));
+    expect(putToken).not.toHaveBeenCalled();
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+  });
+
+  it("checks for a stored token on mount (presence only — never reads the value)", async () => {
+    renderSettings({ backendKind: "api" });
+    await waitFor(() => expect(hasToken).toHaveBeenCalledWith(AGENT_API_TOKEN_REF));
   });
 });
