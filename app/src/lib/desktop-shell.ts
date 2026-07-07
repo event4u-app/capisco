@@ -34,6 +34,23 @@ function getBridge(): SidecarBridge | undefined {
   return (globalThis as { __CAPISCO_SIDECAR__?: SidecarBridge }).__CAPISCO_SIDECAR__;
 }
 
+// The dev bridge is installed ASYNCHRONOUSLY after boot (`connectDevBridge`), so
+// a component that read `isDesktop()` at mount would keep the browser/mock label
+// forever — the composer bar stays stale after the real sidecar wires in (C4).
+// This is a tiny external store so React can subscribe (via `useSyncExternalStore`
+// in `use-bridge.ts`) and re-run effects the moment the bridge appears or clears.
+const bridgeListeners = new Set<() => void>();
+
+/** Subscribe to bridge install/clear. Returns an unsubscribe. */
+export function subscribeBridge(listener: () => void): () => void {
+  bridgeListeners.add(listener);
+  return () => bridgeListeners.delete(listener);
+}
+
+function notifyBridgeChanged(): void {
+  for (const listener of bridgeListeners) listener();
+}
+
 /**
  * Resolve the active provider bundle. Desktop → IPC proxies over the bridged
  * sidecar; browser → mocks. Memoised so repeated calls share one client.
@@ -53,10 +70,12 @@ export function getProviders(): ProviderBundle {
 export function installSidecarBridge(transport: Transport): void {
   (globalThis as { __CAPISCO_SIDECAR__?: SidecarBridge }).__CAPISCO_SIDECAR__ = { transport };
   cached = null;
+  notifyBridgeChanged();
 }
 
 /** Test hook: clear any installed bridge and reset to the browser fallback. */
 export function clearSidecarBridge(): void {
   delete (globalThis as { __CAPISCO_SIDECAR__?: SidecarBridge }).__CAPISCO_SIDECAR__;
   cached = null;
+  notifyBridgeChanged();
 }

@@ -74,8 +74,13 @@ für immer, der Stop-Button erscheint. Das ist ein Hauptgrund für „Chats gehe
 - [x] `loading` nur setzen, wenn ein echter Lauf dispatcht wird. <!-- done: runSend setzt loading NACH dem `if(!text) return`; leerer Send spinnt nicht mehr; der Mock-Pfad completet via `completeRun` (AgentWorkspace.tsx runSend). -->
 - [x] Queue-Drain: `completeRun` auf dem Mock-Pfad gerufen → `runCompletions` bumpt →
       `useQueueDrain` feuert; gequeuete Nachrichten draint im Browser. <!-- done (Browser); der echte Desktop-Pfad completet weiter via Real-Stream (real-runtime). -->
-- [ ] Live-Label-Effekt-Deps (`AgentWorkspace.tsx:220`) um Bridge-Install/`isDesktop`
-      ergänzen, damit das Backend-Label nach Bridge-Swap nicht stale ist. <!-- (C4) offen; landet mit P1 (detect/select). -->
+- [x] Live-Label-Effekt-Deps um Bridge-Install ergänzen, damit das Backend-Label
+      nach Bridge-Swap nicht stale ist (C4): `connectDevBridge()` installiert die
+      Bridge **async nach dem Boot** — ein einmaliges `isDesktop()` beim Mount blieb
+      auf dem Mock-Label hängen. Fix: `subscribeBridge`-Emitter in `desktop-shell`
+      (feuert bei install/clear) + `useBridgeReady()`-Hook (`useSyncExternalStore`);
+      der Live-Label- **und** der B3-Re-Select-Effekt gaten jetzt auf `bridgeReady`
+      und re-rennen, sobald der echte Sidecar da ist. <!-- done: desktop-shell.ts + use-bridge.ts; AgentWorkspace-Effekte (C4) -->
 - [x] Tests: Playwright (`test/visual/agent-send.spec.ts` — senden → Antwort + Settle,
       selbst gefahren, grün) + vitest (Composer.send Case B: Mock dispatcht + settelt;
       Empty-Send spinnt nicht). <!-- done -->

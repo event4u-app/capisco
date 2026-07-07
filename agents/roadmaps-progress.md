@@ -6,7 +6,7 @@
 
 ## Overall
 
-**128 / 253 steps done · 51%**
+**129 / 253 steps done · 51%**
 
 ```text
 ████████████████████░░░░░░░░░░░░░░░░░░░░   51%
@@ -23,7 +23,7 @@
 | 5 | [road-to-real-breadth.md](roadmaps/road-to-real-breadth.md) | 5 | 30 | 22 | 8 | 0 | 0 | ███░░░░░░░ 27% |
 | 6 | [road-to-real-runtime.md](roadmaps/road-to-real-runtime.md) | 5 | 29 | 4 | 25 | 0 | 0 | █████████░ 86% |
 | 7 | [road-to-sentry-observability.md](roadmaps/road-to-sentry-observability.md) | 5 | 29 | 21 | 8 | 0 | 0 | ███░░░░░░░ 28% |
-| 8 | [road-to-shell-and-chat-really-work.md](roadmaps/road-to-shell-and-chat-really-work.md) | 6 | 24 | 5 | 19 | 0 | 0 | ████████░░ 79% |
+| 8 | [road-to-shell-and-chat-really-work.md](roadmaps/road-to-shell-and-chat-really-work.md) | 6 | 24 | 4 | 20 | 0 | 0 | ████████░░ 83% |
 
 ---
 
@@ -124,13 +124,13 @@
 
 ### [road-to-shell-and-chat-really-work.md](roadmaps/road-to-shell-and-chat-really-work.md)
 
-**Road to: Shell & Chat really work** — 19 / 24 done (79%)
+**Road to: Shell & Chat really work** — 20 / 24 done (83%)
 
 | # | Phase | State | Open | Done | Deferred | Cancelled | % |
 |---|---|---|---:|---:|---:|---:|---:|
 | 0 | Native-Fenster-Shell (Tauri-ACL)  [nativ-verifiziert] | 🟡 in progress | 1 | 4 | 0 | 0 | 80% |
 | 1 | Echte Backend-Auswahl (detect → Katalog → select → Redetect/Save) | ✅ done | 0 | 6 | 0 | 0 | 100% |
-| 2 | Send-Loop-Ehrlichkeit (kein Fake-Endlos-Spinner) | 🟡 in progress | 1 | 3 | 0 | 0 | 75% |
+| 2 | Send-Loop-Ehrlichkeit (kein Fake-Endlos-Spinner) | ✅ done | 0 | 4 | 0 | 0 | 100% |
 | 3 | Per-Session-Backend + Mid-Chat-Agent/CLI-Wechsel | 🟡 in progress | 2 | 4 | 0 | 0 | 67% |
 | 4 | Chat-Kind-Ehrlichkeit | ⬜ not started | 1 | 0 | 0 | 0 | 0% |
 | 5 | Browser-Mock streamt eine echte Antwort (Dev/Demo-Erlebnis) | ✅ done | 0 | 2 | 0 | 0 | 100% |
