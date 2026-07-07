@@ -276,21 +276,18 @@ test.describe("agents workspace — a11y (contrast tracked, primary-button contr
     const allowBtn = page.getByTestId("permission-scope-0");
     await expect(allowBtn).toContainText("Allow once");
     // Read the SETTLED colors — the mount-time color transition (DECISIONS.md
-    // anomaly) interpolates briefly; poll until the computed value is stable so
-    // the assertion reflects what the user actually sees.
+    // anomaly) interpolates briefly. The old fixed 30-frame poll RACED the
+    // transition on slower CI and read a MID-interpolation colour (flaky ~4.42
+    // vs the settled 4.5+). Wait for the transition to actually FINISH instead:
+    // let it register (one frame), then await every running animation/transition
+    // on the element — deterministic, no frame-budget guess.
     const { color, bg } = await allowBtn.evaluate(async (el) => {
-      const read = () => {
-        const cs = getComputedStyle(el as HTMLElement);
-        return { color: cs.color, bg: cs.backgroundColor };
-      };
-      let prev = read();
-      for (let i = 0; i < 30; i++) {
-        await new Promise((r) => requestAnimationFrame(() => r(null)));
-        const next = read();
-        if (next.bg === prev.bg && next.color === prev.color) return next;
-        prev = next;
-      }
-      return prev;
+      await new Promise((r) => requestAnimationFrame(() => r(null)));
+      await Promise.all(
+        (el as HTMLElement).getAnimations().map((a) => a.finished.catch(() => undefined)),
+      );
+      const cs = getComputedStyle(el as HTMLElement);
+      return { color: cs.color, bg: cs.backgroundColor };
     });
 
     const parse = (s: string) => (s.match(/\d+(\.\d+)?/g) ?? []).map(Number);
