@@ -170,10 +170,18 @@ Render-Test grün.
 first** (deckt 100 % der Sentry-API; MCP/OAuth folgen ohne Umbau). Polling, single-
 org. **Der Kill-Switch landet zuerst.**
 
-- [ ] **Feature-Flag-Kill-Switch (zuerst, vor dem Real-Provider):** Sentry-
+- [x] **Feature-Flag-Kill-Switch (zuerst, vor dem Real-Provider):** Sentry-
       Integration zur Laufzeit per IPC abschaltbar (kein Neustart) + Remote-Manifest-
       Force-Disable. Auslöser-Kriterien dokumentiert (API-Fehlerrate > 10 %,
       Broker-Reject > 20 %, Signal-Flut > 50/10 min) — Council-Finding.
+      <!-- done: SentryKillSwitch (runtime setEnabled + forceDisabled-Override, letzterer
+      gewinnt) + createGatedSentryProvider (disabled → leere Reads, KEIN Inner-Call →
+      inert, nicht nur versteckt). register-sentry verdrahtet den GATED Provider +
+      `sentry-control`-Wire (isEnabled/setEnabled/isForced); force-disable aus
+      CAPISCO_SENTRY_DISABLED (Manifest-Feed später). Client-Bundle: sentryControl-Proxy
+      + In-Memory-Mock. Tests: 8 (Toggle, Force-Override, inert-when-off, Re-Enable,
+      Registry-Wiring). OFFEN: UI-Toggle-Button im Sentry-Workspace (Design-gated —
+      additive Prototyp-Änderung) + Manifest-Fetch (P4-OAuth-nah). -->
 - [ ] **`ProviderAuth`-Abstraktion** (`mode: "mcp"|"oauth"|"token"|"cli"`) + Resolver
       (best-available, Präferenz aus `road-to-real-breadth` Provider-Auth-Direktive).
       Provider-Code spricht gegen `ProviderAuth`, nie gegen einen festen Modus.

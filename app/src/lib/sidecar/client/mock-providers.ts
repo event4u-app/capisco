@@ -27,7 +27,12 @@ import {
   mockWorkspaceProvider,
   mockWorktreeProvider,
 } from "@/mocks";
-import type { AgentBackendProvider, CredentialsProvider, LspProvider } from "@/contracts";
+import type {
+  AgentBackendProvider,
+  CredentialsProvider,
+  LspProvider,
+  SentryControlProvider,
+} from "@/contracts";
 import type { ProviderBundle } from "./providers.ts";
 
 /** Browser-mode LSP mock — no language server in the browser; empty + deterministic. */
@@ -75,6 +80,17 @@ const mockCredentials: CredentialsProvider = {
   has: (ref: string) => Promise.resolve(mockCredentialRefs.has(ref)),
 };
 
+/** Browser-mode Sentry kill-switch mock: in-memory enabled flag, never forced. */
+let mockSentryEnabled = true;
+const mockSentryControl: SentryControlProvider = {
+  isEnabled: () => Promise.resolve(mockSentryEnabled),
+  setEnabled: (on: boolean) => {
+    mockSentryEnabled = on;
+    return Promise.resolve();
+  },
+  isForced: () => Promise.resolve(false),
+};
+
 export function createMockProviders(): ProviderBundle {
   return {
     agent: mockAgentProvider,
@@ -97,5 +113,6 @@ export function createMockProviders(): ProviderBundle {
     ingest: mockIngestProvider,
     revert: mockRevertProvider,
     sentry: mockSentryProvider,
+    sentryControl: mockSentryControl,
   };
 }
