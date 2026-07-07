@@ -194,14 +194,20 @@ org. **Der Kill-Switch landet zuerst.**
 - [ ] **RealProvider auf den Resolver umstellen** (heute fester `bearerTokenAuth`):
       Kandidaten-Liste (token verfügbar wenn Keychain-Ref gesetzt; oauth/mcp sobald
       gebaut) statt fixem Modus. <!-- Folge-Slice; RealSentryProvider existiert + nutzt token direkt -->
-- [ ] **RealProvider read-only** (`real-sentry-provider.ts`, dünner Swap hinter dem
+- [x] **RealProvider read-only** (`real-sentry-provider.ts`, dünner Swap hinter dem
       gleichen Contract): Sentry Web API (`/api/0/`, self-hosted Base-URL
       konfigurierbar). **Token-Modus zuerst** — Org-Token aus der **OS-Keychain**
-      (`road-to-real-breadth` P0), Scopes `project:read,event:read,org:read,
-      alerts:read,member:read`; Token **nie im LLM-Context**, nie ins Subprozess-env,
-      Injection am Execution-Layer.
-- [ ] **`GET issues`** (Filter: `query`, `environment`, `statsPeriod=24h`) auf den
+      (`road-to-real-breadth` P0); Token **nie im LLM-Context**, nie ins Subprozess-env,
+      Injection am Execution-Layer. <!-- done: RealSentryProvider + sentry-http existierten;
+      dieser Slice schließt den Kill-Switch-Bypass: der Real-Swap in dev-bridge/main
+      wrappt jetzt via createGatedSentryCore(real, kill) + registerSentryControl → der
+      Real-Provider läuft durch DENSELBEN Off-Switch wie die Fixture (P1-Intent:
+      Switch vor dem Real-Provider). REAL verifiziert gegen galabau-workgroup-gmbh
+      (HTTP 200, echte unresolved Issues, alle toIssue-Felder present). -->
+- [x] **`GET issues`** (Filter: `query`, `environment`, `statsPeriod=24h`) auf den
       `SentryIssue`-Shape; Default-Query `is:unresolved`, Default-Env `production`.
+      <!-- done: sentryIssues() baut genau diese Query; live gegen die echte Org geprüft
+      (is:unresolved&statsPeriod=24h → GALAWORK-GPS-5V u.a., korrekt gemappt). -->
 - [ ] **Polling-first** alle 30–60 s mit ETag/`statsPeriod`, 429-Backoff; letzte
       erfolgreiche Sync-Zeit als **„Updated Xs ago" + manueller Refresh** (Kontext,
       keine Entschuldigung — Council).

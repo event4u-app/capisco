@@ -8,7 +8,11 @@
 
 import { describe, expect, it, vi } from "vitest";
 
-import { SentryKillSwitch, createGatedSentryProvider } from "../sentry/sentry-kill-switch.ts";
+import {
+  SentryKillSwitch,
+  createGatedSentryProvider,
+  createGatedSentryCore,
+} from "../sentry/sentry-kill-switch.ts";
 import { ProviderRegistry } from "../registry/registry.ts";
 import {
   registerSentry,
@@ -103,6 +107,38 @@ describe("createGatedSentryProvider", () => {
     kill.setEnabled(false);
     gated.toSignals([]);
     expect(toSignals).toHaveBeenCalled();
+  });
+});
+
+describe("createGatedSentryCore — issues-only real provider", () => {
+  function coreSpy() {
+    let calls = 0;
+    return {
+      org: "acme",
+      toSignals: () => [],
+      listIssues: () => {
+        calls += 1;
+        return Promise.resolve([{ id: "1" } as never]);
+      },
+      calls: () => calls,
+    };
+  }
+
+  it("passes listIssues through while enabled", async () => {
+    const inner = coreSpy();
+    const gated = createGatedSentryCore(inner, new SentryKillSwitch());
+    expect(await gated.listIssues()).toHaveLength(1);
+    expect(inner.calls()).toBe(1);
+    expect(gated.org).toBe("acme");
+  });
+
+  it("returns empty and never calls the real API while disabled", async () => {
+    const inner = coreSpy();
+    const kill = new SentryKillSwitch();
+    const gated = createGatedSentryCore(inner, kill);
+    kill.setEnabled(false);
+    expect(await gated.listIssues()).toEqual([]);
+    expect(inner.calls()).toBe(0); // no HTTP hit to Sentry while off
   });
 });
 
