@@ -18,7 +18,7 @@
  * read), so "off" is genuinely inert, not merely hidden.
  */
 
-import type { SentryReadProvider, SentryStats } from "@/contracts";
+import type { SentryProvider, SentryReadProvider, SentryStats } from "@/contracts";
 
 /** The zeroed stats returned while the integration is disabled — honest "no data". */
 const DISABLED_STATS: SentryStats = {
@@ -73,5 +73,25 @@ export function createGatedSentryProvider(
     getStats: () =>
       kill.enabled() ? inner.getStats() : Promise.resolve({ ...DISABLED_STATS }),
     listAlertRules: () => (kill.enabled() ? inner.listAlertRules() : Promise.resolve([])),
+  };
+}
+
+/**
+ * Gate the ISSUES-CORE surface ({@link SentryProvider}). The real provider today
+ * implements only the issues core (crons/perf/alerts are later slices), so it
+ * needs its own gate — the full-read gate would call listCrons/getStats on it and
+ * crash while enabled. Same discipline: off → empty listIssues, inner untouched;
+ * `org` + the pure `toSignals` pass through.
+ */
+export function createGatedSentryCore(
+  inner: SentryProvider,
+  kill: SentryKillSwitch,
+): SentryProvider {
+  return {
+    get org() {
+      return inner.org;
+    },
+    toSignals: (issues) => inner.toSignals(issues),
+    listIssues: (opts) => (kill.enabled() ? inner.listIssues(opts) : Promise.resolve([])),
   };
 }

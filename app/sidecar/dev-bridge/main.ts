@@ -36,6 +36,8 @@ import { createRealTaskProvider } from "../task-forge/real-task-provider.ts";
 import { createRealLinearProvider } from "../task-forge/real-linear-provider.ts";
 import { FORGE_PROVIDER_ID, TASK_PROVIDER_ID } from "../register-task-forge.ts";
 import { createRealSentryProvider } from "../observability/real-sentry-provider.ts";
+import { SentryKillSwitch, createGatedSentryCore } from "../sentry/sentry-kill-switch.ts";
+import { registerSentryControl } from "../register-sentry.ts";
 import { servicesToSignals } from "../runtime/real-runtime-provider.ts";
 import { prsToSignals } from "../task-forge/real-forge-provider.ts";
 import { RealSignalProvider } from "../observability/real-signal-provider.ts";
@@ -90,7 +92,10 @@ export async function buildDevRegistry(repo?: string): Promise<ProviderRegistry>
     const ghr = await ghRepo(repo);
     if (ghr) {
       try {
-        registry.replace(FORGE_PROVIDER_ID, (await createRealForgeProvider({ repo: ghr })) as never);
+        registry.replace(
+          FORGE_PROVIDER_ID,
+          (await createRealForgeProvider({ repo: ghr })) as never,
+        );
       } catch {
         /* keep the fixture forge on any gh error */
       }
@@ -112,7 +117,10 @@ export async function buildDevRegistry(repo?: string): Promise<ProviderRegistry>
   const jiraEmail = process.env.JIRA_EMAIL ?? cfg("jira-email");
   if (taskBackend === "linear" && secrets.has("linear-token")) {
     try {
-      registry.replace(TASK_PROVIDER_ID, (await createRealLinearProvider({ secrets })) as never);
+      registry.replace(
+        TASK_PROVIDER_ID,
+        (await createRealLinearProvider({ secrets })) as never,
+      );
     } catch {
       /* keep the fixture task provider on any Linear error */
     }
@@ -120,27 +128,37 @@ export async function buildDevRegistry(repo?: string): Promise<ProviderRegistry>
     try {
       registry.replace(
         TASK_PROVIDER_ID,
-        (await createRealTaskProvider({ baseUrl: jiraUrl, email: jiraEmail, secrets })) as never,
+        (await createRealTaskProvider({
+          baseUrl: jiraUrl,
+          email: jiraEmail,
+          secrets,
+        })) as never,
       );
     } catch {
       /* keep the fixture task provider on any Jira error */
     }
   }
   // Real Sentry (SENTRY-BACKEND-SPEC): register the live observability provider
-  // when the org (env/store) + a sentry-token (keychain) are present.
+  // when the org (env/store) + a sentry-token (keychain) are present. The real
+  // provider is gated by the SAME kill-switch surface as the fixture (P1 — the
+  // switch lands before the real provider, on purpose): we wrap it and re-point
+  // `sentry-control` at this switch, so an ungated real provider can never slip
+  // past the operator's off-switch. force-disable seeds from CAPISCO_SENTRY_DISABLED.
   const sentryOrg = process.env.SENTRY_ORG ?? cfg("sentry-org");
   if (sentryOrg && secrets.has("sentry-token")) {
     try {
-      registry.register(
-        "sentry",
-        createRealSentryProvider({
-          org: sentryOrg,
-          secrets,
-          baseUrl: process.env.SENTRY_BASE_URL ?? cfg("sentry-base-url"),
-        }) as never,
-      );
+      const real = createRealSentryProvider({
+        org: sentryOrg,
+        secrets,
+        baseUrl: process.env.SENTRY_BASE_URL ?? cfg("sentry-base-url"),
+      });
+      const kill = new SentryKillSwitch({
+        forceDisabled: process.env.CAPISCO_SENTRY_DISABLED === "1",
+      });
+      registry.register("sentry", createGatedSentryCore(real, kill) as never);
+      registerSentryControl(registry, kill);
     } catch {
-      /* no sentry provider on any error */
+      /* no sentry provider on any error — the gated fixture stays registered */
     }
   }
   // Shared signal rail (§5.2): fold the live PR / container / observability
@@ -178,7 +196,9 @@ export async function buildDevRegistry(repo?: string): Promise<ProviderRegistry>
 /**
  * Start the dev bridge HTTP+WS server on 127.0.0.1. Resolves once listening.
  */
-export async function startDevBridge(opts: { port?: number; repo?: string } = {}): Promise<DevBridge> {
+export async function startDevBridge(
+  opts: { port?: number; repo?: string } = {},
+): Promise<DevBridge> {
   const port = opts.port ?? resolveDevBridgePort();
   const registry = await buildDevRegistry(opts.repo);
   const transports = new Set<WsServerTransport>();

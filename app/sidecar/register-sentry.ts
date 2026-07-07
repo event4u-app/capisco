@@ -40,6 +40,20 @@ export function registerSentry(
   // The wire provider is the GATED one — a flipped switch returns empty reads and
   // makes no upstream call, so "off" is inert, not merely hidden.
   registry.register(SENTRY_PROVIDER_ID, createGatedSentryProvider(sentry, kill) as never);
+  registerSentryControl(registry, kill);
+  return { sentry, kill };
+}
+
+/**
+ * Register the `sentry-control` wire surface for a kill-switch. Extracted so the
+ * dev-bridge can re-point the control at the SAME switch it uses to gate the real
+ * provider on swap — otherwise the real provider would be registered ungated and
+ * the kill-switch would silently control nothing.
+ */
+export function registerSentryControl(
+  registry: ProviderRegistry,
+  kill: SentryKillSwitch,
+): void {
   registry.register(SENTRY_CONTROL_PROVIDER_ID, {
     isEnabled: () => Promise.resolve(kill.enabled()),
     setEnabled: (on: boolean) => {
@@ -48,5 +62,4 @@ export function registerSentry(
     },
     isForced: () => Promise.resolve(kill.forced()),
   } as never);
-  return { sentry, kill };
 }
