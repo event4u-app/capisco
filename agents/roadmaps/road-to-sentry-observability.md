@@ -182,9 +182,18 @@ org. **Der Kill-Switch landet zuerst.**
       + In-Memory-Mock. Tests: 8 (Toggle, Force-Override, inert-when-off, Re-Enable,
       Registry-Wiring). OFFEN: UI-Toggle-Button im Sentry-Workspace (Design-gated —
       additive Prototyp-Änderung) + Manifest-Fetch (P4-OAuth-nah). -->
-- [ ] **`ProviderAuth`-Abstraktion** (`mode: "mcp"|"oauth"|"token"|"cli"`) + Resolver
+- [x] **`ProviderAuth`-Abstraktion** (`mode: "mcp"|"oauth"|"token"|"cli"`) + Resolver
       (best-available, Präferenz aus `road-to-real-breadth` Provider-Auth-Direktive).
       Provider-Code spricht gegen `ProviderAuth`, nie gegen einen festen Modus.
+      <!-- done: Abstraktion existierte bereits (real-breadth: basic/bearer/rawTokenAuth +
+      selfAuth). Neu = `resolveProviderAuth(candidates)` + `AUTH_PREFERENCE`
+      (mcp→oauth→token→cli): Provider deklarieren verfügbare Modi, Resolver wählt den
+      besten; `build` läuft NUR fürs Gewinner-Candidate (kein unnötiger Keychain-Read);
+      undefined → „not configured", nie geraten. Tests: 7 (Präferenz, token-fallback,
+      cli-last-resort, none→undefined, build-only-winner, order, secret-by-reference). -->
+- [ ] **RealProvider auf den Resolver umstellen** (heute fester `bearerTokenAuth`):
+      Kandidaten-Liste (token verfügbar wenn Keychain-Ref gesetzt; oauth/mcp sobald
+      gebaut) statt fixem Modus. <!-- Folge-Slice; RealSentryProvider existiert + nutzt token direkt -->
 - [ ] **RealProvider read-only** (`real-sentry-provider.ts`, dünner Swap hinter dem
       gleichen Contract): Sentry Web API (`/api/0/`, self-hosted Base-URL
       konfigurierbar). **Token-Modus zuerst** — Org-Token aus der **OS-Keychain**
